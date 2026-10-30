@@ -9,7 +9,8 @@ namespace Loyalty.Core.Modules.Members.Application;
 public sealed record WalletView(Guid WalletId, Guid MemberId, string PointsUnitCode, long ActiveBalance, long PendingBalance, long ReservedBalance, int Version);
 
 public sealed record MemberView(
-    Guid MemberId, Guid ApplicationId, string ExternalCustomerId, Guid DefaultWalletId, string Status, WalletView Wallet);
+    Guid MemberId, Guid ApplicationId, string ExternalCustomerId, Guid DefaultWalletId, string Status, WalletView Wallet,
+    string? ReferralCode, DateOnly? BirthDate);
 
 public sealed record LedgerPostingView(int Sequence, string LedgerAccountCode, string AccountType, string? BalanceBucket, long DebitAmount, long CreditAmount);
 public sealed record LedgerTransactionView(
@@ -21,7 +22,7 @@ public sealed class MemberService(
     LoyaltyDbContext db, ApplicationContext scope, LoyaltySettingsService settings,
     MemberProvisioningService provisioning)
 {
-    public async Task<MemberView> CreateAsync(string externalCustomerId, CancellationToken ct)
+    public async Task<MemberView> CreateAsync(string externalCustomerId, CancellationToken ct, DateOnly? birthDate = null)
     {
         if (string.IsNullOrWhiteSpace(externalCustomerId))
             throw new LoyaltyException(LoyaltyError.ValidationFailed("externalCustomerId is required."));
@@ -29,9 +30,18 @@ public sealed class MemberService(
         var effective = await settings.ResolveEffectiveAsync(scope.ApplicationId, ct)
             ?? throw new LoyaltyException(LoyaltyError.LoyaltyNotConfigured());
 
-        var (member, _) = await provisioning.EnsureAsync(scope.ApplicationId, externalCustomerId, effective.PointsUnitCode, effective.BaseCurrency, ct);
+        var (member, _) = await provisioning.EnsureAsync(scope.ApplicationId, externalCustomerId, effective.PointsUnitCode, effective.BaseCurrency, ct, birthDate);
         await db.SaveChangesAsync(ct);
         return (await GetAsync(member.Id, ct))!;
+    }
+
+    public async Task<MemberView?> SetBirthDateAsync(Guid memberId, DateOnly? birthDate, CancellationToken ct)
+    {
+        var m = await db.Members.FirstOrDefaultAsync(x => x.Id == memberId, ct);
+        if (m is null) return null;
+        m.SetBirthDate(birthDate, DateTimeOffset.UtcNow);
+        await db.SaveChangesAsync(ct);
+        return await GetAsync(m.Id, ct);
     }
 
     public async Task<MemberView?> GetAsync(Guid memberId, CancellationToken ct)
@@ -39,7 +49,7 @@ public sealed class MemberService(
         var m = await db.Members.FirstOrDefaultAsync(x => x.Id == memberId, ct);
         if (m is null) return null;
         var w = await db.Wallets.FirstAsync(x => x.Id == m.DefaultWalletId, ct);
-        return new MemberView(m.Id, m.ApplicationId, m.ExternalCustomerId, m.DefaultWalletId, m.Status.ToString(), ToView(w));
+        return new MemberView(m.Id, m.ApplicationId, m.ExternalCustomerId, m.DefaultWalletId, m.Status.ToString(), ToView(w), m.ReferralCode, m.BirthDate);
     }
 
     public async Task<MemberView?> GetByExternalIdAsync(string externalCustomerId, CancellationToken ct)

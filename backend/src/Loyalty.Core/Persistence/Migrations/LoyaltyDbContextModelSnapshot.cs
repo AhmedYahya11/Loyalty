@@ -555,6 +555,164 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.ToTable("segment_versions", "cvm");
                 });
 
+            modelBuilder.Entity("Loyalty.Core.Modules.Engagement.Domain.EngagementSettings", b =>
+                {
+                    b.Property<Guid>("ApplicationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("BirthdayBonusPoints")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("BirthdayEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("RefereePoints")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("ReferralEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("ReferrerPoints")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ApplicationId");
+
+                    b.ToTable("engagement_settings", "engagement");
+                });
+
+            modelBuilder.Entity("Loyalty.Core.Modules.Engagement.Domain.MemberStampCard", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CompletedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("LastStampedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StampCardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Stamps")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "MemberId", "StampCardId")
+                        .IsUnique();
+
+                    b.ToTable("member_stamp_cards", "engagement");
+                });
+
+            modelBuilder.Entity("Loyalty.Core.Modules.Engagement.Domain.Referral", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RefereeMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("RefereePointsAwarded")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ReferralKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("ReferrerMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("ReferrerPointsAwarded")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "ReferralKey")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "ReferrerMemberId");
+
+                    b.ToTable("referrals", "engagement");
+                });
+
+            modelBuilder.Entity("Loyalty.Core.Modules.Engagement.Domain.StampCard", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NameAr")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<long>("RewardPoints")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("StampsRequired")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TriggerEventType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "IsActive");
+
+                    b.ToTable("stamp_cards", "engagement");
+                });
+
             modelBuilder.Entity("Loyalty.Core.Modules.Gamification.Domain.Achievement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -936,6 +1094,9 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.Property<Guid>("ApplicationId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateOnly?>("BirthDate")
+                        .HasColumnType("date");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -946,6 +1107,10 @@ namespace Loyalty.Core.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ReferralCode")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -958,6 +1123,9 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ApplicationId", "ExternalCustomerId")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "ReferralCode")
                         .IsUnique();
 
                     b.ToTable("members", "members");

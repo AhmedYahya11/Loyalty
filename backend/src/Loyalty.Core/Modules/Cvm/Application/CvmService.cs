@@ -23,7 +23,8 @@ public sealed class CvmService(LoyaltyDbContext db, ILoyaltyRuleEvaluator evalua
             case EventTypes.ApplicationLogin: profile.ApplyLogin(occurredAt); break;
             case EventTypes.PurchaseCompleted: profile.ApplyPurchase(occurredAt, amount ?? 0m); break;
             case EventTypes.OrderRefunded: profile.ApplyRefund(amount ?? 0m, occurredAt); break;
-            case EventTypes.ReferralCompleted: profile.ApplyReferral(occurredAt); break;
+            // ReferralCompleted: the referral CREDIT (ReferralCount) is applied to the RESOLVED
+            // REFERRER by the ReferralService (P10), not to the event's customer (the referee).
             // ManualAdjustment has no activity projection; it posts an Adjust ledger entry.
         }
     }

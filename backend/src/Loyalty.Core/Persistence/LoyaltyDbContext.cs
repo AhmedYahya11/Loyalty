@@ -59,6 +59,10 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<MemberAchievement> MemberAchievements => Set<MemberAchievement>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<MemberChallengeProgress> ChallengeProgress => Set<MemberChallengeProgress>();
+    public DbSet<Modules.Engagement.Domain.EngagementSettings> EngagementSettings => Set<Modules.Engagement.Domain.EngagementSettings>();
+    public DbSet<Modules.Engagement.Domain.Referral> Referrals => Set<Modules.Engagement.Domain.Referral>();
+    public DbSet<Modules.Engagement.Domain.StampCard> StampCards => Set<Modules.Engagement.Domain.StampCard>();
+    public DbSet<Modules.Engagement.Domain.MemberStampCard> MemberStampCards => Set<Modules.Engagement.Domain.MemberStampCard>();
     public DbSet<EventLogEntry> EventLog => Set<EventLogEntry>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<RewardDecisionRecord> RewardDecisions => Set<RewardDecisionRecord>();
@@ -115,7 +119,9 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.HasKey(x => x.Id);
             e.Property(x => x.ExternalCustomerId).HasMaxLength(200).IsRequired();
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.ReferralCode).HasMaxLength(32);
             e.HasIndex(x => new { x.ApplicationId, x.ExternalCustomerId }).IsUnique();
+            e.HasIndex(x => new { x.ApplicationId, x.ReferralCode }).IsUnique();
             ApplyScope(e);
         });
 
@@ -408,6 +414,41 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.HasKey(x => x.Id);
             e.Property(x => x.Progress).HasPrecision(18, 4);
             e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.ChallengeId }).IsUnique();
+            ApplyScope(e);
+        });
+
+        // ---------------- engagement (referrals, stamp cards, birthday) ----------------
+        b.Entity<Modules.Engagement.Domain.EngagementSettings>(e =>
+        {
+            e.ToTable("engagement_settings", "engagement");
+            e.HasKey(x => x.ApplicationId);
+            ApplyScope(e);
+        });
+        b.Entity<Modules.Engagement.Domain.Referral>(e =>
+        {
+            e.ToTable("referrals", "engagement");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ReferralKey).HasMaxLength(200).IsRequired();
+            e.HasIndex(x => new { x.ApplicationId, x.ReferralKey }).IsUnique();
+            e.HasIndex(x => new { x.ApplicationId, x.ReferrerMemberId });
+            ApplyScope(e);
+        });
+        b.Entity<Modules.Engagement.Domain.StampCard>(e =>
+        {
+            e.ToTable("stamp_cards", "engagement");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(100);
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.TriggerEventType).HasMaxLength(64).IsRequired();
+            e.HasIndex(x => new { x.ApplicationId, x.IsActive });
+            ApplyScope(e);
+        });
+        b.Entity<Modules.Engagement.Domain.MemberStampCard>(e =>
+        {
+            e.ToTable("member_stamp_cards", "engagement");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.StampCardId }).IsUnique();
             ApplyScope(e);
         });
 

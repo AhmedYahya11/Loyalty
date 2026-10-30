@@ -70,6 +70,13 @@ public static class DependencyInjection
         services.AddScoped<Modules.Gamification.Application.ChallengeService>();
         services.AddScoped<Modules.Gamification.Application.LeaderboardService>();
 
+        // engagement: referrals, stamp cards, birthday/scheduled rewards (P10)
+        services.AddScoped<Modules.Engagement.Application.EngagementSettingsService>();
+        services.AddScoped<Modules.Engagement.Application.ReferralService>();
+        services.AddScoped<Modules.Engagement.Application.StampCardService>();
+        services.AddScoped<Modules.Engagement.Application.BirthdaySweepService>();
+        services.AddHostedService<Modules.Engagement.Application.BirthdaySweepJob>();
+
         return services;
     }
 }

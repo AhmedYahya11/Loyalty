@@ -9,6 +9,7 @@ using Loyalty.Core.Modules.Members.Application;
 using Loyalty.Core.Modules.Settings.Application;
 using Loyalty.Core.Persistence;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Loyalty.Api;
 
@@ -17,7 +18,8 @@ public sealed record BootstrapRequest(string Name, string? NameAr);
 public sealed record CreateApplicationRequest(string Name, string? NameAr, Guid? ParentId);
 public sealed record SetStatusRequest(bool IsActive);
 public sealed record CreateAccountRequest(string AccountName, DateTimeOffset? ExpiresAt);
-public sealed record CreateMemberRequest(string ExternalCustomerId);
+public sealed record CreateMemberRequest(string ExternalCustomerId, DateOnly? BirthDate);
+public sealed record SetBirthDateRequest(DateOnly? BirthDate);
 public sealed record RedeemRequest(Guid RewardId);
 public sealed record ConfirmByCodeRequest(string CouponCode);
 
@@ -41,6 +43,10 @@ public static class Endpoints
         });
 
         // ---------- applications ----------
+        // current authenticated application (resolved from the API key) — used by the dashboard
+        v1.MapGet("/me", (Loyalty.Core.BuildingBlocks.ApplicationContext scope) =>
+            Results.Ok(new { applicationId = scope.ApplicationId }));
+
         var apps = v1.MapGroup("/applications");
         apps.MapPost("", async (CreateApplicationRequest req, ApplicationService svc, CancellationToken ct) =>
             Results.Json(await svc.CreateAsync(req.Name, req.NameAr, req.ParentId, ct), statusCode: 201));
@@ -82,7 +88,9 @@ public static class Endpoints
         // ---------- members + wallet ----------
         var members = v1.MapGroup("/members");
         members.MapPost("", async (CreateMemberRequest req, MemberService svc, CancellationToken ct) =>
-            Results.Json(await svc.CreateAsync(req.ExternalCustomerId, ct), statusCode: 201));
+            Results.Json(await svc.CreateAsync(req.ExternalCustomerId, ct, req.BirthDate), statusCode: 201));
+        members.MapPut("/{id:guid}/birthdate", async (Guid id, SetBirthDateRequest req, MemberService svc, CancellationToken ct) =>
+            await svc.SetBirthDateAsync(id, req.BirthDate, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         members.MapGet("/{id:guid}", async (Guid id, MemberService svc, CancellationToken ct) =>
             await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         members.MapGet("/by-external-id/{externalId}", async (string externalId, MemberService svc, CancellationToken ct) =>
@@ -189,6 +197,26 @@ public static class Endpoints
         v1.MapGet("/leaderboard", async (string? metric, int? limit, Loyalty.Core.Modules.Gamification.Application.LeaderboardService svc, CancellationToken ct) =>
             Results.Ok(new { metric = metric ?? "PointsEarned", items = await svc.TopAsync(metric ?? "PointsEarned", limit ?? 10, ct) }));
 
+        // ---------- engagement (P10): referral program + stamp cards + birthday ----------
+        apps.MapPut("/{appId:guid}/engagement-settings", async (Guid appId, Loyalty.Core.Modules.Engagement.Application.EngagementSettingsInput req, Loyalty.Core.Modules.Engagement.Application.EngagementSettingsService svc, CancellationToken ct) =>
+            Results.Ok(await svc.UpsertAsync(appId, req, ct)));
+        apps.MapGet("/{appId:guid}/engagement-settings", async (Guid appId, Loyalty.Core.Modules.Engagement.Application.EngagementSettingsService svc, CancellationToken ct) =>
+            Results.Ok(await svc.GetAsync(appId, ct)));
+
+        var stampCards = v1.MapGroup("/stamp-cards");
+        stampCards.MapPost("", async (Loyalty.Core.Modules.Engagement.Application.CreateStampCardInput req, Loyalty.Core.Modules.Engagement.Application.StampCardService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(req, ct), statusCode: 201));
+        stampCards.MapGet("", async (Loyalty.Core.Modules.Engagement.Application.StampCardService svc, CancellationToken ct) => Results.Ok(await svc.ListAsync(ct)));
+        stampCards.MapPut("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Engagement.Application.UpdateStampCardInput req, Loyalty.Core.Modules.Engagement.Application.StampCardService svc, CancellationToken ct) =>
+            await svc.UpdateAsync(id, req, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        stampCards.MapDelete("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Engagement.Application.StampCardService svc, CancellationToken ct) =>
+            await svc.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+        members.MapGet("/{id:guid}/stamp-cards", async (Guid id, Loyalty.Core.Modules.Engagement.Application.StampCardService svc, CancellationToken ct) =>
+            Results.Ok(new { items = await svc.ProgressAsync(id, ct) }));
+        members.MapGet("/{id:guid}/referrals", async (Guid id, LoyaltyDbContext db, CancellationToken ct) =>
+            Results.Ok(new { items = await db.Referrals.Where(r => r.ReferrerMemberId == id).OrderByDescending(r => r.CreatedAt)
+                .Select(r => new { r.ReferralKey, r.RefereeMemberId, r.ReferrerPointsAwarded, r.CreatedAt }).ToListAsync(ct) }));
+
         // ---------- events + request status ----------
         v1.MapPost("/events", async (LoyaltyEventEnvelopeV1 envelope, [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
             EventIngestionService svc, CancellationToken ct) =>
@@ -207,6 +235,10 @@ public static class Endpoints
         // ---------- admin: trigger the lifecycle inactivity sweep on demand ----------
         v1.MapPost("/admin/lifecycle-sweep", async (Loyalty.Core.Modules.Cvm.Application.LifecycleSweepService svc, CancellationToken ct) =>
             Results.Ok(new { transitions = await svc.RunAsync(ct) }));
+
+        // ---------- admin: trigger the daily birthday reward sweep on demand (P10) ----------
+        v1.MapPost("/admin/birthday-sweep", async (string? asOf, Loyalty.Core.Modules.Engagement.Application.BirthdaySweepService svc, CancellationToken ct) =>
+            Results.Ok(new { rewarded = asOf is not null && DateTimeOffset.TryParse(asOf, out var d) ? await svc.RunForAsync(d, ct) : await svc.RunAsync(ct) }));
 
         // ---------- analytics ----------
         v1.MapGet("/analytics/overview", async (Loyalty.Core.Modules.Analytics.AnalyticsService svc, CancellationToken ct) =>

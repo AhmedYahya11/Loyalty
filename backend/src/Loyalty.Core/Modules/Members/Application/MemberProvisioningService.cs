@@ -18,7 +18,8 @@ namespace Loyalty.Core.Modules.Members.Application;
 public sealed class MemberProvisioningService(LoyaltyDbContext db, LedgerService ledger, IClock clock)
 {
     public async Task<(Member Member, Wallet Wallet)> EnsureAsync(
-        Guid applicationId, string externalCustomerId, string pointsUnitCode, string baseCurrency, CancellationToken ct)
+        Guid applicationId, string externalCustomerId, string pointsUnitCode, string baseCurrency, CancellationToken ct,
+        DateOnly? birthDate = null)
     {
         externalCustomerId = externalCustomerId.Trim();
         var existing = await db.Members
@@ -26,6 +27,7 @@ public sealed class MemberProvisioningService(LoyaltyDbContext db, LedgerService
         if (existing is not null)
         {
             var w = await db.Wallets.FirstAsync(x => x.Id == existing.DefaultWalletId, ct);
+            if (birthDate is not null && existing.BirthDate is null) existing.SetBirthDate(birthDate, clock.UtcNow);
             return (existing, w);
         }
 
@@ -34,7 +36,8 @@ public sealed class MemberProvisioningService(LoyaltyDbContext db, LedgerService
         var walletId = Guid.NewGuid();
 
         var wallet = Wallet.Create(walletId, applicationId, memberId, pointsUnitCode);
-        var member = Member.Create(memberId, applicationId, externalCustomerId, walletId, now);
+        var member = Member.Create(memberId, applicationId, externalCustomerId, walletId, now,
+            referralCode: GenerateReferralCode(memberId), birthDate: birthDate);
         var profile = MemberValueProfile.Create(applicationId, memberId, baseCurrency, now);
 
         db.Wallets.Add(wallet);
@@ -45,4 +48,8 @@ public sealed class MemberProvisioningService(LoyaltyDbContext db, LedgerService
 
         return (member, wallet);
     }
+
+    /// <summary>Deterministic, human-shareable referral code derived from the member id (P10).</summary>
+    private static string GenerateReferralCode(Guid memberId) =>
+        "REF-" + memberId.ToString("N")[..8].ToUpperInvariant();
 }

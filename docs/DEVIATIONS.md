@@ -184,3 +184,25 @@ emitter template themselves).
 - **P4** Dashboard depth + analytics + CVM snapshot + result events + webhooks. ✅ DONE
 - **P5** Reliability/ops: EF migrations, Postgres transport + dedicated worker, reconciliation, rate limits, health, dead-letter replay, OpenTelemetry. ✅ DONE (load tests + segment-version binding + full profile-rebuild deferred).
 - **P6** Generic integration kit (onboarding + backfill CLIs, emitter template, guide); Hareer = one example; no external repo touched. ✅ DONE
+- **P7** Membership Tiers (rank + threshold metric + earn-multiplier benefit), tier-change events, analytics + dashboard. ✅ DONE
+- **P8** Rewards & Redemptions (catalog, reserve→confirm→cancel saga, QR coupons, ledger reserve/release/redeem). ✅ DONE
+- **P9** Gamification (metric achievements/badges, daily streaks, time-boxed challenges, leaderboards). ✅ DONE
+- **P10** Engagement — Referrals + Stamp cards + Birthday/scheduled rewards. ✅ DONE
+
+### P10 engagement notes
+- **Referrals**: each member gets a shareable `ReferralCode` at provisioning (unique per app). A
+  `ReferralCompleted` event (customerId = the referee) resolves the referrer from
+  `attributes.referrerCode` (preferred) or `attributes.referrerCustomerId`, then pays both sides out
+  of the per-app referral program and records a `referrals` row — UNIQUE by referralId, so
+  redelivery never double-rewards. The **referral credit (`ReferralCount`) is applied to the
+  referrer**, not the event's customer; `CvmService` no longer auto-increments the referee.
+- **Stamp cards**: an active card adds one stamp per qualifying event (idempotent per source event
+  via a `stamp:{cardId}` reward-effect); when it fills it awards `RewardPoints` through the ledger
+  and **resets keeping the remainder** (repeatable). `StampCardCompletedV1` emitted.
+- **Birthday / scheduled**: optional member `BirthDate`; a daily `BirthdaySweepJob` (admin-triggerable
+  at `POST /admin/birthday-sweep`, accepts `?asOf=` for testing) credits a once-per-year bonus,
+  idempotent via a `birthday:{year}` reward-effect. `BirthdayRewardedV1` emitted.
+- Per-app config lives in one `engagement.engagement_settings` row (referral + birthday), upserted at
+  `PUT /applications/{appId}/engagement-settings`. The dashboard resolves its own app via `GET /me`.
+- **Deferred**: scheduled/segment-targeted *campaigns* beyond birthday (e.g. "re-engage dormant on a
+  cron") reuse the sweep pattern but are not yet wired; stamp-card expiry/per-category triggers TBD.

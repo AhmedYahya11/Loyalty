@@ -95,6 +95,22 @@ export const t: Dict = {
   target: { en: "Target", ar: "الهدف" },
   streak: { en: "Streak", ar: "التتابع" },
   badges: { en: "Badges", ar: "الأوسمة" },
+  engagement: { en: "Engagement", ar: "التفاعل" },
+  referralProgram: { en: "Referral program", ar: "برنامج الإحالة" },
+  referrals: { en: "Referrals", ar: "الإحالات" },
+  referralCode: { en: "Referral code", ar: "رمز الإحالة" },
+  referrerPoints: { en: "Referrer points", ar: "نقاط المُحيل" },
+  refereePoints: { en: "Referee points", ar: "نقاط المُحال" },
+  stampCards: { en: "Stamp cards", ar: "بطاقات الأختام" },
+  stampsRequired: { en: "Stamps required", ar: "الأختام المطلوبة" },
+  rewardPoints: { en: "Reward points", ar: "نقاط المكافأة" },
+  progress: { en: "Progress", ar: "التقدم" },
+  birthdayReward: { en: "Birthday reward", ar: "مكافأة عيد الميلاد" },
+  birthDate: { en: "Birth date", ar: "تاريخ الميلاد" },
+  bonusPointsLabel: { en: "Bonus points", ar: "نقاط إضافية" },
+  enabled: { en: "Enabled", ar: "مُفعّل" },
+  runBirthdaySweep: { en: "Run birthday sweep", ar: "تشغيل مكافآت الميلاد" },
+  triggerEvent: { en: "Trigger event", ar: "حدث التفعيل" },
 };
 
 export function tr(key: string, lang: Lang): string {

@@ -15,6 +15,9 @@ public static class ResultEventTypes
     public const string RedemptionCancelled = "RedemptionCancelledV1";
     public const string AchievementUnlocked = "AchievementUnlockedV1";
     public const string ChallengeCompleted = "ChallengeCompletedV1";
+    public const string ReferralRewarded = "ReferralRewardedV1";
+    public const string StampCardCompleted = "StampCardCompletedV1";
+    public const string BirthdayRewarded = "BirthdayRewardedV1";
 }
 
 /// <summary>

@@ -7,7 +7,8 @@ import { api } from "@/lib/api";
 import { isConnected } from "@/lib/session";
 
 type Wallet = { walletId: string; pointsUnitCode: string; activeBalance: number; pendingBalance: number; reservedBalance: number };
-type Member = { memberId: string; externalCustomerId: string; defaultWalletId: string; status: string; wallet: Wallet };
+type Member = { memberId: string; externalCustomerId: string; defaultWalletId: string; status: string; wallet: Wallet; referralCode?: string; birthDate?: string };
+type Stamp = { stampCardId: string; name: string; nameAr?: string; stamps: number; stampsRequired: number; completedCount: number; rewardPoints: number };
 type Txn = { transactionId: string; transactionType: string; totalDebit: number; totalCredit: number; occurredAt: string };
 type Segment = { segmentId: string; name: string; nameAr?: string };
 type Tier = { name: string; nameAr?: string; rank: number; earnMultiplier: number };
@@ -25,6 +26,7 @@ export default function MembersPage() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [badges, setBadges] = useState<Badge[]>([]);
+  const [stamps, setStamps] = useState<Stamp[]>([]);
   const [rewardId, setRewardId] = useState("");
   const [err, setErr] = useState("");
 
@@ -35,6 +37,7 @@ export default function MembersPage() {
     try { setProfile(await api.get<Profile>(`/api/v1/members/${memberId}/value-profile`)); } catch { setProfile(null); }
     setRedemptions((await api.get<{ items: Redemption[] }>(`/api/v1/members/${memberId}/redemptions`)).items);
     try { setBadges((await api.get<{ items: Badge[] }>(`/api/v1/members/${memberId}/achievements`)).items); } catch { setBadges([]); }
+    try { setStamps((await api.get<{ items: Stamp[] }>(`/api/v1/members/${memberId}/stamp-cards`)).items); } catch { setStamps([]); }
     const rw = await api.get<Reward[]>("/api/v1/rewards?activeOnly=true");
     setRewards(rw); if (rw[0]) setRewardId(rw[0].id);
   };
@@ -109,9 +112,30 @@ export default function MembersPage() {
                 <tr><th>{tr("activeBalance", lang)}</th><td>{member.wallet.activeBalance} {member.wallet.pointsUnitCode}</td></tr>
                 <tr><th>Pending</th><td>{member.wallet.pendingBalance}</td></tr>
                 <tr><th>{tr("reserved", lang)}</th><td>{member.wallet.reservedBalance}</td></tr>
+                {member.referralCode && <tr><th>{tr("referralCode", lang)}</th><td><span className="badge ok" style={{ letterSpacing: 1 }}>🎁 {member.referralCode}</span></td></tr>}
+                {member.birthDate && <tr><th>{tr("birthDate", lang)}</th><td>🎂 {member.birthDate}</td></tr>}
               </tbody>
             </table>
           </div>
+
+          {stamps.length > 0 && (
+            <>
+              <h2>🎟️ {tr("stampCards", lang)}</h2>
+              <table>
+                <thead><tr><th>{tr("name", lang)}</th><th>{tr("progress", lang)}</th><th>{tr("rewardPoints", lang)}</th><th>✓</th></tr></thead>
+                <tbody>
+                  {stamps.map((st) => (
+                    <tr key={st.stampCardId}>
+                      <td>{(lang === "ar" && st.nameAr ? st.nameAr : st.name)}</td>
+                      <td>{"●".repeat(st.stamps)}{"○".repeat(Math.max(0, st.stampsRequired - st.stamps))} <span className="muted">{st.stamps}/{st.stampsRequired}</span></td>
+                      <td>+{st.rewardPoints}</td>
+                      <td>{st.completedCount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
 
           <h2>{tr("redeem", lang)}</h2>
           <div className="card">

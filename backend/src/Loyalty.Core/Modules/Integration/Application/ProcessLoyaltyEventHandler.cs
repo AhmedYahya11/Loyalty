@@ -45,6 +45,8 @@ public sealed class ProcessLoyaltyEventHandler
         var engine = sp.GetRequiredService<CampaignEngine>();
         var cvm = sp.GetRequiredService<CvmService>();
         var gamification = sp.GetRequiredService<Gamification.Application.GamificationService>();
+        var referrals = sp.GetRequiredService<Engagement.Application.ReferralService>();
+        var stampCards = sp.GetRequiredService<Engagement.Application.StampCardService>();
         var clock = sp.GetRequiredService<IClock>();
 
         var visible = await RunInSystemScope(scope, () => scopeResolver.ResolveVisibleAsync(message.ApplicationId, ct));
@@ -206,13 +208,26 @@ public sealed class ProcessLoyaltyEventHandler
 
         if (totalAwarded > 0) profile.AddPointsEarned(totalAwarded);
 
+        // stamp cards: add a stamp for qualifying events; award + reset when a card fills (P10)
+        var stamp = await stampCards.EvaluateAsync(wallet, member, profile, envelope.EventType,
+            envelope.EventId, request.SourceSystem, envelope.SourceTransactionId, normalized.BusinessEventKey, envelope.CorrelationId,
+            envelope.OccurredAt, now, ct);
+
+        // referrals: reward both sides when a referral completes (P10)
+        var referral = envelope.EventType == EventTypes.ReferralCompleted
+            ? await referrals.EvaluateAsync(wallet, member, profile, normalized,
+                envelope.EventId, request.SourceSystem, envelope.SourceTransactionId, normalized.BusinessEventKey, envelope.CorrelationId,
+                envelope.OccurredAt, now, ct)
+            : new Engagement.Application.ReferralResult(0, 0, false);
+
         // gamification runs regardless of a campaign reward (streak/achievements/challenges)
         var gam = await gamification.EvaluateAsync(wallet, member, profile, envelope.EventType, normalized.Amount,
             envelope.EventId, request.SourceSystem, envelope.SourceTransactionId, normalized.BusinessEventKey, envelope.CorrelationId,
             envelope.OccurredAt, now, ct);
-        var grandTotal = totalAwarded + gam.Bonus;
+        var grandTotal = totalAwarded + stamp.Bonus + referral.RefereeBonus + gam.Bonus;
+        var anyEngagement = gam.Any || stamp.Completed > 0 || referral.Rewarded;
 
-        if (grandTotal <= 0 && !gam.Any)
+        if (grandTotal <= 0 && !anyEngagement)
         {
             db.RewardDecisions.Add(RewardDecisionRecord.Create(request.ApplicationId, member.Id, request.Id, envelope.EventId,
                 profile.Version, profile.LifecycleStage.ToString(), segmentVersionRefs, 0, "Rejected", now));

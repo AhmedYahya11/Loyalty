@@ -1,9 +1,29 @@
-# Deviations from the MVP spec (Phases 1–4)
+# Deviations from the MVP spec (Phases 1–5)
 
 The authoritative design is `docs/design/MVP_IMPLEMENTATION_PLAN.md`. Phase 1 = core pipeline;
 Phase 2 = CVM; Phase 3 = full campaign engine + RulesEngine + refund reversal; Phase 4 =
-**result events + webhooks/notifications, analytics, CVM/segment-version snapshots, dashboard
-depth**. Bilingual (AR/EN) throughout. These are the intentional, documented deltas.
+result events + webhooks/notifications + analytics + snapshots; Phase 5 = **reliability/ops**
+(EF migrations, Postgres transport + dedicated worker, reconciliation, rate limiting, health,
+dead-letter replay, OpenTelemetry). Bilingual (AR/EN) throughout. Documented deltas below.
+
+## Phase 5 status (done)
+- **EF Core migrations** replace EnsureCreated; applied at startup (+ idempotent balancing trigger) ✅
+- **Durable PostgreSQL transport**: API publishes + listens, and `Loyalty.Worker` is a cross-process
+  competing consumer (dedicated processor pool). Kafka still deferred ✅
+- **Reconciliation**: wallet projections recomputed from ledger postings (credits − debits) with
+  mismatch report + optional repair; profile PointsEarned checked against the ledger ✅
+- **Rate limiting** per API key on /events (429) + request-body cap ✅
+- **Health checks**: `/health` liveness, `/health/ready` with a PostgreSQL check ✅
+- **Dead-letter ops**: list requests by status + controlled `/requests/{id}/replay` ✅
+- **OpenTelemetry** traces + metrics (ASP.NET/HTTP/runtime; OTLP when configured) + scoped log
+  enrichment (ApplicationId/AccountId/CorrelationId; secrets never logged) ✅
+
+### Phase 5 remaining deltas
+| Area | Spec | Phase 5 choice | When |
+|---|---|---|---|
+| Worker DB migration ordering | — | API runs migrations at startup; Worker assumes schema exists (start API first) | ok operationally |
+| Profile rebuild | full event replay reconciliation | wallet + PointsEarned reconciled; full event-replay profile rebuild not yet | later |
+| Load tests | included | not run here | later |
 
 ## Phase 4 status (done)
 - Result events (PointsAwardedV1 / PointsReversedV1 / PointsAdjustedV1 / MemberLifecycleChangedV1)
@@ -86,5 +106,5 @@ depth**. Bilingual (AR/EN) throughout. These are the intentional, documented del
 - **P2** CVM (value profile, lifecycle job, segments, audience targeting) + remaining event types. ✅ DONE
 - **P3** Campaign engine (stacking, member limits, global budget, validate/simulate) + RulesEngine adapter + refund reversal. ✅ DONE (CVM/segment-version snapshots moved to P4).
 - **P4** Dashboard depth + analytics + CVM snapshot + result events + webhooks. ✅ DONE
-- **P5** Reliability/ops: Postgres transport (dedicated worker), retries/dead-letter ops, reconciliation, rate limits, OpenTelemetry, EF migrations, load tests + segment-version binding.
+- **P5** Reliability/ops: EF migrations, Postgres transport + dedicated worker, reconciliation, rate limits, health, dead-letter replay, OpenTelemetry. ✅ DONE (load tests + segment-version binding + full profile-rebuild deferred).
 - **P6** Hareer live integration (emit from the real repo, map tenants→applications, backfill).

@@ -93,6 +93,8 @@ public static class Endpoints
             await svc.GetWalletAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         members.MapGet("/{id:guid}/wallet/transactions", async (Guid id, MemberService svc, CancellationToken ct) =>
             await svc.GetTransactionsAsync(id, ct) is { } v ? Results.Ok(new { items = v }) : Results.NotFound());
+        members.MapPost("/{id:guid}/reconcile", async (Guid id, bool? repair, Loyalty.Core.Modules.Wallets.Application.ReconciliationService svc, CancellationToken ct) =>
+            await svc.ReconcileMemberAsync(id, repair ?? false, ct) is { } v ? Results.Ok(v) : Results.NotFound());
 
         // ---------- campaigns ----------
         var campaigns = v1.MapGroup("/campaigns");
@@ -131,9 +133,13 @@ public static class Endpoints
             var canonical = JsonSerializer.Serialize(envelope, JsonOptionsProvider.Default);
             var result = await svc.SubmitAsync(envelope, canonical, idempotencyKey, ct);
             return Results.Json(result.Body, statusCode: result.StatusCode);
-        });
+        }).RequireRateLimiting("events");
         v1.MapGet("/requests/{id:guid}", async (Guid id, EventIngestionService svc, CancellationToken ct) =>
             await svc.GetRequestStatusAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        v1.MapGet("/requests", async (string? status, int? limit, EventIngestionService svc, CancellationToken ct) =>
+            Results.Ok(new { items = await svc.ListRequestsAsync(status, limit ?? 50, ct) }));
+        v1.MapPost("/requests/{id:guid}/replay", async (Guid id, EventIngestionService svc, CancellationToken ct) =>
+            await svc.ReplayAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
 
         // ---------- admin: trigger the lifecycle inactivity sweep on demand ----------
         v1.MapPost("/admin/lifecycle-sweep", async (Loyalty.Core.Modules.Cvm.Application.LifecycleSweepService svc, CancellationToken ct) =>

@@ -7,9 +7,9 @@ using Wolverine.Postgresql;
 namespace Loyalty.Core;
 
 /// <summary>
-/// Shared Wolverine configuration. Phase 1 uses a durable local queue backed by PostgreSQL
-/// (Kafka and the cross-process Postgres transport are deferred — MVP spec §3, §20). Messages
-/// are persisted transactionally with the ingestion request and processed asynchronously.
+/// Shared Wolverine configuration. Uses the durable PostgreSQL persistence + transport so the
+/// API publishes to a durable queue and either the API host or the dedicated Loyalty.Worker
+/// consumes it (cross-process competing consumers). Kafka remains deferred (MVP spec §3, §20).
 /// </summary>
 public static class LoyaltyWolverine
 {
@@ -20,16 +20,17 @@ public static class LoyaltyWolverine
         // handlers live in Loyalty.Core, not the entry assembly
         opts.Discovery.IncludeAssembly(typeof(LoyaltyWolverine).Assembly);
 
-        opts.PersistMessagesWithPostgresql(connectionString);
+        // durable PostgreSQL message store + transport (queues live in the database)
+        opts.UsePostgresqlPersistenceAndTransport(connectionString);
         opts.UseEntityFrameworkCoreTransactions();
-
-        // make local queues durable so accepted work survives a restart
-        opts.Policies.UseDurableLocalQueues();
 
         // retry transient failures (e.g. reading the ingestion row just after commit) with backoff
         opts.OnException<InvalidOperationException>()
             .RetryWithCooldown(TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
 
-        opts.PublishMessage<ProcessLoyaltyEvent>().ToLocalQueue(ProcessQueue);
+        // publish to and listen on the durable Postgres queue (every host both publishes and
+        // can consume; run Loyalty.Worker for a dedicated processor pool)
+        opts.PublishMessage<ProcessLoyaltyEvent>().ToPostgresqlQueue(ProcessQueue);
+        opts.ListenToPostgresqlQueue(ProcessQueue);
     }
 }

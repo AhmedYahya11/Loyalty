@@ -3,15 +3,14 @@ using Microsoft.EntityFrameworkCore;
 namespace Loyalty.Core.Persistence;
 
 /// <summary>
-/// Creates the application schema and installs the deferred balancing trigger that enforces
+/// Applies EF Core migrations and installs the deferred balancing trigger that enforces
 /// double-entry integrity in PostgreSQL (defense in depth beyond the domain — MVP spec §13).
-/// Phase 1 uses EnsureCreated; production will switch to EF migrations (see docs/DEVIATIONS.md).
 /// </summary>
 public static class DbBootstrap
 {
     public static async Task InitializeAsync(LoyaltyDbContext db, CancellationToken ct = default)
     {
-        await db.Database.EnsureCreatedAsync(ct);
+        await db.Database.MigrateAsync(ct);
         await db.Database.ExecuteSqlRawAsync(BalancingTriggerSql, ct);
     }
 

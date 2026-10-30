@@ -75,6 +75,10 @@ GET    /api/v1/members/{id}/value-profile         # lifecycle stage, counts, net
 GET    /api/v1/analytics/overview                 # members, points issued/reversed, lifecycle mix
 GET    /api/v1/notifications                       # result-event feed (PointsAwardedV1, …)
 POST   /api/v1/webhooks                            # register an HMAC-signed webhook endpoint
+POST   /api/v1/members/{id}/reconcile              # recompute wallet from the ledger; report mismatch
+GET    /api/v1/requests?status=…                   # dead-letter / status explorer
+POST   /api/v1/requests/{id}/replay                # controlled replay of a stuck request
+GET    /health/ready                               # readiness (PostgreSQL)
 ```
 
 Event types: `PurchaseCompleted`, `OrderRefunded`, `CustomerRegistered`, `ApplicationLogin`,
@@ -84,12 +88,14 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
 
 ## Status
 
-**Phases 1–4 complete and verified — 33 tests** (25 unit + 8 Testcontainers end-to-end):
+**Phases 1–5 complete and verified — 37 tests** (25 unit + 12 Testcontainers end-to-end):
 - **P1** core pipeline (ingestion → ledger, 4-boundary idempotency)
 - **P2** CVM (value profiles, lifecycle, rule-based segments, audience targeting, all six event types)
 - **P3** full campaign engine (stacking, member limits, global budgets, validate/simulate),
   Microsoft **RulesEngine adapter** (toggle `LOYALTY_RULES_ENGINE`), and **refund reversal**
 - **P4** result events + **webhooks** (HMAC-signed delivery), **analytics** overview, frozen CVM
   snapshot + explainable reward decisions, and dashboard depth (Overview / Notifications / Webhooks)
+- **P5** reliability/ops: **EF migrations**, durable **PostgreSQL transport + dedicated worker**,
+  **reconciliation**, per-key **rate limiting**, `/health/ready`, dead-letter **replay**, **OpenTelemetry**
 
-See `docs/DEVIATIONS.md` for the roadmap (P5 ops/dedicated worker + migrations, P6 live Hareer integration).
+See `docs/DEVIATIONS.md` for the roadmap (P6 live Hareer integration).

@@ -132,6 +132,34 @@ public sealed class EventIngestionService(
         return AcceptedResult(requestId, RequestStatus.Accepted, duplicate: false);
     }
 
+    /// <summary>List ingestion requests, optionally filtered by status (for dead-letter ops).</summary>
+    public async Task<IReadOnlyList<object>> ListRequestsAsync(string? status, int limit, CancellationToken ct)
+    {
+        limit = Math.Clamp(limit, 1, 200);
+        var q = db.IngestionRequests.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<RequestStatus>(status, true, out var parsed))
+            q = q.Where(r => r.Status == parsed);
+        return await q.OrderByDescending(r => r.CreatedAt).Take(limit)
+            .Select(r => (object)new { requestId = r.Id, status = r.Status.ToString(), eventType = r.EventType, customerId = r.CustomerId, statusReason = r.StatusReason, createdAt = r.CreatedAt })
+            .ToListAsync(ct);
+    }
+
+    /// <summary>
+    /// Controlled replay: re-enqueue a request whose message was dead-lettered or that is stuck
+    /// (not yet in a terminal success/reject state). Idempotency makes a completed replay a no-op.
+    /// </summary>
+    public async Task<object?> ReplayAsync(Guid requestId, CancellationToken ct)
+    {
+        var r = await db.IngestionRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct);
+        if (r is null) return null;
+        if (r.Status is RequestStatus.Completed or RequestStatus.Rejected)
+            throw new LoyaltyException(LoyaltyError.Conflict("request_already_final", "Request has already reached a final business outcome."));
+
+        await outbox.PublishAsync(new ProcessLoyaltyEvent(r.Id, r.ApplicationId, r.AccountId, r.EventId, r.CorrelationId));
+        await outbox.SaveChangesAndFlushMessagesAsync();
+        return new { requestId = r.Id, status = "requeued" };
+    }
+
     public async Task<object?> GetRequestStatusAsync(Guid requestId, CancellationToken ct)
     {
         var r = await db.IngestionRequests.AsNoTracking().FirstOrDefaultAsync(x => x.Id == requestId, ct);

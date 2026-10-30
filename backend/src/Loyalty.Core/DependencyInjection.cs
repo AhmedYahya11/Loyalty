@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<Modules.Cvm.Application.LifecycleSweepService>();
         services.AddHostedService<Modules.Cvm.Application.LifecycleSweepJob>();
         services.AddScoped<LedgerService>();
+        services.AddScoped<ReconciliationService>();
         services.AddScoped<MemberProvisioningService>();
         services.AddScoped<MemberService>();
         services.AddScoped<CampaignService>();

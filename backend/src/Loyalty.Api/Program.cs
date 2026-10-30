@@ -1,17 +1,22 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using JasperFx.Resources;
 using Loyalty.Api;
 using Loyalty.Api.Auth;
 using Loyalty.Core;
 using Loyalty.Core.Persistence;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 using Serilog;
 using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configuration).WriteTo.Console());
+builder.Host.UseSerilog((ctx, cfg) =>
+    cfg.ReadFrom.Configuration(ctx.Configuration).Enrich.FromLogContext().WriteTo.Console());
 
 var conn = Environment.GetEnvironmentVariable("LOYALTY_DB")
     ?? builder.Configuration.GetConnectionString("Loyalty")
@@ -30,9 +35,42 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 
 builder.Services.AddOpenApi();
 
+// cap request bodies (loyalty events are small); configurable.
+var maxBody = builder.Configuration.GetValue<long?>("Limits:MaxRequestBodyBytes") ?? 256 * 1024;
+builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = maxBody);
+
+// per-API-key rate limiting on event ingestion (§17).
+var eventsPerSecond = builder.Configuration.GetValue<int?>("RateLimit:EventsPerSecond") ?? 100;
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = 429;
+    o.OnRejected = async (ctx, ct) =>
+    {
+        ctx.HttpContext.Response.ContentType = "application/json";
+        await ctx.HttpContext.Response.WriteAsJsonAsync(new { code = "rate_limited", message = "Too many requests." }, ct);
+    };
+    o.AddPolicy("events", ctx => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: ctx.Request.Headers["X-Api-Key"].ToString(),
+        factory: _ => new FixedWindowRateLimiterOptions { PermitLimit = eventsPerSecond, Window = TimeSpan.FromSeconds(1), QueueLimit = 0 }));
+});
+
+// health checks
+builder.Services.AddHealthChecks().AddDbContextCheck<LoyaltyDbContext>("postgres");
+
+// OpenTelemetry traces + metrics (§17). OTLP export is enabled when an endpoint is configured.
+var otel = builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService("Loyalty.Api"))
+    .WithTracing(t => t.AddAspNetCoreInstrumentation().AddHttpClientInstrumentation())
+    .WithMetrics(m => m.AddAspNetCoreInstrumentation().AddHttpClientInstrumentation().AddRuntimeInstrumentation());
+if (Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") is not null)
+{
+    otel.WithTracing(t => t.AddOtlpExporter());
+    otel.WithMetrics(m => m.AddOtlpExporter());
+}
+
 var app = builder.Build();
 
-// Phase 1 schema bootstrap (EnsureCreated + balancing trigger); production will use migrations.
+// schema bootstrap: apply EF migrations + the balancing trigger.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<LoyaltyDbContext>();
@@ -48,8 +86,10 @@ app.MapScalarApiReference(o => o.WithTitle("Loyalty Platform API — منصة ا
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseMiddleware<ApiKeyAuthMiddleware>();
+app.UseRateLimiter();
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));         // liveness
+app.MapHealthChecks("/health/ready");                                    // readiness (Postgres)
 app.MapLoyaltyEndpoints();
 
 app.Run();

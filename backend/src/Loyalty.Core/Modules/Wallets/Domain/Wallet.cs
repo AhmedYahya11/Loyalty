@@ -47,4 +47,16 @@ public sealed class Wallet : IApplicationScoped
         ReservedBalance += reserved;
         Version += 1;
     }
+
+    /// <summary>
+    /// Reconciliation repair only: overwrite the stored projections to match the ledger
+    /// (credits − debits on the member bucket accounts). Never call from normal processing.
+    /// </summary>
+    public void ReconcileTo(long active, long pending, long reserved)
+    {
+        ActiveBalance = active;
+        PendingBalance = pending;
+        ReservedBalance = reserved;
+        Version += 1;
+    }
 }

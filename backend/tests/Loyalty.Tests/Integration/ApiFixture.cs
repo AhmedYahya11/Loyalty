@@ -27,6 +27,9 @@ public sealed class ApiFixture : IAsyncLifetime
     {
         await _pg.StartAsync();
         Environment.SetEnvironmentVariable("LOYALTY_DB", _pg.GetConnectionString());
+        // low-ish per-key event rate limit so the rate-limit test can burst past it (other tests
+        // use distinct keys and never send 20/sec, so they are unaffected).
+        Environment.SetEnvironmentVariable("RateLimit__EventsPerSecond", "20");
         Factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment("Development"));
         Client = Factory.CreateClient();
 

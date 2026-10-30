@@ -32,8 +32,8 @@ services:
       postgres:
         condition: service_healthy
 
-  # Phase 1 processes events in the API host (durable local queue). The worker becomes the
-  # dedicated processor once the cross-process Postgres transport is enabled (P5).
+  # Dedicated processor: a cross-process competing consumer on the durable PostgreSQL queue.
+  # Start the API first (it runs EF migrations). Enable with: docker compose --profile worker up.
   worker:
     build:
       context: ./backend

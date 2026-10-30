@@ -53,7 +53,13 @@ public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
         scope.Establish(targetApplicationId, account.Id, account.AccountName, visibleIds);
         ctx.Items[nameof(Account)] = account;
 
-        await next(ctx);
+        // enrich logs/traces with scope identity (never the raw key) — §17
+        using (Serilog.Context.LogContext.PushProperty("ApplicationId", targetApplicationId))
+        using (Serilog.Context.LogContext.PushProperty("AccountId", account.Id))
+        using (Serilog.Context.LogContext.PushProperty("CorrelationId", ctx.Request.Headers["X-Correlation-Id"].ToString()))
+        {
+            await next(ctx);
+        }
     }
 
     private static bool IsAnonymous(string path) =>

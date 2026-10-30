@@ -48,6 +48,7 @@ public sealed class ProcessLoyaltyEventHandler
         var referrals = sp.GetRequiredService<Engagement.Application.ReferralService>();
         var stampCards = sp.GetRequiredService<Engagement.Application.StampCardService>();
         var raffles = sp.GetRequiredService<Raffles.Application.RaffleService>();
+        var redemptions = sp.GetRequiredService<Rewards.Application.RedemptionService>();
         var clock = sp.GetRequiredService<IClock>();
 
         var visible = await RunInSystemScope(scope, () => scopeResolver.ResolveVisibleAsync(message.ApplicationId, ct));
@@ -188,32 +189,61 @@ public sealed class ProcessLoyaltyEventHandler
         var byCampaign = decision.Effects.GroupBy(e => e.CampaignId).ToDictionary(g => g.Key, g => g.ToList());
         var appliedCampaigns = new HashSet<Guid>();
         long totalAwarded = 0;
+        var rewardsGranted = 0;
 
         foreach (var c in limitSurviving)
         {
-            if (!byCampaign.TryGetValue(c.Id, out var campaignEffects)) continue;
-            var campaignPoints = campaignEffects.Sum(e => e.Points);
-            if (!await engine.TryReserveBudgetAsync(c, campaignPoints, ct)) continue; // budget exhausted → skip
+            var applied = false;
+            long campaignPoints = 0;
 
-            foreach (var effect in campaignEffects)
+            // --- point effects (budget-gated) ---
+            if (byCampaign.TryGetValue(c.Id, out var campaignEffects))
             {
-                var alreadyApplied = await db.RewardEffects.AnyAsync(
-                    e => e.MemberId == member.Id && e.SourceEventId == envelope.EventId
-                         && e.CampaignId == effect.CampaignId && e.CampaignVersion == effect.CampaignVersion
-                         && e.EffectId == effect.EffectId, ct);
-                if (alreadyApplied) continue;
+                campaignPoints = campaignEffects.Sum(e => e.Points);
+                if (await engine.TryReserveBudgetAsync(c, campaignPoints, ct)) // budget exhausted → skip points
+                {
+                    foreach (var effect in campaignEffects)
+                    {
+                        var alreadyApplied = await db.RewardEffects.AnyAsync(
+                            e => e.MemberId == member.Id && e.SourceEventId == envelope.EventId
+                                 && e.CampaignId == effect.CampaignId && e.CampaignVersion == effect.CampaignVersion
+                                 && e.EffectId == effect.EffectId, ct);
+                        if (alreadyApplied) continue;
 
-                var ledgerTx = await ledger.PostEarnAsync(
-                    wallet, effect.Points, envelope.EventId, request.SourceSystem, envelope.SourceTransactionId,
-                    normalized.BusinessEventKey, envelope.CorrelationId, effect.CampaignId, effect.EffectId, envelope.OccurredAt, ct);
+                        var ledgerTx = await ledger.PostEarnAsync(
+                            wallet, effect.Points, envelope.EventId, request.SourceSystem, envelope.SourceTransactionId,
+                            normalized.BusinessEventKey, envelope.CorrelationId, effect.CampaignId, effect.EffectId, envelope.OccurredAt, ct);
 
-                db.RewardEffects.Add(new RewardEffect(
-                    Guid.NewGuid(), request.ApplicationId, member.Id, envelope.EventId, effect.CampaignId,
-                    effect.CampaignVersion, effect.EffectId, effect.Points, ledgerTx.Id, clock.UtcNow));
-                totalAwarded += effect.Points;
+                        db.RewardEffects.Add(new RewardEffect(
+                            Guid.NewGuid(), request.ApplicationId, member.Id, envelope.EventId, effect.CampaignId,
+                            effect.CampaignVersion, effect.EffectId, effect.Points, ledgerTx.Id, clock.UtcNow));
+                        totalAwarded += effect.Points;
+                    }
+                    applied = true;
+                }
             }
-            appliedCampaigns.Add(c.Id);
-            await engine.RecordUsageAsync(c, member.Id, envelope.OccurredAt, campaignPoints, ct);
+
+            // --- grant-reward effects: issue a free coupon/voucher (P16) ---
+            foreach (var ge in c.Effects.Where(e => e.Type == Campaigns.Domain.EffectType.GrantReward && e.RewardId is not null))
+            {
+                var alreadyGranted = await db.RewardEffects.AnyAsync(
+                    e => e.MemberId == member.Id && e.SourceEventId == envelope.EventId
+                         && e.CampaignId == c.Id && e.CampaignVersion == c.Version && e.EffectId == ge.EffectId, ct);
+                if (alreadyGranted) continue;
+
+                var grant = await redemptions.GrantAsync(member.Id, ge.RewardId!.Value, now, ct);
+                if (grant is null) continue; // out of stock / per-member limit reached
+                db.RewardEffects.Add(new RewardEffect(Guid.NewGuid(), request.ApplicationId, member.Id, envelope.EventId,
+                    c.Id, c.Version, ge.EffectId, 0, Guid.Empty, clock.UtcNow));
+                rewardsGranted++;
+                applied = true;
+            }
+
+            if (applied)
+            {
+                appliedCampaigns.Add(c.Id);
+                await engine.RecordUsageAsync(c, member.Id, envelope.OccurredAt, campaignPoints, ct);
+            }
         }
 
         if (totalAwarded > 0) profile.AddPointsEarned(totalAwarded);
@@ -238,7 +268,7 @@ public sealed class ProcessLoyaltyEventHandler
         var raffle = await raffles.EvaluateAsync(wallet, member, normalized, envelope.EventId, now, ct);
 
         var grandTotal = totalAwarded + stamp.Bonus + referral.RefereeBonus + gam.Bonus;
-        var anyEngagement = gam.Any || stamp.Completed > 0 || referral.Rewarded || raffle.EntriesGranted > 0;
+        var anyEngagement = gam.Any || stamp.Completed > 0 || referral.Rewarded || raffle.EntriesGranted > 0 || rewardsGranted > 0;
 
         if (grandTotal <= 0 && !anyEngagement)
         {

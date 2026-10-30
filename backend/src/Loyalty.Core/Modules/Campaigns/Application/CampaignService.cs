@@ -39,6 +39,13 @@ public sealed class CampaignService(
         if (input.Effects.Count == 0) throw new LoyaltyException(LoyaltyError.ValidationFailed("at least one effect is required."));
         if (input.GlobalBudget is < 0) throw new LoyaltyException(LoyaltyError.ValidationFailed("globalBudget must be non-negative."));
 
+        // GrantReward effects must reference an existing reward (P16)
+        foreach (var e in input.Effects.Where(e => e.Type == EffectType.GrantReward))
+        {
+            if (e.RewardId is null) throw new LoyaltyException(LoyaltyError.ValidationFailed("GrantReward effect requires a rewardId."));
+            if (!await db.Rewards.AnyAsync(r => r.Id == e.RewardId, ct)) throw new LoyaltyException(LoyaltyError.NotFound("Reward"));
+        }
+
         var c = Campaign.Create(Guid.NewGuid(), scope.ApplicationId, input.Name, input.NameAr, input.TriggerEventType,
             input.MinimumEventVersion <= 0 ? 1 : input.MinimumEventVersion, input.StartsAtUtc, input.EndsAtUtc,
             input.Priority, input.StackingPolicy, input.Conditions, input.Effects,

@@ -197,6 +197,7 @@ export const t: Dict = {
   participants2: { en: "Participants", ar: "المشاركون", ku: "بەشداربووان" },
   drawn: { en: "Drawn", ar: "تم السحب", ku: "ڕاکێشرا" },
   youWon: { en: "You won! 🎉", ar: "لقد فزت! 🎉", ku: "براوە بوویت! 🎉" },
+  grantReward: { en: "Grant reward (optional)", ar: "منح مكافأة (اختياري)", ku: "بەخشینی خەڵات (ئارەزوومەندانە)" },
 };
 
 export function tr(key: string, lang: Lang): string {

@@ -313,3 +313,23 @@ expansion (P7–P14). Messaging/omnichannel hub intentionally out of scope.
 ## Status
 **P1–P15 complete — 69 tests green.** Generic multi-tenant core (P1–P6) + chaay-style product
 expansion (P7–P15). Messaging/omnichannel hub + commerce-side cart promos intentionally out of scope.
+
+- **P16** GrantReward campaign effect — grant a coupon/voucher directly (not just points). ✅ DONE
+
+### P16 notes
+- New `EffectType.GrantReward` + `CampaignEffect.RewardId`. When a campaign fires, the worker issues a
+  **granted (0-cost) Redemption** for that reward via `RedemptionService.GrantAsync` (no ledger hold;
+  honors inventory + per-member limit; 30-day coupon). Idempotent per (member, sourceEvent, campaign,
+  version, effect) via a RewardEffect marker; the campaign records usage + counts as engagement even
+  when it only grants (no points). `RewardGrantedV1` emitted. Granted coupons are detected by
+  `PointsCost == 0`, so confirm/cancel skip the ledger legs (nothing was reserved).
+- Admin can grant directly: `POST /members/{id}/grant-reward {rewardId}` (`GrantStandaloneAsync`).
+  Dashboard campaign form gained a trigger-event selector + an optional "grant reward" dropdown.
+- No schema migration — campaign effects are jsonb (RewardId is a new nullable field) and granted
+  redemptions reuse the Redemption table with PointsCost 0.
+- This closes the last deferred item: "directly granting a coupon vs points/entries on an arbitrary
+  event." Commerce-side cart promos (free-item-in-cart, bundles, basket discounts) remain out of scope.
+
+## Status
+**P1–P16 complete — 71 tests green.** Generic multi-tenant core (P1–P6) + chaay-style product
+expansion (P7–P16). Messaging/omnichannel hub + commerce-side cart promos intentionally out of scope.

@@ -21,6 +21,48 @@ public sealed class RedemptionService(LoyaltyDbContext db, ApplicationContext sc
 {
     private const string SourceSystem = "redemption";
     private static readonly TimeSpan Hold = TimeSpan.FromHours(24);
+    private static readonly TimeSpan GrantHold = TimeSpan.FromDays(30); // granted coupons live longer than point holds
+
+    /// <summary>
+    /// Grant a reward to a member at no point cost (P16). No ledger hold (it's free). Honors the
+    /// reward's inventory + per-member limit. Does NOT open a transaction or SaveChanges — the caller
+    /// (campaign worker) owns the commit. Returns the granted redemption, or null when unavailable.
+    /// </summary>
+    public async Task<Redemption?> GrantAsync(Guid memberId, Guid rewardId, DateTimeOffset now, CancellationToken ct)
+    {
+        var reward = await db.Rewards.FirstOrDefaultAsync(r => r.Id == rewardId && r.IsActive, ct);
+        if (reward is null) return null;
+
+        if (reward.PerMemberLimit is { } limit)
+        {
+            var used = await db.Redemptions.CountAsync(r => r.MemberId == memberId && r.RewardId == rewardId
+                && (r.Status == RedemptionStatus.Reserved || r.Status == RedemptionStatus.Confirmed), ct);
+            if (used >= limit) return null;
+        }
+        if (!reward.TryHoldInventory()) return null;
+
+        var redemption = Redemption.Grant(scope.ApplicationId, memberId, rewardId, NewCouponCode(), now, GrantHold);
+        db.Redemptions.Add(redemption);
+        EmitEvent(ResultEventTypes.RewardGranted, memberId,
+            new { redemptionId = redemption.Id, rewardId, rewardName = reward.Name, couponCode = redemption.CouponCode, granted = true }, now);
+        return redemption;
+    }
+
+    /// <summary>Admin: grant a reward directly to a member (owns its transaction).</summary>
+    public async Task<RedemptionView?> GrantStandaloneAsync(Guid memberId, Guid rewardId, CancellationToken ct)
+    {
+        var member = await db.Members.FirstOrDefaultAsync(m => m.Id == memberId, ct)
+            ?? throw new LoyaltyException(LoyaltyError.NotFound("Member"));
+        var reward = await db.Rewards.FirstOrDefaultAsync(r => r.Id == rewardId && r.IsActive, ct)
+            ?? throw new LoyaltyException(LoyaltyError.NotFound("Reward"));
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var redemption = await GrantAsync(memberId, rewardId, clock.UtcNow, ct);
+        if (redemption is null) throw new LoyaltyException(LoyaltyError.Conflict("reward_unavailable", "Reward is out of stock or the per-member limit is reached."));
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return ToView(redemption, reward.Name);
+    }
 
     public async Task<RedemptionView> ReserveAsync(Guid memberId, Guid rewardId, CancellationToken ct)
     {
@@ -78,10 +120,13 @@ public sealed class RedemptionService(LoyaltyDbContext db, ApplicationContext sc
         var now = clock.UtcNow;
 
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-        await ledger.PostRedeemAsync(wallet, redemption.PointsCost, redemption.Id, SourceSystem, redemption.Id.ToString(),
-            $"{SourceSystem}|{redemption.Id}", redemption.Id.ToString(), "redeem", now, ct);
+        if (redemption.PointsCost > 0) // granted (0-cost) coupons have no ledger legs
+        {
+            await ledger.PostRedeemAsync(wallet, redemption.PointsCost, redemption.Id, SourceSystem, redemption.Id.ToString(),
+                $"{SourceSystem}|{redemption.Id}", redemption.Id.ToString(), "redeem", now, ct);
+            profile.AddPointsRedeemed(redemption.PointsCost);
+        }
         redemption.Confirm(now);
-        profile.AddPointsRedeemed(redemption.PointsCost);
         EmitEvent(ResultEventTypes.PointsRedeemed, redemption.MemberId, new { redemptionId = redemption.Id, redemption.RewardId, pointsCost = redemption.PointsCost }, now);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -102,8 +147,9 @@ public sealed class RedemptionService(LoyaltyDbContext db, ApplicationContext sc
         var now = clock.UtcNow;
 
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-        await ledger.PostReleaseAsync(wallet, redemption.PointsCost, redemption.Id, SourceSystem, redemption.Id.ToString(),
-            $"{SourceSystem}|{redemption.Id}", redemption.Id.ToString(), "release", now, ct);
+        if (redemption.PointsCost > 0) // granted (0-cost) coupons held no points
+            await ledger.PostReleaseAsync(wallet, redemption.PointsCost, redemption.Id, SourceSystem, redemption.Id.ToString(),
+                $"{SourceSystem}|{redemption.Id}", redemption.Id.ToString(), "release", now, ct);
         redemption.Cancel(now);
         reward.RestoreInventory();
         EmitEvent(ResultEventTypes.RedemptionCancelled, redemption.MemberId, new { redemptionId = redemption.Id, redemption.RewardId, pointsCost = redemption.PointsCost }, now);

@@ -23,6 +23,7 @@ public static class ResultEventTypes
     public const string ChallengeProgressReversed = "ChallengeProgressReversedV1";
     public const string RaffleEntryGranted = "RaffleEntryGrantedV1";
     public const string RaffleWon = "RaffleWonV1";
+    public const string RewardGranted = "RewardGrantedV1";
 }
 
 /// <summary>

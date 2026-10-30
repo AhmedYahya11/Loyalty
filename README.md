@@ -135,8 +135,14 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
   dynamically — e.g. *share the app → a raffle voucher*; the profile referral QR already covers
   *scan-to-reward* downloads
 
-The core platform (P1–P6) is complete and generic/multi-tenant. P7–P15 are a **chaay.io-style** SMB
+- **P16** **GrantReward effect**: a campaign can now **grant a specific reward/coupon directly** (not
+  just points) on any qualifying event — e.g. *spend ≥ 100k → free dessert coupon*, *share the app →
+  voucher*. Issues a free (0-cost) redemption with a coupon code, honoring inventory + per-member
+  limit, idempotent; granted coupons confirm/cancel without touching the ledger. Admin can also grant
+  directly (`POST /members/{id}/grant-reward`).
+
+The core platform (P1–P6) is complete and generic/multi-tenant. P7–P16 are a **chaay.io-style** SMB
 product expansion (loyalty features; messaging hub out of scope): **Tiers ✅**, **Rewards &
 Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, **Customer-facing
 app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**, **Refund reversal +
-reporting ✅**, **Raffles + custom actions ✅**. **69 tests green.**
+reporting ✅**, **Raffles + custom actions ✅**, **GrantReward effect ✅**. **71 tests green.**

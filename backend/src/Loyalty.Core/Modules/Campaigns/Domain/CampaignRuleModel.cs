@@ -24,17 +24,21 @@ public enum EffectType
     ReversePoints = 2,
     AdjustPoints = 3,
     NoReward = 4,
+    /// <summary>Grant a specific catalog reward/coupon to the member at no point cost (P16).</summary>
+    GrantReward = 5,
 }
 
 /// <summary>
 /// A typed effect specification stored on the campaign. Points is used by AwardPoints /
-/// ReversePoints / AdjustPoints; Multiplier scales base points for AwardBasePoints.
+/// ReversePoints / AdjustPoints; Multiplier scales base points for AwardBasePoints; RewardId is the
+/// catalog reward granted by GrantReward.
 /// </summary>
 public sealed record CampaignEffect(
     string EffectId,
     EffectType Type,
     long? Points = null,
-    decimal? Multiplier = null);
+    decimal? Multiplier = null,
+    Guid? RewardId = null);
 
 public enum StackingPolicy { Exclusive = 0, Stackable = 1 }
 

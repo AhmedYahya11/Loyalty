@@ -171,6 +171,8 @@ public static class Endpoints
         // ---------- redemptions (reserve → confirm → cancel) ----------
         members.MapPost("/{id:guid}/redemptions", async (Guid id, RedeemRequest req, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
             Results.Json(await svc.ReserveAsync(id, req.RewardId, ct), statusCode: 201));
+        members.MapPost("/{id:guid}/grant-reward", async (Guid id, RedeemRequest req, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
+            await svc.GrantStandaloneAsync(id, req.RewardId, ct) is { } v ? Results.Json(v, statusCode: 201) : Results.NotFound());
         members.MapGet("/{id:guid}/redemptions", async (Guid id, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
             Results.Ok(new { items = await svc.ListMemberAsync(id, ct) }));
         var redemptions = v1.MapGroup("/redemptions");

@@ -40,6 +40,24 @@ public sealed class Redemption : IApplicationScoped
         ExpiresAt = now.Add(hold),
     };
 
+    /// <summary>Grant a reward at no point cost (P16): a ready-to-use coupon, no ledger hold.
+    /// Detected by <see cref="PointsCost"/> == 0 so confirm/cancel skip the ledger legs.</summary>
+    public static Redemption Grant(
+        Guid applicationId, Guid memberId, Guid rewardId, string couponCode, DateTimeOffset now, TimeSpan hold) => new()
+    {
+        Id = Guid.NewGuid(),
+        ApplicationId = applicationId,
+        MemberId = memberId,
+        RewardId = rewardId,
+        PointsCost = 0,
+        Status = RedemptionStatus.Reserved,
+        CouponCode = couponCode,
+        ReservedAt = now,
+        ExpiresAt = now.Add(hold),
+    };
+
+    public bool IsGranted => PointsCost == 0;
+
     public void Confirm(DateTimeOffset now) { Status = RedemptionStatus.Confirmed; ConfirmedAt = now; }
     public void Cancel(DateTimeOffset now) { Status = RedemptionStatus.Cancelled; CancelledAt = now; }
     public void Expire(DateTimeOffset now) { Status = RedemptionStatus.Expired; CancelledAt = now; }

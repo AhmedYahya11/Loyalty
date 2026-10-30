@@ -23,6 +23,9 @@ export default function CampaignsPage() {
   const [points, setPoints] = useState("");
   const [budget, setBudget] = useState("");
   const [dailyLimit, setDailyLimit] = useState("");
+  const [trigger, setTrigger] = useState("PurchaseCompleted");
+  const [grantRewardId, setGrantRewardId] = useState("");
+  const [rewardList, setRewardList] = useState<{ id: string; name: string }[]>([]);
   const [sim, setSim] = useState("");
   const [err, setErr] = useState("");
 
@@ -33,6 +36,7 @@ export default function CampaignsPage() {
     setConnected(isConnected());
     if (!isConnected()) return;
     api.get<App[]>("/api/v1/applications").then((a) => { setApps(a); if (a[0]) setAppId(a[0].id); }).catch(() => {});
+    api.get<{ id: string; name: string }[]>("/api/v1/rewards?activeOnly=true").then(setRewardList).catch(() => {});
     loadCampaigns();
   }, []);
 
@@ -56,11 +60,13 @@ export default function CampaignsPage() {
   const createCampaign = async () => {
     setErr("");
     try {
-      const effects = points
+      const effects = grantRewardId
+        ? [{ effectId: "grant", type: "GrantReward", rewardId: grantRewardId }]
+        : points
         ? [{ effectId: "bonus", type: "AwardPoints", points: Number(points) }]
         : [{ effectId: "base-earn", type: "AwardBasePoints" }];
       await api.post("/api/v1/campaigns", {
-        name, nameAr: nameAr || null, triggerEventType: "PurchaseCompleted", minimumEventVersion: 1,
+        name, nameAr: nameAr || null, triggerEventType: trigger, minimumEventVersion: 1,
         priority: 100, stackingPolicy: "Stackable", conditions: [], effects,
         globalBudget: budget ? Number(budget) : null,
         memberLimits: dailyLimit ? [{ period: "CalendarDay", maximumExecutions: Number(dailyLimit) }] : [],
@@ -122,6 +128,8 @@ export default function CampaignsPage() {
           <div><label>{tr("points", lang)} (blank = base earn)</label><input value={points} onChange={(e) => setPoints(e.target.value)} placeholder="base earn" /></div>
         </div>
         <div className="row">
+          <div><label>{tr("triggerEvent", lang)}</label><select value={trigger} onChange={(e) => setTrigger(e.target.value)}>{["PurchaseCompleted", "CustomAction", "ApplicationLogin", "ReferralCompleted"].map((x) => <option key={x}>{x}</option>)}</select></div>
+          <div><label>{tr("grantReward", lang)}</label><select value={grantRewardId} onChange={(e) => setGrantRewardId(e.target.value)}><option value="">—</option>{rewardList.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
           <div><label>Global budget (points, optional)</label><input value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="unlimited" /></div>
           <div><label>Daily limit / member (optional)</label><input value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} placeholder="unlimited" /></div>
         </div>

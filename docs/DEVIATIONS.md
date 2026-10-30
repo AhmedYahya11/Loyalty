@@ -6,6 +6,28 @@ result events + webhooks/notifications + analytics + snapshots; Phase 5 = **reli
 (EF migrations, Postgres transport + dedicated worker, reconciliation, rate limiting, health,
 dead-letter replay, OpenTelemetry). Bilingual (AR/EN) throughout. Documented deltas below.
 
+## Phase 6 status (done) — generic integration kit
+
+The platform is **generic and multi-tenant**; every customer is an `Application`. P6 ships a
+provider-agnostic integration kit, with Hareer kept as **one worked example** — **no changes were
+made to any external/customer codebase** (e.g. the Hareer repo is untouched; its team imports the
+emitter template themselves).
+
+- Generic **onboarding CLI** (`integration/onboard.mjs`): platform bootstrap + per-tenant onboarding
+  (child application + API key + loyalty/CVM settings + base-earn/welcome campaigns) ✅
+- Generic **backfill CLI** (`integration/backfill.mjs`): replays history from a customer-provided
+  **export file** (never a source DB), idempotent by business key ✅
+- Provider-agnostic **emitter template** (`integration/emitter-template.ts`) + generic integration
+  guide (`integration/README.md`) ✅
+- Hareer example retained under `integration/hareer/` (contract, reference emitter, mock, samples) ✅
+
+### Phase 6 note
+- **Backfill lifecycle**: a backfilled member's `LastActivityAt` is the onboarding/processing time
+  (provisioning initializes activity to creation time per §11.2), so historical members appear
+  recently-active. `FirstActivityAt` is still moved to the historical date. Acceptable for onboarding.
+
+---
+
 ## Phase 5 status (done)
 - **EF Core migrations** replace EnsureCreated; applied at startup (+ idempotent balancing trigger) ✅
 - **Durable PostgreSQL transport**: API publishes + listens, and `Loyalty.Worker` is a cross-process
@@ -107,4 +129,4 @@ dead-letter replay, OpenTelemetry). Bilingual (AR/EN) throughout. Documented del
 - **P3** Campaign engine (stacking, member limits, global budget, validate/simulate) + RulesEngine adapter + refund reversal. ✅ DONE (CVM/segment-version snapshots moved to P4).
 - **P4** Dashboard depth + analytics + CVM snapshot + result events + webhooks. ✅ DONE
 - **P5** Reliability/ops: EF migrations, Postgres transport + dedicated worker, reconciliation, rate limits, health, dead-letter replay, OpenTelemetry. ✅ DONE (load tests + segment-version binding + full profile-rebuild deferred).
-- **P6** Hareer live integration (emit from the real repo, map tenants→applications, backfill).
+- **P6** Generic integration kit (onboarding + backfill CLIs, emitter template, guide); Hareer = one example; no external repo touched. ✅ DONE

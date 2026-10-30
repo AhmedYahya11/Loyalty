@@ -1,0 +1,5 @@
+[
+  { "id": "ORDER-1001", "userId": "cust-1", "payableAmount": 50000, "currency": "IQD", "occurredAt": "2026-09-01T10:00:00Z" },
+  { "id": "ORDER-1002", "userId": "cust-1", "payableAmount": 25000, "currency": "IQD", "occurredAt": "2026-09-05T12:30:00Z" },
+  { "id": "ORDER-1003", "userId": "cust-2", "payableAmount": 120000, "currency": "IQD", "occurredAt": "2026-09-07T09:15:00Z" }
+]

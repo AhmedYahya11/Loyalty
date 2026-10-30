@@ -97,5 +97,8 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
   snapshot + explainable reward decisions, and dashboard depth (Overview / Notifications / Webhooks)
 - **P5** reliability/ops: **EF migrations**, durable **PostgreSQL transport + dedicated worker**,
   **reconciliation**, per-key **rate limiting**, `/health/ready`, dead-letter **replay**, **OpenTelemetry**
+- **P6** generic **integration kit** — onboarding + backfill CLIs, a provider-agnostic emitter
+  template, and a guide (`integration/`). Works for **any customer**; Hareer is one worked example.
 
-See `docs/DEVIATIONS.md` for the roadmap (P6 live Hareer integration).
+All six phases complete. The platform is generic and multi-tenant — any customer onboards as an
+`Application` and integrates via the same event contract.

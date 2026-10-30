@@ -27,6 +27,7 @@ public static class DependencyInjection
         // ambient application scope (same instance behind the interface)
         services.AddScoped<ApplicationContext>();
         services.AddScoped<IApplicationContext>(sp => sp.GetRequiredService<ApplicationContext>());
+        services.AddScoped<CustomerContext>();
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<EventRegistry>();
@@ -51,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<ReconciliationService>();
         services.AddScoped<MemberProvisioningService>();
         services.AddScoped<MemberService>();
+        services.AddScoped<MemberTokenService>();
         services.AddScoped<CampaignService>();
         services.AddScoped<CampaignEngine>();
         services.AddScoped<RewardDecisionService>();
@@ -76,6 +78,9 @@ public static class DependencyInjection
         services.AddScoped<Modules.Engagement.Application.StampCardService>();
         services.AddScoped<Modules.Engagement.Application.BirthdaySweepService>();
         services.AddHostedService<Modules.Engagement.Application.BirthdaySweepJob>();
+
+        // customer-facing app (P11)
+        services.AddScoped<Modules.Customers.Application.CustomerService>();
 
         return services;
     }

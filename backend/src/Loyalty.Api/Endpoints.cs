@@ -20,6 +20,7 @@ public sealed record SetStatusRequest(bool IsActive);
 public sealed record CreateAccountRequest(string AccountName, DateTimeOffset? ExpiresAt);
 public sealed record CreateMemberRequest(string ExternalCustomerId, DateOnly? BirthDate);
 public sealed record SetBirthDateRequest(DateOnly? BirthDate);
+public sealed record IssueTokenRequest(int? TtlDays);
 public sealed record RedeemRequest(Guid RewardId);
 public sealed record ConfirmByCodeRequest(string CouponCode);
 
@@ -91,6 +92,13 @@ public static class Endpoints
             Results.Json(await svc.CreateAsync(req.ExternalCustomerId, ct, req.BirthDate), statusCode: 201));
         members.MapPut("/{id:guid}/birthdate", async (Guid id, SetBirthDateRequest req, MemberService svc, CancellationToken ct) =>
             await svc.SetBirthDateAsync(id, req.BirthDate, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        // mint a member access token for the customer-facing app (P11)
+        members.MapPost("/{id:guid}/access-token", async (Guid id, IssueTokenRequest? req, MemberTokenService svc, CancellationToken ct) =>
+        {
+            var ttlDays = req?.TtlDays is int n && n > 0 ? n : 30;
+            var t = await svc.IssueAsync(id, TimeSpan.FromDays(ttlDays), ct);
+            return t is null ? Results.NotFound() : Results.Ok(new { token = t.Token, expiresAt = t.ExpiresAt });
+        });
         members.MapGet("/{id:guid}", async (Guid id, MemberService svc, CancellationToken ct) =>
             await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         members.MapGet("/by-external-id/{externalId}", async (string externalId, MemberService svc, CancellationToken ct) =>
@@ -216,6 +224,31 @@ public static class Endpoints
         members.MapGet("/{id:guid}/referrals", async (Guid id, LoyaltyDbContext db, CancellationToken ct) =>
             Results.Ok(new { items = await db.Referrals.Where(r => r.ReferrerMemberId == id).OrderByDescending(r => r.CreatedAt)
                 .Select(r => new { r.ReferralKey, r.RefereeMemberId, r.ReferrerPointsAwarded, r.CreatedAt }).ToListAsync(ct) }));
+
+        // ---------- customer-facing app (P11): member-token auth, own data only ----------
+        var customer = v1.MapGroup("/customer");
+        customer.MapGet("/me", async (Loyalty.Core.Modules.Customers.Application.CustomerService svc, CancellationToken ct) =>
+        {
+            var m = await svc.GetMemberAsync(ct);
+            if (m is null) return Results.NotFound();
+            return Results.Ok(new { member = m, profile = await svc.GetProfileAsync(ct) });
+        });
+        customer.MapGet("/transactions", async (Loyalty.Core.Modules.Customers.Application.CustomerService svc, CancellationToken ct) =>
+            await svc.GetTransactionsAsync(ct) is { } v ? Results.Ok(new { items = v }) : Results.NotFound());
+        customer.MapGet("/rewards", async (Loyalty.Core.Modules.Customers.Application.CustomerService svc, CancellationToken ct) =>
+            Results.Ok(await svc.GetRewardsAsync(ct)));
+        customer.MapGet("/redemptions", async (Loyalty.Core.Modules.Customers.Application.CustomerService svc, CancellationToken ct) =>
+            Results.Ok(new { items = await svc.GetRedemptionsAsync(ct) }));
+        customer.MapPost("/redemptions", async (RedeemRequest req, Loyalty.Core.Modules.Customers.Application.CustomerService svc, CancellationToken ct) =>
+            Results.Json(await svc.ReserveAsync(req.RewardId, ct), statusCode: 201));
+        customer.MapPost("/redemptions/{id:guid}/cancel", async (Guid id, Loyalty.Core.Modules.Customers.Application.CustomerService svc, CancellationToken ct) =>
+            await svc.CancelAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        customer.MapGet("/stamp-cards", async (Loyalty.Core.Modules.Customers.Application.CustomerService svc, CancellationToken ct) =>
+            Results.Ok(new { items = await svc.GetStampCardsAsync(ct) }));
+        customer.MapGet("/achievements", async (Loyalty.Core.Modules.Customers.Application.CustomerService svc, CancellationToken ct) =>
+            await svc.GetAchievementsAsync(ct) is { } v ? Results.Ok(new { items = v }) : Results.NotFound());
+        customer.MapGet("/referrals", async (Loyalty.Core.Modules.Customers.Application.CustomerService svc, CancellationToken ct) =>
+            Results.Ok(new { items = await svc.GetReferralsAsync(ct) }));
 
         // ---------- events + request status ----------
         v1.MapPost("/events", async (LoyaltyEventEnvelopeV1 envelope, [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,

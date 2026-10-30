@@ -1131,6 +1131,42 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.ToTable("members", "members");
                 });
 
+            modelBuilder.Entity("Loyalty.Core.Modules.Members.Domain.MemberToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "MemberId");
+
+                    b.ToTable("member_tokens", "members");
+                });
+
             modelBuilder.Entity("Loyalty.Core.Modules.Notifications.Domain.EventLogEntry", b =>
                 {
                     b.Property<Guid>("Id")

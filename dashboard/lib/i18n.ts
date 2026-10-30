@@ -111,6 +111,23 @@ export const t: Dict = {
   enabled: { en: "Enabled", ar: "مُفعّل" },
   runBirthdaySweep: { en: "Run birthday sweep", ar: "تشغيل مكافآت الميلاد" },
   triggerEvent: { en: "Trigger event", ar: "حدث التفعيل" },
+  myCard: { en: "My card", ar: "بطاقتي" },
+  myRewards: { en: "Rewards", ar: "المكافآت" },
+  history: { en: "History", ar: "السجل" },
+  availablePoints: { en: "Available points", ar: "النقاط المتاحة" },
+  showAtCheckout: { en: "Show this at checkout", ar: "اعرض هذا عند الدفع" },
+  myCoupons: { en: "My coupons", ar: "قسائمي" },
+  noRewards: { en: "No rewards available yet.", ar: "لا توجد مكافآت متاحة بعد." },
+  redeemFor: { en: "Redeem", ar: "استبدال" },
+  connectCustomer: { en: "Welcome to your loyalty card", ar: "مرحبًا ببطاقة ولائك" },
+  pasteToken: { en: "Paste your access token", ar: "الصق رمز الدخول" },
+  connectBtn: { en: "Open my card", ar: "افتح بطاقتي" },
+  signOut: { en: "Sign out", ar: "خروج" },
+  notConnectedCust: { en: "Not connected. Open the link from your store, or paste your token.", ar: "غير متصل. افتح الرابط من المتجر أو الصق الرمز." },
+  pointsEarnedShort: { en: "Earned", ar: "المكتسبة" },
+  pointsRedeemedShort: { en: "Redeemed", ar: "المستبدلة" },
+  affordableTag: { en: "Affordable", ar: "متاح" },
+  recentActivity: { en: "Recent activity", ar: "النشاط الأخير" },
 };
 
 export function tr(key: string, lang: Lang): string {

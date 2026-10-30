@@ -2,6 +2,7 @@ using Loyalty.Core.BuildingBlocks;
 using Loyalty.Core.Modules.Accounts.Application;
 using Loyalty.Core.Modules.Accounts.Domain;
 using Loyalty.Core.Modules.Applications.Application;
+using Loyalty.Core.Modules.Members.Application;
 
 namespace Loyalty.Api.Auth;
 
@@ -19,6 +20,13 @@ public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
     {
         var path = ctx.Request.Path.Value ?? "/";
         if (IsAnonymous(path)) { await next(ctx); return; }
+
+        // customer-facing app: authenticate a member access token (Bearer) and scope to that member
+        if (path.StartsWith("/api/v1/customer", StringComparison.OrdinalIgnoreCase))
+        {
+            await InvokeCustomerAsync(ctx);
+            return;
+        }
 
         var sp = ctx.RequestServices;
         var accounts = sp.GetRequiredService<AccountService>();
@@ -57,6 +65,35 @@ public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
         using (Serilog.Context.LogContext.PushProperty("ApplicationId", targetApplicationId))
         using (Serilog.Context.LogContext.PushProperty("AccountId", account.Id))
         using (Serilog.Context.LogContext.PushProperty("CorrelationId", ctx.Request.Headers["X-Correlation-Id"].ToString()))
+        {
+            await next(ctx);
+        }
+    }
+
+    /// <summary>Authenticate a member access token and establish member + application scope (P11).</summary>
+    private async Task InvokeCustomerAsync(HttpContext ctx)
+    {
+        var sp = ctx.RequestServices;
+        var tokens = sp.GetRequiredService<MemberTokenService>();
+        var resolver = sp.GetRequiredService<ApplicationScopeResolver>();
+        var scope = sp.GetRequiredService<ApplicationContext>();
+        var customer = sp.GetRequiredService<CustomerContext>();
+
+        var auth = ctx.Request.Headers.Authorization.ToString();
+        var token = auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? auth["Bearer ".Length..].Trim() : auth.Trim();
+
+        var resolved = await tokens.ResolveAsync(token, ctx.RequestAborted);
+        if (resolved is null) { await Write(ctx, LoyaltyError.InvalidCredential()); return; }
+
+        if (!await resolver.IsActiveChainAsync(resolved.ApplicationId, ctx.RequestAborted))
+        { await Write(ctx, LoyaltyError.CredentialDisabled()); return; }
+
+        // a customer sees only their own application (self), never descendants
+        scope.Establish(resolved.ApplicationId, Guid.Empty, "customer-app", [resolved.ApplicationId]);
+        customer.Establish(resolved.ApplicationId, resolved.MemberId);
+
+        using (Serilog.Context.LogContext.PushProperty("ApplicationId", resolved.ApplicationId))
+        using (Serilog.Context.LogContext.PushProperty("MemberId", resolved.MemberId))
         {
             await next(ctx);
         }

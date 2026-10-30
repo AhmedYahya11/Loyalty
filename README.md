@@ -108,8 +108,12 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
 - **P10** **Engagement**: **referral program** (member codes + dual-side rewards, idempotent per
   referral), **stamp cards** (digital punch cards that award + reset when full), and **birthday /
   scheduled rewards** (daily sweep, once-per-year)
+- **P11** **Customer-facing app**: member **access tokens** (hashed, Bearer-authenticated, scoped to
+  one member), a `/api/v1/customer/*` self-service API (own points/tier/streak/badges, rewards +
+  redeem, coupons, stamp progress, history), and a mobile-style **digital loyalty card** at `/card`
+  (QR, redeem, history) — same Next.js app, admin mints a shareable link/QR from the Members page
 
 The core platform (P1–P6) is complete and generic/multi-tenant. P7+ is a product expansion toward
 **chaay.io-style** SMB loyalty (loyalty features; messaging hub out of scope): **Tiers ✅**,
-**Rewards & Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, then a
-customer-facing app and RFM personas. **58 tests green.**
+**Rewards & Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**,
+**Customer-facing app ✅**, then RFM personas + Kurdish. **60 tests green.**

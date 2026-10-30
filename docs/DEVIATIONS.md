@@ -206,3 +206,21 @@ emitter template themselves).
   `PUT /applications/{appId}/engagement-settings`. The dashboard resolves its own app via `GET /me`.
 - **Deferred**: scheduled/segment-targeted *campaigns* beyond birthday (e.g. "re-engage dormant on a
   cron") reuse the sweep pattern but are not yet wired; stamp-card expiry/per-category triggers TBD.
+- **P11** Customer-facing app — member access tokens + `/api/v1/customer/*` self-service + digital loyalty card. ✅ DONE
+
+### P11 customer-app notes
+- **Auth**: member access tokens (`mt_` prefix, SHA-256 hashed like API keys, optional expiry +
+  revoke) in `members.member_tokens`. The admin mints one via `POST /members/{id}/access-token`;
+  the customer app presents it as `Authorization: Bearer`. The auth middleware branches on
+  `/api/v1/customer`: it resolves the token (system scope), establishes the member's application
+  scope (**self only**, no descendants, AccountId = empty) and a request-scoped `CustomerContext`.
+- **Scope**: every `/customer/*` endpoint reads `CustomerContext.MemberId` — a customer can only ever
+  read/act on their own data. Cancel checks redemption ownership → 404 on someone else's. Customers
+  can reserve + cancel their own redemptions but never confirm (that's the merchant action via QR).
+- **Frontend**: one Next.js app, now split into route groups — `app/(admin)/*` keeps the sidebar
+  `Shell`; `app/(customer)/card/*` is a mobile loyalty card (`/card`, `/card/rewards`,
+  `/card/history`) with a bottom nav and its own Bearer-token session (`lib/customer.ts` +
+  `lib/customerApi.ts`). The card reads `?token=` on first load (deep link), so the admin's
+  "Customer app link" button (Members page, QR + URL) is the handoff.
+- **Deferred**: real end-customer identity (host-app SSO / OTP) — tokens are admin-minted + shared
+  for now; token self-service (list/revoke own sessions) and push notifications are later.

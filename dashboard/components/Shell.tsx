@@ -34,6 +34,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Link>
         ))}
         <div style={{ flex: 1 }} />
+        <Link href="/card" className="navlink" style={{ marginBottom: 8 }}>💳 {tr("myCard", lang)}</Link>
         <button className="lang-toggle" onClick={() => setLang(lang === "en" ? "ar" : "en")}>
           {lang === "en" ? "العربية" : "English"}
         </button>

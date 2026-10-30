@@ -37,6 +37,7 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<ApplicationLoyaltySettings> LoyaltySettings => Set<ApplicationLoyaltySettings>();
     public DbSet<Member> Members => Set<Member>();
+    public DbSet<MemberToken> MemberTokens => Set<MemberToken>();
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<PointsLedgerAccount> LedgerAccounts => Set<PointsLedgerAccount>();
     public DbSet<PointsLedgerTransaction> LedgerTransactions => Set<PointsLedgerTransaction>();
@@ -122,6 +123,16 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.Property(x => x.ReferralCode).HasMaxLength(32);
             e.HasIndex(x => new { x.ApplicationId, x.ExternalCustomerId }).IsUnique();
             e.HasIndex(x => new { x.ApplicationId, x.ReferralCode }).IsUnique();
+            ApplyScope(e);
+        });
+
+        b.Entity<MemberToken>(e =>
+        {
+            e.ToTable("member_tokens", "members");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.TokenHash).HasMaxLength(128).IsRequired();
+            e.HasIndex(x => x.TokenHash).IsUnique();
+            e.HasIndex(x => new { x.ApplicationId, x.MemberId });
             ApplyScope(e);
         });
 

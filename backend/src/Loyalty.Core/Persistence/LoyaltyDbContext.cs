@@ -509,7 +509,16 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
 
     private static ValueConverter<List<T>, string> JsonListConverter<T>() => new(
         v => JsonSerializer.Serialize(v, JsonOptionsProvider.Default),
-        v => JsonSerializer.Deserialize<List<T>>(v, JsonOptionsProvider.Default) ?? new());
+        v => ParseJsonList<T>(v));
+
+    /// <summary>Deserialize a jsonb list column, tolerating a non-array value (e.g. an empty "{}"
+    /// default) by returning an empty list instead of throwing.</summary>
+    private static List<T> ParseJsonList<T>(string v)
+    {
+        if (string.IsNullOrWhiteSpace(v) || v.TrimStart().StartsWith('{')) return new();
+        try { return JsonSerializer.Deserialize<List<T>>(v, JsonOptionsProvider.Default) ?? new(); }
+        catch (JsonException) { return new(); }
+    }
 
     private static ValueComparer<List<T>> JsonListComparer<T>() => new(
         (a, c) => JsonSerializer.Serialize(a, JsonOptionsProvider.Default) == JsonSerializer.Serialize(c, JsonOptionsProvider.Default),

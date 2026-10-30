@@ -17,7 +17,7 @@ namespace Loyalty.Core.Persistence.Migrations
                 table: "stamp_cards",
                 type: "jsonb",
                 nullable: false,
-                defaultValue: "");
+                defaultValueSql: "'[]'::jsonb");
 
             migrationBuilder.AddColumn<DateTimeOffset>(
                 name: "EndsAtUtc",

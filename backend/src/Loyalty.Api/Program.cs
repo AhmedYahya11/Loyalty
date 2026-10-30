@@ -54,6 +54,18 @@ builder.Services.AddRateLimiter(o =>
         factory: _ => new FixedWindowRateLimiterOptions { PermitLimit = eventsPerSecond, Window = TimeSpan.FromSeconds(1), QueueLimit = 0 }));
 });
 
+// CORS so the browser dashboard (a different origin) can call the API. Auth is header-based
+// (X-Api-Key), not cookies, so any-origin is safe for dev; lock down Cors:Origins in prod.
+var corsOrigins = builder.Configuration.GetValue<string>("Cors:Origins");
+builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
+{
+    if (string.IsNullOrWhiteSpace(corsOrigins) || corsOrigins == "*")
+        p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    else
+        p.WithOrigins(corsOrigins.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            .AllowAnyHeader().AllowAnyMethod();
+}));
+
 // health checks
 builder.Services.AddHealthChecks().AddDbContextCheck<LoyaltyDbContext>("postgres");
 
@@ -84,6 +96,7 @@ using (var scope = app.Services.CreateScope())
 app.MapOpenApi();
 app.MapScalarApiReference(o => o.WithTitle("Loyalty Platform API — منصة الولاء"));
 
+app.UseCors(); // must precede the auth middleware so preflight (OPTIONS) is answered without a key
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseMiddleware<ApiKeyAuthMiddleware>();
 app.UseRateLimiter();

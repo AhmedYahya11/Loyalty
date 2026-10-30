@@ -9,6 +9,7 @@ type Overview = {
   members: number; activeCampaigns: number; activeSegments: number;
   pointsIssued: number; pointsReversed: number; activeBalance: number;
   lifecycle: Record<string, number>;
+  tiers: Record<string, number>;
 };
 
 function Card({ label, value }: { label: string; value: number | string }) {
@@ -35,6 +36,8 @@ export default function OverviewPage() {
   if (!o) return <p className="muted">…</p>;
 
   const maxLc = Math.max(1, ...Object.values(o.lifecycle));
+  const tierEntries = Object.entries(o.tiers ?? {});
+  const maxTier = Math.max(1, ...tierEntries.map(([, c]) => c));
 
   return (
     <>
@@ -63,6 +66,24 @@ export default function OverviewPage() {
           </div>
         ))}
       </div>
+
+      {tierEntries.length > 0 && (
+        <>
+          <h2>{tr("tierDistribution", lang)}</h2>
+          <div className="card">
+            {tierEntries.map(([name, count]) => (
+              <div key={name} style={{ display: "flex", alignItems: "center", gap: 12, margin: "8px 0" }}>
+                <div style={{ width: 90, color: "var(--muted)" }}>{name}</div>
+                <div style={{ flex: 1, background: "var(--panel-2)", borderRadius: 6 }}>
+                  <div style={{ width: `${(count / maxTier) * 100}%`, minWidth: count ? 24 : 0, background: "var(--accent-2)", height: 22, borderRadius: 6, textAlign: "center", color: "#fff", fontSize: 12, lineHeight: "22px" }}>
+                    {count || ""}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </>
   );
 }

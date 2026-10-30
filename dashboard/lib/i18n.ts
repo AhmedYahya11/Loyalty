@@ -70,6 +70,13 @@ export const t: Dict = {
   dispatch: { en: "Dispatch now", ar: "إرسال الآن" },
   delete: { en: "Delete", ar: "حذف" },
   when: { en: "When", ar: "الوقت" },
+  tiers: { en: "Tiers", ar: "المستويات" },
+  tier: { en: "Tier", ar: "المستوى" },
+  rank: { en: "Rank", ar: "الترتيب" },
+  metric: { en: "Metric", ar: "المقياس" },
+  threshold: { en: "Threshold", ar: "الحد" },
+  multiplier: { en: "Earn ×", ar: "مضاعف الكسب" },
+  tierDistribution: { en: "Tier distribution", ar: "توزيع المستويات" },
 };
 
 export function tr(key: string, lang: Lang): string {

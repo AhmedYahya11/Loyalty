@@ -61,10 +61,18 @@ public sealed class MemberService(
             where ms.MemberId == memberId && ms.IsActive
             select new { segmentId = s.Id, name = s.Name, nameAr = s.NameAr, segmentVersion = ms.SegmentVersion }).ToListAsync(ct);
 
+        object? tier = null;
+        if (p.CurrentTierId is { } tierId)
+        {
+            var t = await db.Tiers.FirstOrDefaultAsync(x => x.Id == tierId, ct);
+            if (t is not null) tier = new { tierId = t.Id, name = t.Name, nameAr = t.NameAr, rank = t.Rank, earnMultiplier = t.EarnMultiplier, color = t.Color };
+        }
+
         return new
         {
             memberId = p.MemberId,
             lifecycleStage = p.LifecycleStage.ToString(),
+            tier,
             p.FirstActivityAt,
             p.LastActivityAt,
             p.LastPurchaseAt,

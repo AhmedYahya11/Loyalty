@@ -9,7 +9,8 @@ type Wallet = { walletId: string; pointsUnitCode: string; activeBalance: number;
 type Member = { memberId: string; externalCustomerId: string; defaultWalletId: string; status: string; wallet: Wallet };
 type Txn = { transactionId: string; transactionType: string; totalDebit: number; totalCredit: number; occurredAt: string };
 type Segment = { segmentId: string; name: string; nameAr?: string };
-type Profile = { lifecycleStage: string; purchaseCount: number; netSpendAmount: number; pointsEarned: number; activeSegments: Segment[] };
+type Tier = { name: string; nameAr?: string; rank: number; earnMultiplier: number };
+type Profile = { lifecycleStage: string; tier?: Tier | null; purchaseCount: number; netSpendAmount: number; pointsEarned: number; activeSegments: Segment[] };
 
 export default function MembersPage() {
   const { lang } = useLang();
@@ -57,6 +58,7 @@ export default function MembersPage() {
             <table>
               <tbody>
                 <tr><th>{tr("lifecycleStage", lang)}</th><td><span className="badge ok">{profile.lifecycleStage}</span></td></tr>
+                <tr><th>{tr("tier", lang)}</th><td>{profile.tier ? <span className="badge ok">{(lang === "ar" && profile.tier.nameAr ? profile.tier.nameAr : profile.tier.name)} (×{profile.tier.earnMultiplier})</span> : "—"}</td></tr>
                 <tr><th>{tr("purchaseCount", lang)}</th><td>{profile.purchaseCount}</td></tr>
                 <tr><th>{tr("netSpend", lang)}</th><td>{profile.netSpendAmount} IQD</td></tr>
                 <tr><th>{tr("pointsEarned", lang)}</th><td>{profile.pointsEarned}</td></tr>

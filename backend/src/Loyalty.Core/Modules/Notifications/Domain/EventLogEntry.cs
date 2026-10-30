@@ -8,6 +8,7 @@ public static class ResultEventTypes
     public const string PointsAwarded = "PointsAwardedV1";
     public const string PointsReversed = "PointsReversedV1";
     public const string MemberLifecycleChanged = "MemberLifecycleChangedV1";
+    public const string MemberTierChanged = "MemberTierChangedV1";
     public const string PointsAdjusted = "PointsAdjustedV1";
 }
 

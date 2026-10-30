@@ -86,6 +86,25 @@ public sealed class ProcessLoyaltyEventHandler
         var activeSegmentIds = activeMemberships.Select(m => m.SegmentId).ToHashSet();
         var segmentVersionRefs = activeMemberships.Select(m => new SegmentVersionRef(m.SegmentId, m.SegmentVersion)).ToList();
 
+        // --- Tiers: evaluate the member's tier; apply its earn-multiplier to the reward ---
+        var tiers = await db.Tiers.Where(t => t.ApplicationId == request.ApplicationId && t.IsActive).ToListAsync(ct);
+        var newTier = Tiers.Domain.TierEvaluator.Evaluate(profile.NetSpendAmount, profile.PointsEarned, profile.PurchaseCount, tiers);
+        var newRank = newTier?.Rank ?? -1;
+        if (newRank != profile.CurrentTierRank)
+        {
+            var fromTierId = profile.CurrentTierId;
+            var fromRank = profile.CurrentTierRank;
+            profile.SetTier(newTier?.Id, newRank, now);
+            if (newTier is not null)
+            {
+                db.TierHistory.Add(new Tiers.Domain.TierHistory(request.ApplicationId, member.Id, fromTierId, fromRank, newTier.Id, newRank, now));
+                EmitEvent(db, request, ResultEventTypes.MemberTierChanged, member.Id,
+                    new { memberId = member.Id, fromRank, toRank = newRank, tierName = newTier.Name }, now);
+            }
+            await db.SaveChangesAsync(ct);
+        }
+        var tierMultiplier = newTier?.EarnMultiplier ?? 1m;
+
         // --- ManualAdjustment: controlled Adjust ledger entry, no campaigns ---
         if (envelope.EventType == EventTypes.ManualAdjustmentRequested)
         {
@@ -148,7 +167,7 @@ public sealed class ProcessLoyaltyEventHandler
         var eligible = decider.SelectEligible(normalized, candidates, profile.LifecycleStage.ToString(), activeSegmentIds);
         var limitSurviving = await engine.FilterByMemberLimitsAsync(eligible, member.Id, envelope.OccurredAt, ct);
 
-        var decision = decider.ComputeStackedEffects(snapshot.SpendAmountPerPoint, snapshot.RoundingPolicy, normalized, limitSurviving);
+        var decision = decider.ComputeStackedEffects(snapshot.SpendAmountPerPoint, snapshot.RoundingPolicy, normalized, limitSurviving, tierMultiplier);
 
         // group effects by campaign; reserve budget per campaign (atomic), drop campaigns that fail
         var byCampaign = decision.Effects.GroupBy(e => e.CampaignId).ToDictionary(g => g.Key, g => g.ToList());

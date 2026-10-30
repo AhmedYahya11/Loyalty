@@ -8,6 +8,7 @@ using Loyalty.Core.Modules.Integration.Domain;
 using Loyalty.Core.Modules.Members.Domain;
 using Loyalty.Core.Modules.Notifications.Domain;
 using Loyalty.Core.Modules.Settings.Domain;
+using Loyalty.Core.Modules.Tiers.Domain;
 using Loyalty.Core.Modules.Wallets.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -48,6 +49,8 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<SegmentDefinition> Segments => Set<SegmentDefinition>();
     public DbSet<SegmentVersion> SegmentVersions => Set<SegmentVersion>();
     public DbSet<MemberSegmentMembership> SegmentMemberships => Set<MemberSegmentMembership>();
+    public DbSet<Tier> Tiers => Set<Tier>();
+    public DbSet<TierHistory> TierHistory => Set<TierHistory>();
     public DbSet<EventLogEntry> EventLog => Set<EventLogEntry>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<RewardDecisionRecord> RewardDecisions => Set<RewardDecisionRecord>();
@@ -306,6 +309,30 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.ToTable("member_segment_memberships", "cvm");
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.SegmentId, x.IsActive });
+            ApplyScope(e);
+        });
+
+        // ---------------- tiers ----------------
+        b.Entity<Tier>(e =>
+        {
+            e.ToTable("tiers", "tiers");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(100);
+            e.Property(x => x.Color).HasMaxLength(32);
+            e.Property(x => x.ThresholdMetric).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.ThresholdValue).HasPrecision(18, 4);
+            e.Property(x => x.EarnMultiplier).HasPrecision(9, 4);
+            e.HasIndex(x => new { x.ApplicationId, x.Rank }).IsUnique();
+            e.HasIndex(x => new { x.ApplicationId, x.Name }).IsUnique();
+            ApplyScope(e);
+        });
+
+        b.Entity<TierHistory>(e =>
+        {
+            e.ToTable("tier_history", "tiers");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.EvaluatedAt });
             ApplyScope(e);
         });
 

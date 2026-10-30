@@ -28,6 +28,15 @@ public sealed class AnalyticsService(LoyaltyDbContext db)
         var lifecycle = Enum.GetValues<LifecycleStage>()
             .ToDictionary(s => s.ToString(), s => lifecycleRaw.FirstOrDefault(x => x.Stage == s)?.Count ?? 0);
 
+        // tier distribution (members per tier name; untiered members grouped under "None")
+        var tierRaw = await (
+            from p in db.ValueProfiles
+            join t in db.Tiers on p.CurrentTierId equals t.Id into tj
+            from t in tj.DefaultIfEmpty()
+            group p by t != null ? t.Name : "None" into g
+            select new { Tier = g.Key, Count = g.Count() }).ToListAsync(ct);
+        var tiers = tierRaw.ToDictionary(x => x.Tier, x => x.Count);
+
         return new
         {
             members,
@@ -37,6 +46,7 @@ public sealed class AnalyticsService(LoyaltyDbContext db)
             pointsReversed,
             activeBalance,
             lifecycle,
+            tiers,
         };
     }
 }

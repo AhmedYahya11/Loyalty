@@ -41,9 +41,14 @@ public sealed class RewardDecisionService(ILoyaltyRuleEvaluator evaluator)
         return matched[0].StackingPolicy == StackingPolicy.Exclusive ? [matched[0]] : matched;
     }
 
-    /// <summary>Compute stacked effects over an already-eligible, limit/budget-surviving set.</summary>
+    /// <summary>
+    /// Compute stacked effects over an already-eligible, limit/budget-surviving set. The member's
+    /// tier earn-multiplier joins the pool of multipliers considered for the "highest eligible
+    /// multiplier" applied to the base (tier benefit).
+    /// </summary>
     public RewardDecisionResult ComputeStackedEffects(
-        decimal spendAmountPerPoint, RoundingPolicy rounding, NormalizedEvent normalized, IReadOnlyList<Campaign> eligible)
+        decimal spendAmountPerPoint, RoundingPolicy rounding, NormalizedEvent normalized, IReadOnlyList<Campaign> eligible,
+        decimal tierMultiplier = 1m)
     {
         if (eligible.Count == 0) return new RewardDecisionResult([]);
 
@@ -58,10 +63,10 @@ public sealed class RewardDecisionService(ILoyaltyRuleEvaluator evaluator)
             .ToList();
         if (basePoints > 0 && baseCampaigns.Count > 0)
         {
-            var highestMultiplier = baseCampaigns
+            var highestMultiplier = Math.Max(tierMultiplier, baseCampaigns
                 .SelectMany(c => c.Effects)
                 .Where(e => e.Type == EffectType.AwardBasePoints)
-                .Max(e => e.Multiplier ?? 1m);
+                .Max(e => e.Multiplier ?? 1m));
             var multipliedBase = (long)Math.Floor(basePoints * highestMultiplier);
             var baseCampaign = baseCampaigns[0];
             var baseEffectId = baseCampaign.Effects.First(e => e.Type == EffectType.AwardBasePoints).EffectId;

@@ -6,6 +6,24 @@ result events + webhooks/notifications + analytics + snapshots; Phase 5 = **reli
 (EF migrations, Postgres transport + dedicated worker, reconciliation, rate limiting, health,
 dead-letter replay, OpenTelemetry). Bilingual (AR/EN) throughout. Documented deltas below.
 
+## Phase 7 status (done) — Tiers (product expansion toward chaay-parity)
+
+Target: match a chaay.io-style SMB loyalty product (loyalty features; messaging hub excluded).
+P7 adds membership **Tiers**:
+- Tier entity (rank, threshold metric NetSpend/PointsEarned/PurchaseCount, threshold, earn
+  multiplier, bilingual name, color) + TierHistory audit + CRUD endpoints ✅
+- Deterministic tier evaluation (highest tier met); evaluated in the worker after the profile
+  update; `MemberTierChangedV1` result event on change ✅
+- Tier **earn-multiplier benefit** joins the "highest eligible multiplier" applied to base points ✅
+- Tier on the member value-profile; tier distribution in analytics; dashboard Tiers page ✅
+
+Roadmap to chaay-parity (loyalty-only): **P7 Tiers ✅** → P8 Rewards & Redemptions (catalog,
+redeem points, QR coupons, reserve→confirm→cancel) → P9 Gamification (badges, streaks, challenges,
+leaderboards) → P10 Referrals + Stamp cards + Birthday/scheduled → P11 Customer-facing app →
+P12 richer dashboard + RFM personas + Kurdish. (Unified messaging hub intentionally out of scope.)
+
+---
+
 ## Phase 6 status (done) — generic integration kit
 
 The platform is **generic and multi-tenant**; every customer is an `Application`. P6 ships a

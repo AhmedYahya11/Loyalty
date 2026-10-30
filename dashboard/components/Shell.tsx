@@ -10,6 +10,7 @@ const links = [
   { href: "/applications", key: "applications" },
   { href: "/campaigns", key: "campaigns" },
   { href: "/segments", key: "segments" },
+  { href: "/tiers", key: "tiers" },
   { href: "/members", key: "members" },
   { href: "/events", key: "events" },
   { href: "/notifications", key: "notifications" },

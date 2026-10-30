@@ -25,6 +25,9 @@ public sealed class MemberValueProfile : IApplicationScoped
     public long PointsExpired { get; private set; }
     public LifecycleStage LifecycleStage { get; private set; }
     public DateTimeOffset? LastLifecycleEvaluationAt { get; private set; }
+    public Guid? CurrentTierId { get; private set; }
+    public int CurrentTierRank { get; private set; } = -1;
+    public DateTimeOffset? TierEvaluatedAt { get; private set; }
     public int Version { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -82,6 +85,14 @@ public sealed class MemberValueProfile : IApplicationScoped
     {
         LifecycleStage = stage;
         LastLifecycleEvaluationAt = evaluatedAt;
+        UpdatedAt = evaluatedAt;
+    }
+
+    public void SetTier(Guid? tierId, int rank, DateTimeOffset evaluatedAt)
+    {
+        CurrentTierId = tierId;
+        CurrentTierRank = rank;
+        TierEvaluatedAt = evaluatedAt;
         UpdatedAt = evaluatedAt;
     }
 }

@@ -126,6 +126,18 @@ public static class Endpoints
         segments.MapPost("/{id:guid}/pause", async (Guid id, Loyalty.Core.Modules.Cvm.Application.SegmentService svc, CancellationToken ct) =>
             await svc.PauseAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
 
+        // ---------- tiers ----------
+        var tiers = v1.MapGroup("/tiers");
+        tiers.MapPost("", async (Loyalty.Core.Modules.Tiers.Application.CreateTierInput req, Loyalty.Core.Modules.Tiers.Application.TierService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(req, ct), statusCode: 201));
+        tiers.MapGet("", async (Loyalty.Core.Modules.Tiers.Application.TierService svc, CancellationToken ct) => Results.Ok(await svc.ListAsync(ct)));
+        tiers.MapGet("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Tiers.Application.TierService svc, CancellationToken ct) =>
+            await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        tiers.MapPut("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Tiers.Application.UpdateTierInput req, Loyalty.Core.Modules.Tiers.Application.TierService svc, CancellationToken ct) =>
+            await svc.UpdateAsync(id, req, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        tiers.MapDelete("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Tiers.Application.TierService svc, CancellationToken ct) =>
+            await svc.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+
         // ---------- events + request status ----------
         v1.MapPost("/events", async (LoyaltyEventEnvelopeV1 envelope, [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
             EventIngestionService svc, CancellationToken ct) =>

@@ -100,5 +100,10 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
 - **P6** generic **integration kit** — onboarding + backfill CLIs, a provider-agnostic emitter
   template, and a guide (`integration/`). Works for **any customer**; Hareer is one worked example.
 
-All six phases complete. The platform is generic and multi-tenant — any customer onboards as an
-`Application` and integrates via the same event contract.
+- **P7** membership **Tiers** (Bronze→Platinum): auto-progression from spend/points/visits,
+  earn-multiplier benefits, tier-change events, tier analytics + dashboard page
+
+The core platform (P1–P6) is complete and generic/multi-tenant. P7+ is a product expansion toward
+**chaay.io-style** SMB loyalty (loyalty features; messaging hub out of scope): **Tiers ✅**, then
+Rewards & Redemptions (QR coupons), Gamification, Referrals/Stamp cards, a customer-facing app, and
+RFM personas. **47 tests green.**

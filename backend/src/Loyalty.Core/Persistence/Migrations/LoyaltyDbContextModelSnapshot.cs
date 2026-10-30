@@ -413,6 +413,12 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("CurrentTierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CurrentTierRank")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset?>("FirstActivityAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -451,6 +457,9 @@ namespace Loyalty.Core.Persistence.Migrations
 
                     b.Property<long>("ReferralCount")
                         .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("TierEvaluatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -903,6 +912,98 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.HasKey("ApplicationId");
 
                     b.ToTable("loyalty_settings", "settings");
+                });
+
+            modelBuilder.Entity("Loyalty.Core.Modules.Tiers.Domain.Tier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("EarnMultiplier")
+                        .HasPrecision(9, 4)
+                        .HasColumnType("numeric(9,4)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NameAr")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ThresholdMetric")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<decimal>("ThresholdValue")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "Name")
+                        .IsUnique();
+
+                    b.HasIndex("ApplicationId", "Rank")
+                        .IsUnique();
+
+                    b.ToTable("tiers", "tiers");
+                });
+
+            modelBuilder.Entity("Loyalty.Core.Modules.Tiers.Domain.TierHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FromRank")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("FromTierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ToRank")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ToTierId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "MemberId", "EvaluatedAt");
+
+                    b.ToTable("tier_history", "tiers");
                 });
 
             modelBuilder.Entity("Loyalty.Core.Modules.Wallets.Domain.PointsLedgerAccount", b =>

@@ -62,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<Modules.Notifications.Application.WebhookDispatcher>();
         services.AddHostedService<Modules.Notifications.Application.WebhookDispatcherJob>();
         services.AddScoped<Modules.Analytics.AnalyticsService>();
+        services.AddScoped<Modules.Tiers.Application.TierService>();
 
         return services;
     }

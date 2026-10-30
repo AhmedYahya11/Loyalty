@@ -184,6 +184,19 @@ export const t: Dict = {
   outstandingPoints: { en: "Outstanding points", ar: "النقاط القائمة", ku: "خاڵە ماوەکان" },
   reservedPoints: { en: "Reserved points", ar: "النقاط المحجوزة", ku: "خاڵە حیجزکراوەکان" },
   confirmedLabel: { en: "Confirmed", ar: "مؤكد", ku: "پشتڕاستکراو" },
+  raffles: { en: "Prize draws", ar: "السحوبات", ku: "کێشانەکان" },
+  raffle: { en: "Prize draw", ar: "السحب", ku: "کێشان" },
+  entries: { en: "Entries", ar: "التذاكر", ku: "بلیتەکان" },
+  myEntries: { en: "My entries", ar: "تذاكري", ku: "بلیتەکانم" },
+  entriesPerEvent: { en: "Entries per event", ar: "التذاكر لكل حدث", ku: "بلیت بۆ هەر ڕووداو" },
+  minAmount: { en: "Min amount (IQD)", ar: "الحد الأدنى (دينار)", ku: "کەمترین بڕ (دینار)" },
+  prizePoints: { en: "Prize points", ar: "نقاط الجائزة", ku: "خاڵی خەڵات" },
+  prizeDescription: { en: "Prize description", ar: "وصف الجائزة", ku: "وەسفی خەڵات" },
+  draw: { en: "Draw winner", ar: "سحب الفائز", ku: "ڕاکێشانی براوە" },
+  winner: { en: "Winner", ar: "الفائز", ku: "براوە" },
+  participants2: { en: "Participants", ar: "المشاركون", ku: "بەشداربووان" },
+  drawn: { en: "Drawn", ar: "تم السحب", ku: "ڕاکێشرا" },
+  youWon: { en: "You won! 🎉", ar: "لقد فزت! 🎉", ku: "براوە بوویت! 🎉" },
 };
 
 export function tr(key: string, lang: Lang): string {

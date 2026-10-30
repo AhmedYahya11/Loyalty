@@ -87,6 +87,9 @@ public static class DependencyInjection
         // customer-facing app (P11)
         services.AddScoped<Modules.Customers.Application.CustomerService>();
 
+        // raffles / prize draws (P15)
+        services.AddScoped<Modules.Raffles.Application.RaffleService>();
+
         return services;
     }
 }

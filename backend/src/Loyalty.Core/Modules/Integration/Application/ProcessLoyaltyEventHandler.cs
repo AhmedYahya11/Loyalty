@@ -47,6 +47,7 @@ public sealed class ProcessLoyaltyEventHandler
         var gamification = sp.GetRequiredService<Gamification.Application.GamificationService>();
         var referrals = sp.GetRequiredService<Engagement.Application.ReferralService>();
         var stampCards = sp.GetRequiredService<Engagement.Application.StampCardService>();
+        var raffles = sp.GetRequiredService<Raffles.Application.RaffleService>();
         var clock = sp.GetRequiredService<IClock>();
 
         var visible = await RunInSystemScope(scope, () => scopeResolver.ResolveVisibleAsync(message.ApplicationId, ct));
@@ -233,8 +234,11 @@ public sealed class ProcessLoyaltyEventHandler
         var gam = await gamification.EvaluateAsync(wallet, member, profile, envelope.EventType, normalized.Amount,
             envelope.EventId, request.SourceSystem, envelope.SourceTransactionId, normalized.BusinessEventKey, envelope.CorrelationId,
             envelope.OccurredAt, now, ct);
+        // raffles: grant weighted entries for qualifying events (purchase ≥ value, custom actions, …)
+        var raffle = await raffles.EvaluateAsync(wallet, member, normalized, envelope.EventId, now, ct);
+
         var grandTotal = totalAwarded + stamp.Bonus + referral.RefereeBonus + gam.Bonus;
-        var anyEngagement = gam.Any || stamp.Completed > 0 || referral.Rewarded;
+        var anyEngagement = gam.Any || stamp.Completed > 0 || referral.Rewarded || raffle.EntriesGranted > 0;
 
         if (grandTotal <= 0 && !anyEngagement)
         {

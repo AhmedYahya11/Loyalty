@@ -21,6 +21,8 @@ public static class ResultEventTypes
     public const string PointsExpired = "PointsExpiredV1";
     public const string StampCardReversed = "StampCardReversedV1";
     public const string ChallengeProgressReversed = "ChallengeProgressReversedV1";
+    public const string RaffleEntryGranted = "RaffleEntryGrantedV1";
+    public const string RaffleWon = "RaffleWonV1";
 }
 
 /// <summary>

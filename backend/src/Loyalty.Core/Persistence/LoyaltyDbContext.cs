@@ -64,6 +64,8 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<Modules.Engagement.Domain.Referral> Referrals => Set<Modules.Engagement.Domain.Referral>();
     public DbSet<Modules.Engagement.Domain.StampCard> StampCards => Set<Modules.Engagement.Domain.StampCard>();
     public DbSet<Modules.Engagement.Domain.MemberStampCard> MemberStampCards => Set<Modules.Engagement.Domain.MemberStampCard>();
+    public DbSet<Modules.Raffles.Domain.Raffle> Raffles => Set<Modules.Raffles.Domain.Raffle>();
+    public DbSet<Modules.Raffles.Domain.RaffleEntry> RaffleEntries => Set<Modules.Raffles.Domain.RaffleEntry>();
     public DbSet<EventLogEntry> EventLog => Set<EventLogEntry>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<RewardDecisionRecord> RewardDecisions => Set<RewardDecisionRecord>();
@@ -463,6 +465,33 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.ToTable("member_stamp_cards", "engagement");
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.StampCardId }).IsUnique();
+            ApplyScope(e);
+        });
+
+        // ---------------- raffles (prize draws) ----------------
+        b.Entity<Modules.Raffles.Domain.Raffle>(e =>
+        {
+            e.ToTable("raffles", "raffles");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(100);
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.TriggerEventType).HasMaxLength(64).IsRequired();
+            e.Property(x => x.PrizeDescription).HasMaxLength(500);
+            e.Property(x => x.MinAmount).HasPrecision(18, 4);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.Conditions)
+                .HasConversion(JsonListConverter<Modules.Campaigns.Domain.CampaignCondition>(), JsonListComparer<Modules.Campaigns.Domain.CampaignCondition>())
+                .HasColumnType("jsonb");
+            e.HasIndex(x => new { x.ApplicationId, x.Status });
+            ApplyScope(e);
+        });
+        b.Entity<Modules.Raffles.Domain.RaffleEntry>(e =>
+        {
+            e.ToTable("raffle_entries", "raffles");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.ApplicationId, x.RaffleId, x.SourceEventId }).IsUnique();
+            e.HasIndex(x => new { x.RaffleId, x.MemberId });
             ApplyScope(e);
         });
 

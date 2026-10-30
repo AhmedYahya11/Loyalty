@@ -128,8 +128,15 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
   **promotions report** (`/analytics/promotions` + dashboard) aggregates campaign usage, reward
   redemption funnels + rate, stamp-card completions, AOV, and outstanding points/credit liabilities
 
-The core platform (P1–P6) is complete and generic/multi-tenant. P7–P14 are a **chaay.io-style** SMB
+- **P15** **Raffles + generic actions**: a **prize-draw engine** (qualifying events — purchase ≥ value,
+  bookings, shares — earn weighted **entries**; `POST /raffles/{id}/draw` picks a **weighted-random
+  winner**, awards the prize, `RaffleWonV1`), and a **generic `CustomAction` event** (`attributes.action`)
+  so any user action (app.shared, app.installed, review…) can drive campaigns / stamp cards / raffles
+  dynamically — e.g. *share the app → a raffle voucher*; the profile referral QR already covers
+  *scan-to-reward* downloads
+
+The core platform (P1–P6) is complete and generic/multi-tenant. P7–P15 are a **chaay.io-style** SMB
 product expansion (loyalty features; messaging hub out of scope): **Tiers ✅**, **Rewards &
 Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, **Customer-facing
 app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**, **Refund reversal +
-reporting ✅**. **67 tests green.**
+reporting ✅**, **Raffles + custom actions ✅**. **69 tests green.**

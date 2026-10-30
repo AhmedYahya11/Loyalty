@@ -25,6 +25,7 @@ public sealed class EventRegistry
     {
         EventTypes.PurchaseCompleted, EventTypes.OrderRefunded, EventTypes.CustomerRegistered,
         EventTypes.ApplicationLogin, EventTypes.ReferralCompleted, EventTypes.ManualAdjustmentRequested,
+        EventTypes.CustomAction,
     };
 
     public bool IsKnown(string eventType, int eventVersion) => eventVersion == 1 && Known.Contains(eventType);
@@ -54,6 +55,7 @@ public sealed class EventRegistry
             EventTypes.ApplicationLogin => Login(e, attrs, sourceSystem, facts),
             EventTypes.ReferralCompleted => Referral(e, attrs, sourceSystem, facts),
             EventTypes.ManualAdjustmentRequested => ManualAdjustment(e, attrs, sourceSystem, facts),
+            EventTypes.CustomAction => CustomAction(e, attrs, sourceSystem, facts),
             _ => throw new LoyaltyException(LoyaltyError.UnsupportedEventContract($"Unsupported event contract: {e.EventType}.")),
         };
     }
@@ -103,6 +105,16 @@ public sealed class EventRegistry
         _ = Str(a, "reason") ?? throw Invalid("reason is required.");
         facts["signedPoints"] = signed;
         return new(e.EventType, 1, $"{src}|{adjustmentId}", null, null, signed, facts);
+    }
+
+    private static NormalizedEvent CustomAction(LoyaltyEventEnvelopeV1 e, JsonElement a, string src, Dictionary<string, object?> facts)
+    {
+        var action = Str(a, "action") ?? throw Invalid("action is required.");
+        // actionId makes the action idempotent + bounds per-member limits; default to the event id
+        var actionId = Str(a, "actionId");
+        var amount = Dec(a, "amount"); // optional — some actions carry a value
+        if (amount is not null) facts["amount"] = amount;
+        return new(e.EventType, 1, $"{src}|custom|{action}|{actionId ?? e.EventId.ToString()}", amount, null, null, facts);
     }
 
     private static LoyaltyException Invalid(string msg) => new(LoyaltyError.ValidationFailed(msg));

@@ -11,6 +11,7 @@ type Member = { memberId: string; externalCustomerId: string; wallet: Wallet; re
 type Tier = { name: string; nameAr?: string; earnMultiplier: number };
 type Profile = { lifecycleStage: string; tier?: Tier | null; currentStreak: number; longestStreak: number; pointsEarned: number; pointsRedeemed: number; referralCount: number };
 type Badge = { achievementId: string; name: string; nameAr?: string };
+type Raffle = { raffleId: string; name: string; nameAr?: string; myEntries: number; status: string; won: boolean; prizeDescription?: string };
 type Me = { member: Member; profile: Profile };
 
 export default function CardHome() {
@@ -19,10 +20,15 @@ export default function CardHome() {
   const [token, setToken] = useState("");
   const [me, setMe] = useState<Me | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
+  const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [err, setErr] = useState("");
 
   const load = async () => {
-    try { setMe(await capi.get<Me>("/api/v1/customer/me")); setBadges((await capi.get<{ items: Badge[] }>("/api/v1/customer/achievements")).items); }
+    try {
+      setMe(await capi.get<Me>("/api/v1/customer/me"));
+      setBadges((await capi.get<{ items: Badge[] }>("/api/v1/customer/achievements")).items);
+      try { setRaffles((await capi.get<{ items: Raffle[] }>("/api/v1/customer/raffles")).items.filter((r) => r.myEntries > 0 || r.won)); } catch { setRaffles([]); }
+    }
     catch (e) { setErr((e as Error).message); }
   };
 
@@ -88,6 +94,20 @@ export default function CardHome() {
         {badges.length === 0 ? <span className="muted">—</span> :
           badges.map((b) => <span key={b.achievementId} className="badge ok" style={{ marginInlineEnd: 6, display: "inline-block", marginBottom: 6 }}>🏅 {(lang === "ar" && b.nameAr ? b.nameAr : b.name)}</span>)}
       </div>
+
+      {raffles.length > 0 && (
+        <>
+          <h2>🎲 {tr("raffles", lang)}</h2>
+          <div className="card">
+            {raffles.map((r) => (
+              <div key={r.raffleId} className="stat">
+                <span>{(lang === "ar" && r.nameAr ? r.nameAr : r.name)}{r.prizeDescription ? <span className="muted"> · {r.prizeDescription}</span> : null}</span>
+                <b>{r.won ? tr("youWon", lang) : `🎟️ ${r.myEntries}`}</b>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="card">
         <div className="stat"><span>{tr("pointsEarnedShort", lang)}</span><b>{profile.pointsEarned.toLocaleString()}</b></div>

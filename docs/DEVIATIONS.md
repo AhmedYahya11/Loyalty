@@ -290,3 +290,26 @@ expansion (P7–P12). Messaging/omnichannel hub intentionally out of scope.
 ## Status
 **P1–P14 complete — 67 tests green.** Generic multi-tenant core (P1–P6) + chaay-style product
 expansion (P7–P14). Messaging/omnichannel hub intentionally out of scope.
+
+- **P15** Raffles / prize draws + generic CustomAction events. ✅ DONE
+
+### P15 notes
+- **CustomAction event**: a generic event type carrying `attributes.action` (+ optional `actionId` for
+  idempotency/limits); business key `{src}|custom|{action}|{actionId|eventId}`. Flows through the normal
+  reward path, so campaigns, stamp cards and raffles can trigger/condition on `attributes.action` — e.g.
+  "app.shared → +points" (campaign) or "app.shared → raffle entry" (raffle). Covers **share-the-app**
+  and any future action with zero new code per action.
+- **Raffle engine** (`Modules/Raffles`): dynamic `Raffle` (trigger event + conditions + `MinAmount` +
+  `EntriesPerEvent` + prize points/description + status). The worker grants weighted `RaffleEntry` rows
+  per qualifying event (idempotent by source event). `POST /raffles/{id}/draw` picks a **weighted-random
+  winner** (`RandomNumberGenerator`), awards prize points through the ledger, marks Drawn (idempotent —
+  re-draw returns the same winner, no second prize), emits `RaffleWonV1`. Entries endpoint + customer
+  "my entries" on the loyalty card + `/raffles` dashboard page. The three requested use-cases map on:
+  purchase≥value → entries (prize draw); CustomAction(app.shared) → entry (share→voucher); profile
+  referral QR + ReferralCompleted → reward (download/scan).
+- **Deferred**: directly granting a *coupon* (vs points/entries) on an arbitrary event — raffle prizes
+  and campaign points cover most cases; a `GrantReward` campaign effect would generalise it later.
+
+## Status
+**P1–P15 complete — 69 tests green.** Generic multi-tenant core (P1–P6) + chaay-style product
+expansion (P7–P15). Messaging/omnichannel hub + commerce-side cart promos intentionally out of scope.

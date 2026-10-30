@@ -16,6 +16,7 @@ const links = [
   { href: "/rewards", key: "rewards" },
   { href: "/gamification", key: "gamification" },
   { href: "/engagement", key: "engagement" },
+  { href: "/raffles", key: "raffles" },
   { href: "/members", key: "members" },
   { href: "/events", key: "events" },
   { href: "/notifications", key: "notifications" },

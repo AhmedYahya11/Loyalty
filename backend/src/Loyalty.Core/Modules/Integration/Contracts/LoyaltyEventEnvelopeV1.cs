@@ -26,4 +26,7 @@ public static class EventTypes
     public const string ApplicationLogin = "ApplicationLogin";
     public const string ReferralCompleted = "ReferralCompleted";
     public const string ManualAdjustmentRequested = "ManualAdjustmentRequested";
+    /// <summary>A generic, tenant-defined user action (e.g. app.shared, app.installed, review.left),
+    /// carried in attributes.action — lets campaigns/stamp cards/raffles reward any action (P15).</summary>
+    public const string CustomAction = "CustomAction";
 }

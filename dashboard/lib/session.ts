@@ -6,9 +6,13 @@ const KEY = "loyalty.apiKey";
 const LANG = "loyalty.lang";
 
 export const getApiBase = () =>
-  (typeof window !== "undefined" && localStorage.getItem(BASE)) || "http://localhost:8080";
+  (typeof window !== "undefined" && localStorage.getItem(BASE)) ||
+  process.env.NEXT_PUBLIC_LOYALTY_API_BASE ||
+  "http://localhost:8080";
 export const getApiKey = () =>
-  (typeof window !== "undefined" && localStorage.getItem(KEY)) || "";
+  (typeof window !== "undefined" && localStorage.getItem(KEY)) ||
+  process.env.NEXT_PUBLIC_LOYALTY_API_KEY ||
+  "";
 export const setSession = (base: string, key: string) => {
   localStorage.setItem(BASE, base);
   localStorage.setItem(KEY, key);

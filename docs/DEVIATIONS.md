@@ -265,3 +265,28 @@ expansion (P7–P12). Messaging/omnichannel hub intentionally out of scope.
   `attributes.service Equals "laser"`) — so "complete 10 *laser* sessions" is expressible.
 - **Deferred**: still not stamp/challenge *reversal* on refund (points reverse; stamps don't), and
   promotion-level performance reporting (both noted for a later P14).
+
+- **P14** Refund reversal for stamps/challenges + promotion-level reporting. ✅ DONE
+
+### P14 notes
+- **Refund reversal**: on `OrderRefunded` the worker resolves the original purchase event(s) from the
+  ingestion log (`BusinessEventKey == {src}|{originalOrderId}`, works even when no points were earned)
+  and calls `StampCardService.ReverseForEventsAsync` + `GamificationService.ReverseChallengesAsync`.
+  Stamps: a non-completing stamp is removed; a completing stamp decrements the completion count. The
+  completion's reward POINTS are ledgered under the purchase's business key, so they are already
+  undone by the existing earn reversal — the stamp method only fixes counters (no double reversal).
+  Challenges: open progress is reduced by the same `Contribution` against the refunded amount.
+  **Achievements and already-completed challenges keep their bonus** (permanent) — documented policy.
+  Idempotent via `stamp-reversal:{card}` effects + the request terminal-status guard. Emits
+  `StampCardReversedV1` / `ChallengeProgressReversedV1`.
+- **Promotion reporting**: `PromotionAnalyticsService` + `GET /analytics/promotions` + a `/reports`
+  dashboard page — per-campaign executions/members/points/budget, per-reward reserved/confirmed/
+  cancelled + redemption rate, stamp-card completions/participants, AOV, and outstanding points +
+  reserved (store-credit) liabilities. No schema change (reads existing tables).
+- **Remaining out of scope** (commerce/checkout, not loyalty): free-item-in-cart BxGy, bundle pricing,
+  basket discounts, product-page/checkout promo widgets — loyalty feeds points/coupons/credit to the
+  storefront which applies them.
+
+## Status
+**P1–P14 complete — 67 tests green.** Generic multi-tenant core (P1–P6) + chaay-style product
+expansion (P7–P14). Messaging/omnichannel hub intentionally out of scope.

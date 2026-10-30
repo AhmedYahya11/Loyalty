@@ -72,4 +72,8 @@ public sealed class MemberChallengeProgress : IApplicationScoped
 
     public void Add(decimal amount, DateTimeOffset now) { Progress += amount; UpdatedAt = now; }
     public void Complete(DateTimeOffset now) { Completed = true; CompletedAt = now; UpdatedAt = now; }
+
+    /// <summary>Reduce progress (floor 0) when a contributing purchase is refunded (P14). A challenge
+    /// already completed keeps its badge/bonus — only still-open progress is clawed back.</summary>
+    public void Subtract(decimal amount, DateTimeOffset now) { Progress = Progress > amount ? Progress - amount : 0; UpdatedAt = now; }
 }

@@ -155,6 +155,15 @@ public sealed class ProcessLoyaltyEventHandler
             if (reversed > 0)
                 EmitEvent(db, request, ResultEventTypes.PointsReversed, member.Id,
                     new { memberId = member.Id, requestId = request.Id, reversedPoints = reversed, pointsUnitCode = snapshot.PointsUnitCode }, now);
+
+            // P14: a refunded purchase also unwinds the stamps it earned + decrements open challenge progress.
+            // Resolve the original purchase event(s) from the request log so this works even without earns.
+            var originalEventIds = await db.IngestionRequests
+                .Where(r => r.BusinessEventKey == originalKey && r.EventType == EventTypes.PurchaseCompleted)
+                .Select(r => r.EventId).ToListAsync(ct);
+            await stampCards.ReverseForEventsAsync(wallet, member, profile, originalEventIds, envelope.EventId, now, ct);
+            await gamification.ReverseChallengesAsync(member, normalized.Amount, envelope.OccurredAt, now, ct);
+
             request.MarkCompleted(-reversed, snapshot.PointsUnitCode, clock.UtcNow);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);

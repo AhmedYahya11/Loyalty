@@ -111,6 +111,47 @@ public sealed class StampCardService(LoyaltyDbContext db, ApplicationContext sco
         return new StampCardResult(bonus, completed);
     }
 
+    /// <summary>
+    /// Reverse the stamps a now-refunded purchase earned (P14). For each original purchase event, undo
+    /// its stamp: if the event had completed a card, decrement the completion count; otherwise remove
+    /// the stamp. The reward POINTS of a completion are ledgered under the purchase's business key, so
+    /// they are already undone by the caller's earn reversal — this method only corrects the stamp
+    /// counters. Idempotent via a <c>stamp-reversal:{card}</c> reward-effect keyed on the original event.
+    /// Returns the number of stamp cards adjusted.
+    /// </summary>
+    public async Task<int> ReverseForEventsAsync(
+        Wallet wallet, Member member, MemberValueProfile profile, IReadOnlyCollection<Guid> originalEventIds,
+        Guid refundEventId, DateTimeOffset now, CancellationToken ct)
+    {
+        if (originalEventIds.Count == 0) return 0;
+        var adjusted = 0;
+
+        var stampEffects = await db.RewardEffects
+            .Where(e => e.MemberId == member.Id && originalEventIds.Contains(e.SourceEventId) && e.EffectId.StartsWith("stamp:"))
+            .ToListAsync(ct);
+
+        foreach (var effect in stampEffects)
+        {
+            var cardId = Guid.Parse(effect.EffectId["stamp:".Length..]);
+            var reversalId = $"stamp-reversal:{cardId}";
+            if (await db.RewardEffects.AnyAsync(e => e.MemberId == member.Id && e.SourceEventId == effect.SourceEventId && e.EffectId == reversalId, ct))
+                continue; // already reversed this event's stamp
+
+            var progress = await db.MemberStampCards.FirstOrDefaultAsync(p => p.MemberId == member.Id && p.StampCardId == cardId, ct);
+            if (progress is null) continue;
+
+            if (effect.Points > 0) progress.ReverseCompletion(now); // reward points already reversed by the earn reversal
+            else progress.RemoveStamp(now);
+
+            db.RewardEffects.Add(new Modules.Integration.Domain.RewardEffect(Guid.NewGuid(), member.ApplicationId, member.Id,
+                effect.SourceEventId, Guid.Empty, 0, reversalId, 0, Guid.Empty, now));
+            db.EventLog.Add(EventLogEntry.Create(member.ApplicationId, ResultEventTypes.StampCardReversed, member.Id, null,
+                JsonSerializer.Serialize(new { memberId = member.Id, stampCardId = cardId, completionReversed = effect.Points > 0 }, JsonOptionsProvider.Default), now, now));
+            adjusted++;
+        }
+        return adjusted;
+    }
+
     private static StampCardView ToView(StampCard c) =>
         new(c.Id, c.Name, c.NameAr, c.Description, c.TriggerEventType, c.StampsRequired, c.RewardPoints, c.IsActive, c.Conditions, c.StartsAtUtc, c.EndsAtUtc);
 }

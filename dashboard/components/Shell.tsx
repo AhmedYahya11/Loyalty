@@ -8,6 +8,7 @@ const links = [
   { href: "/", key: "connect" },
   { href: "/overview", key: "overview" },
   { href: "/rfm", key: "rfm" },
+  { href: "/reports", key: "reports" },
   { href: "/applications", key: "applications" },
   { href: "/campaigns", key: "campaigns" },
   { href: "/segments", key: "segments" },

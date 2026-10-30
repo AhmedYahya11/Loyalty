@@ -123,7 +123,13 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
   events matching attribute conditions, e.g. one service/category, within an optional date window —
   reuses the campaign condition model + rule evaluator)
 
-The core platform (P1–P6) is complete and generic/multi-tenant. P7–P13 are a **chaay.io-style** SMB
+- **P14** **Refund reversal + reporting**: a refund now also **unwinds the stamp** its purchase earned
+  (claws back a completed card + decrements open challenge progress; badges stay permanent), and a
+  **promotions report** (`/analytics/promotions` + dashboard) aggregates campaign usage, reward
+  redemption funnels + rate, stamp-card completions, AOV, and outstanding points/credit liabilities
+
+The core platform (P1–P6) is complete and generic/multi-tenant. P7–P14 are a **chaay.io-style** SMB
 product expansion (loyalty features; messaging hub out of scope): **Tiers ✅**, **Rewards &
 Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, **Customer-facing
-app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**. **65 tests green.**
+app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**, **Refund reversal +
+reporting ✅**. **67 tests green.**

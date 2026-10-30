@@ -19,6 +19,8 @@ public static class ResultEventTypes
     public const string StampCardCompleted = "StampCardCompletedV1";
     public const string BirthdayRewarded = "BirthdayRewardedV1";
     public const string PointsExpired = "PointsExpiredV1";
+    public const string StampCardReversed = "StampCardReversedV1";
+    public const string ChallengeProgressReversed = "ChallengeProgressReversedV1";
 }
 
 /// <summary>

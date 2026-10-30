@@ -284,6 +284,8 @@ public static class Endpoints
             Results.Ok(new { rewarded = asOf is not null && DateTimeOffset.TryParse(asOf, out var d) ? await svc.RunForAsync(d, ct) : await svc.RunAsync(ct) }));
 
         // ---------- analytics ----------
+        v1.MapGet("/analytics/promotions", async (Loyalty.Core.Modules.Analytics.PromotionAnalyticsService svc, CancellationToken ct) =>
+            Results.Ok(await svc.SummaryAsync(ct)));
         v1.MapGet("/analytics/overview", async (Loyalty.Core.Modules.Analytics.AnalyticsService svc, CancellationToken ct) =>
             Results.Ok(await svc.OverviewAsync(ct)));
 

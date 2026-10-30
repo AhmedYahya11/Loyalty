@@ -170,6 +170,20 @@ export const t: Dict = {
   serviceCategory: { en: "Service / category (optional)", ar: "الخدمة / الفئة (اختياري)", ku: "خزمەتگوزاری / پۆل (ئارەزوومەندانە)" },
   validFrom: { en: "Valid from", ar: "صالح من", ku: "لە بەرواری" },
   validTo: { en: "Valid to", ar: "صالح حتى", ku: "تا بەرواری" },
+  reports: { en: "Reports", ar: "التقارير", ku: "ڕاپۆرتەکان" },
+  campaignPerformance: { en: "Campaign performance", ar: "أداء الحملات", ku: "ئەدای کەمپینەکان" },
+  rewardPerformance: { en: "Reward redemptions", ar: "استبدالات المكافآت", ku: "گۆڕینەوەی خەڵاتەکان" },
+  stampPerformance: { en: "Stamp cards", ar: "بطاقات الأختام", ku: "کارتی مۆر" },
+  executions: { en: "Executions", ar: "التنفيذات", ku: "جێبەجێکردنەکان" },
+  budget: { en: "Budget (left / total)", ar: "الميزانية (المتبقي / الكل)", ku: "بودجە (ماوە / کۆ)" },
+  redemptionRate: { en: "Redemption rate", ar: "معدل الاستبدال", ku: "ڕێژەی گۆڕینەوە" },
+  completions: { en: "Completions", ar: "الإكمالات", ku: "تەواوکردنەکان" },
+  participants: { en: "Participants", ar: "المشاركون", ku: "بەشداربووان" },
+  aov: { en: "Average order value", ar: "متوسط قيمة الطلب", ku: "نرخی ناوەندی داواکاری" },
+  liabilities: { en: "Outstanding liabilities", ar: "الالتزامات القائمة", ku: "ئەرکە ماوەکان" },
+  outstandingPoints: { en: "Outstanding points", ar: "النقاط القائمة", ku: "خاڵە ماوەکان" },
+  reservedPoints: { en: "Reserved points", ar: "النقاط المحجوزة", ku: "خاڵە حیجزکراوەکان" },
+  confirmedLabel: { en: "Confirmed", ar: "مؤكد", ku: "پشتڕاستکراو" },
 };
 
 export function tr(key: string, lang: Lang): string {

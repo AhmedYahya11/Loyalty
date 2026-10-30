@@ -78,6 +78,30 @@ public sealed class GamificationService(LoyaltyDbContext db, LedgerService ledge
         return new GamificationResult(bonus, unlocked, challengesCompleted);
     }
 
+    /// <summary>
+    /// Reduce open challenge progress when a contributing purchase is refunded (P14). Uses the same
+    /// <see cref="Challenge.Contribution"/> rule against the refunded amount, so a refund subtracts
+    /// exactly what the purchase added. Already-completed challenges keep their bonus (like achievements).
+    /// </summary>
+    public async Task<int> ReverseChallengesAsync(Member member, decimal? refundAmount, DateTimeOffset occurredAt, DateTimeOffset now, CancellationToken ct)
+    {
+        var challenges = await db.Challenges.Where(c => c.ApplicationId == member.ApplicationId).ToListAsync(ct);
+        var reversed = 0;
+        foreach (var c in challenges)
+        {
+            var contribution = c.Contribution(Integration.Contracts.EventTypes.PurchaseCompleted, refundAmount);
+            if (contribution <= 0) continue;
+            var progress = await db.ChallengeProgress.FirstOrDefaultAsync(p => p.MemberId == member.Id && p.ChallengeId == c.Id, ct);
+            if (progress is null || progress.Completed || progress.Progress <= 0) continue;
+
+            progress.Subtract(contribution, now);
+            reversed++;
+            EmitEvent(member.ApplicationId, ResultEventTypes.ChallengeProgressReversed, member.Id,
+                new { memberId = member.Id, challengeId = c.Id, name = c.Name, reversed = contribution }, now);
+        }
+        return reversed;
+    }
+
     private async Task<long> AwardBonusAsync(Wallet wallet, MemberValueProfile profile, long points, string effectId,
         Guid sourceEventId, string sourceSystem, string sourceTransactionId, string businessEventKey, string correlationId,
         DateTimeOffset occurredAt, DateTimeOffset now, CancellationToken ct)

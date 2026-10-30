@@ -98,4 +98,10 @@ public sealed class MemberStampCard : IApplicationScoped
         }
         return false;
     }
+
+    /// <summary>Remove one stamp (floor 0) — a refunded visit no longer counts (P14).</summary>
+    public void RemoveStamp(DateTimeOffset now) { if (Stamps > 0) Stamps--; UpdatedAt = now; }
+
+    /// <summary>Undo a completion whose triggering purchase was refunded (P14).</summary>
+    public void ReverseCompletion(DateTimeOffset now) { if (CompletedCount > 0) CompletedCount--; UpdatedAt = now; }
 }

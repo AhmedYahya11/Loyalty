@@ -6,6 +6,23 @@ result events + webhooks/notifications + analytics + snapshots; Phase 5 = **reli
 (EF migrations, Postgres transport + dedicated worker, reconciliation, rate limiting, health,
 dead-letter replay, OpenTelemetry). Bilingual (AR/EN) throughout. Documented deltas below.
 
+## Phase 9 status (done) — Gamification
+
+- **Achievements/Badges**: one-time metric-threshold unlock (PurchaseCount/NetSpend/PointsEarned/
+  LoginCount/ReferralCount/Streak) with bonus points + AchievementUnlockedV1; member badges ✅
+- **Daily streaks**: consecutive-day activity counter on the value profile (current/longest) ✅
+- **Challenges**: time-boxed per-member metric goals → bonus points + ChallengeCompletedV1 ✅
+- **Leaderboard**: top-N members by a value-profile metric ✅
+- Evaluated in the worker after the profile update; bonus points posted via the ledger (idempotent
+  per effect); dashboard Gamification page (achievements/challenges/leaderboard) + member badges/streak ✅
+- Tests: 4 unit (streak) + 2 Testcontainers E2E (achievement unlock+bonus+leaderboard, challenge
+  completion) — 55 green total
+
+Roadmap: P7 Tiers ✅ · P8 Rewards & Redemptions ✅ · **P9 Gamification ✅** → P10 Referrals/Stamp
+cards/Birthday → P11 Customer-facing app → P12 richer dashboard + RFM + Kurdish.
+
+---
+
 ## Phase 8 status (done) — Rewards & Redemptions
 
 Points are now **spendable** (previously earn-only):

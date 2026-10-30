@@ -104,8 +104,9 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
   earn-multiplier benefits, tier-change events, tier analytics + dashboard page
 
 - **P8** **Rewards & Redemptions**: reward catalog, redeem points, **QR coupons**, reserve→confirm→cancel
+- **P9** **Gamification**: achievements/badges, daily streaks, time-boxed challenges, leaderboards
 
 The core platform (P1–P6) is complete and generic/multi-tenant. P7+ is a product expansion toward
 **chaay.io-style** SMB loyalty (loyalty features; messaging hub out of scope): **Tiers ✅**,
-**Rewards & Redemptions ✅**, then Gamification, Referrals/Stamp cards, a customer-facing app, and
-RFM personas. **49 tests green.**
+**Rewards & Redemptions ✅**, **Gamification ✅**, then Referrals/Stamp cards, a customer-facing app,
+and RFM personas. **55 tests green.**

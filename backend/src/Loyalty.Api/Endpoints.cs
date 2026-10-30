@@ -167,6 +167,28 @@ public static class Endpoints
         redemptions.MapPost("/{id:guid}/cancel", async (Guid id, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
             await svc.CancelAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
 
+        // ---------- gamification: achievements ----------
+        var achievements = v1.MapGroup("/achievements");
+        achievements.MapPost("", async (Loyalty.Core.Modules.Gamification.Application.CreateAchievementInput req, Loyalty.Core.Modules.Gamification.Application.AchievementService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(req, ct), statusCode: 201));
+        achievements.MapGet("", async (Loyalty.Core.Modules.Gamification.Application.AchievementService svc, CancellationToken ct) => Results.Ok(await svc.ListAsync(ct)));
+        achievements.MapPut("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Gamification.Application.UpdateAchievementInput req, Loyalty.Core.Modules.Gamification.Application.AchievementService svc, CancellationToken ct) =>
+            await svc.UpdateAsync(id, req, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        achievements.MapDelete("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Gamification.Application.AchievementService svc, CancellationToken ct) =>
+            await svc.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+        members.MapGet("/{id:guid}/achievements", async (Guid id, MemberService svc, CancellationToken ct) =>
+            await svc.GetAchievementsAsync(id, ct) is { } v ? Results.Ok(new { items = v }) : Results.NotFound());
+
+        // ---------- gamification: challenges + leaderboard ----------
+        var challenges = v1.MapGroup("/challenges");
+        challenges.MapPost("", async (Loyalty.Core.Modules.Gamification.Application.CreateChallengeInput req, Loyalty.Core.Modules.Gamification.Application.ChallengeService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(req, ct), statusCode: 201));
+        challenges.MapGet("", async (Loyalty.Core.Modules.Gamification.Application.ChallengeService svc, CancellationToken ct) => Results.Ok(await svc.ListAsync(ct)));
+        challenges.MapDelete("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Gamification.Application.ChallengeService svc, CancellationToken ct) =>
+            await svc.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+        v1.MapGet("/leaderboard", async (string? metric, int? limit, Loyalty.Core.Modules.Gamification.Application.LeaderboardService svc, CancellationToken ct) =>
+            Results.Ok(new { metric = metric ?? "PointsEarned", items = await svc.TopAsync(metric ?? "PointsEarned", limit ?? 10, ct) }));
+
         // ---------- events + request status ----------
         v1.MapPost("/events", async (LoyaltyEventEnvelopeV1 envelope, [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
             EventIngestionService svc, CancellationToken ct) =>

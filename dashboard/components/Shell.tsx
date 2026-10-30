@@ -12,6 +12,7 @@ const links = [
   { href: "/segments", key: "segments" },
   { href: "/tiers", key: "tiers" },
   { href: "/rewards", key: "rewards" },
+  { href: "/gamification", key: "gamification" },
   { href: "/members", key: "members" },
   { href: "/events", key: "events" },
   { href: "/notifications", key: "notifications" },

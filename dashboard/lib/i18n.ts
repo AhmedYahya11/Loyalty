@@ -87,6 +87,14 @@ export const t: Dict = {
   confirm: { en: "Confirm", ar: "تأكيد" },
   cancel: { en: "Cancel", ar: "إلغاء" },
   reserved: { en: "Reserved", ar: "محجوز" },
+  gamification: { en: "Gamification", ar: "التحفيز" },
+  achievements: { en: "Achievements", ar: "الإنجازات" },
+  challenges: { en: "Challenges", ar: "التحديات" },
+  leaderboard: { en: "Leaderboard", ar: "المتصدرون" },
+  bonusPoints: { en: "Bonus points", ar: "نقاط إضافية" },
+  target: { en: "Target", ar: "الهدف" },
+  streak: { en: "Streak", ar: "التتابع" },
+  badges: { en: "Badges", ar: "الأوسمة" },
 };
 
 export function tr(key: string, lang: Lang): string {

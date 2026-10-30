@@ -13,6 +13,8 @@ public static class ResultEventTypes
     public const string RedemptionReserved = "RedemptionReservedV1";
     public const string PointsRedeemed = "PointsRedeemedV1";
     public const string RedemptionCancelled = "RedemptionCancelledV1";
+    public const string AchievementUnlocked = "AchievementUnlockedV1";
+    public const string ChallengeCompleted = "ChallengeCompletedV1";
 }
 
 /// <summary>

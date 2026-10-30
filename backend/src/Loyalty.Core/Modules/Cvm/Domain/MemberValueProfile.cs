@@ -28,6 +28,9 @@ public sealed class MemberValueProfile : IApplicationScoped
     public Guid? CurrentTierId { get; private set; }
     public int CurrentTierRank { get; private set; } = -1;
     public DateTimeOffset? TierEvaluatedAt { get; private set; }
+    public int CurrentStreak { get; private set; }
+    public int LongestStreak { get; private set; }
+    public DateOnly? LastStreakDate { get; private set; }
     public int Version { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -86,6 +89,20 @@ public sealed class MemberValueProfile : IApplicationScoped
         LifecycleStage = stage;
         LastLifecycleEvaluationAt = evaluatedAt;
         UpdatedAt = evaluatedAt;
+    }
+
+    /// <summary>Update the consecutive-day activity streak from an event's OccurredAt (idempotent per day).</summary>
+    public void ApplyStreak(DateTimeOffset occurredAt)
+    {
+        var date = DateOnly.FromDateTime(occurredAt.UtcDateTime);
+        if (LastStreakDate is null) CurrentStreak = 1;
+        else if (date == LastStreakDate.Value) return;                 // same day — no change
+        else if (date == LastStreakDate.Value.AddDays(1)) CurrentStreak++;  // consecutive
+        else if (date > LastStreakDate.Value) CurrentStreak = 1;       // gap — reset
+        else return;                                                   // out-of-order older event — ignore
+        LastStreakDate = date;
+        if (CurrentStreak > LongestStreak) LongestStreak = CurrentStreak;
+        Version++;
     }
 
     public void SetTier(Guid? tierId, int rank, DateTimeOffset evaluatedAt)

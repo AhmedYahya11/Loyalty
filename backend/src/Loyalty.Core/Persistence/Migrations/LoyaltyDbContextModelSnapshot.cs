@@ -413,6 +413,9 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("CurrentStreak")
+                        .HasColumnType("integer");
+
                     b.Property<Guid?>("CurrentTierId")
                         .HasColumnType("uuid");
 
@@ -431,6 +434,9 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.Property<DateTimeOffset?>("LastPurchaseAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateOnly?>("LastStreakDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("LifecycleStage")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -438,6 +444,9 @@ namespace Loyalty.Core.Persistence.Migrations
 
                     b.Property<long>("LoginCount")
                         .HasColumnType("bigint");
+
+                    b.Property<int>("LongestStreak")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("NetSpendAmount")
                         .HasPrecision(18, 4)
@@ -544,6 +553,175 @@ namespace Loyalty.Core.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("segment_versions", "cvm");
+                });
+
+            modelBuilder.Entity("Loyalty.Core.Modules.Gamification.Domain.Achievement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("BonusPoints")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Metric")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NameAr")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("Threshold")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "IsActive");
+
+                    b.ToTable("achievements", "gamification");
+                });
+
+            modelBuilder.Entity("Loyalty.Core.Modules.Gamification.Domain.Challenge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("BonusPoints")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("EndsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Metric")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NameAr")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("StartsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("TargetValue")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "IsActive");
+
+                    b.ToTable("challenges", "gamification");
+                });
+
+            modelBuilder.Entity("Loyalty.Core.Modules.Gamification.Domain.MemberAchievement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AchievementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UnlockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "MemberId", "AchievementId")
+                        .IsUnique();
+
+                    b.ToTable("member_achievements", "gamification");
+                });
+
+            modelBuilder.Entity("Loyalty.Core.Modules.Gamification.Domain.MemberChallengeProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChallengeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Progress")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "MemberId", "ChallengeId")
+                        .IsUnique();
+
+                    b.ToTable("member_challenge_progress", "gamification");
                 });
 
             modelBuilder.Entity("Loyalty.Core.Modules.Integration.Domain.IdempotencyRecord", b =>

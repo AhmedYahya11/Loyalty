@@ -44,6 +44,7 @@ public sealed class ProcessLoyaltyEventHandler
         var decider = sp.GetRequiredService<RewardDecisionService>();
         var engine = sp.GetRequiredService<CampaignEngine>();
         var cvm = sp.GetRequiredService<CvmService>();
+        var gamification = sp.GetRequiredService<Gamification.Application.GamificationService>();
         var clock = sp.GetRequiredService<IClock>();
 
         var visible = await RunInSystemScope(scope, () => scopeResolver.ResolveVisibleAsync(message.ApplicationId, ct));
@@ -72,6 +73,8 @@ public sealed class ProcessLoyaltyEventHandler
         var profile = await db.ValueProfiles.FirstAsync(p => p.MemberId == member.Id, ct);
         var previousStage = profile.LifecycleStage;
         cvm.ApplyEvent(profile, envelope.EventType, normalized.Amount, envelope.OccurredAt);
+        if (envelope.EventType != EventTypes.ManualAdjustmentRequested)
+            profile.ApplyStreak(envelope.OccurredAt); // daily-activity streak
         var thresholds = ParseCvmThresholds(request.CvmSettingsSnapshot);
         var lifecycleChanged = cvm.EvaluateLifecycle(profile, thresholds, now);
         await cvm.EvaluateSegmentsAsync(profile, now, ct);
@@ -201,7 +204,15 @@ public sealed class ProcessLoyaltyEventHandler
             await engine.RecordUsageAsync(c, member.Id, envelope.OccurredAt, campaignPoints, ct);
         }
 
-        if (totalAwarded <= 0)
+        if (totalAwarded > 0) profile.AddPointsEarned(totalAwarded);
+
+        // gamification runs regardless of a campaign reward (streak/achievements/challenges)
+        var gam = await gamification.EvaluateAsync(wallet, member, profile, envelope.EventType, normalized.Amount,
+            envelope.EventId, request.SourceSystem, envelope.SourceTransactionId, normalized.BusinessEventKey, envelope.CorrelationId,
+            envelope.OccurredAt, now, ct);
+        var grandTotal = totalAwarded + gam.Bonus;
+
+        if (grandTotal <= 0 && !gam.Any)
         {
             db.RewardDecisions.Add(RewardDecisionRecord.Create(request.ApplicationId, member.Id, request.Id, envelope.EventId,
                 profile.Version, profile.LifecycleStage.ToString(), segmentVersionRefs, 0, "Rejected", now));
@@ -211,12 +222,12 @@ public sealed class ProcessLoyaltyEventHandler
             return;
         }
 
-        profile.AddPointsEarned(totalAwarded);
         db.RewardDecisions.Add(RewardDecisionRecord.Create(request.ApplicationId, member.Id, request.Id, envelope.EventId,
-            profile.Version, profile.LifecycleStage.ToString(), segmentVersionRefs, totalAwarded, "Completed", now));
-        EmitEvent(db, request, ResultEventTypes.PointsAwarded, member.Id,
-            new { memberId = member.Id, requestId = request.Id, awardedPoints = totalAwarded, pointsUnitCode = snapshot.PointsUnitCode }, now);
-        request.MarkCompleted(totalAwarded, snapshot.PointsUnitCode, clock.UtcNow);
+            profile.Version, profile.LifecycleStage.ToString(), segmentVersionRefs, grandTotal, "Completed", now));
+        if (grandTotal > 0)
+            EmitEvent(db, request, ResultEventTypes.PointsAwarded, member.Id,
+                new { memberId = member.Id, requestId = request.Id, awardedPoints = grandTotal, pointsUnitCode = snapshot.PointsUnitCode }, now);
+        request.MarkCompleted(grandTotal, snapshot.PointsUnitCode, clock.UtcNow);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }

@@ -65,6 +65,10 @@ public static class DependencyInjection
         services.AddScoped<Modules.Tiers.Application.TierService>();
         services.AddScoped<Modules.Rewards.Application.RewardService>();
         services.AddScoped<Modules.Rewards.Application.RedemptionService>();
+        services.AddScoped<Modules.Gamification.Application.GamificationService>();
+        services.AddScoped<Modules.Gamification.Application.AchievementService>();
+        services.AddScoped<Modules.Gamification.Application.ChallengeService>();
+        services.AddScoped<Modules.Gamification.Application.LeaderboardService>();
 
         return services;
     }

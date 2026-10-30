@@ -11,9 +11,10 @@ type Member = { memberId: string; externalCustomerId: string; defaultWalletId: s
 type Txn = { transactionId: string; transactionType: string; totalDebit: number; totalCredit: number; occurredAt: string };
 type Segment = { segmentId: string; name: string; nameAr?: string };
 type Tier = { name: string; nameAr?: string; rank: number; earnMultiplier: number };
-type Profile = { lifecycleStage: string; tier?: Tier | null; purchaseCount: number; netSpendAmount: number; pointsEarned: number; pointsRedeemed: number; activeSegments: Segment[] };
+type Profile = { lifecycleStage: string; tier?: Tier | null; currentStreak: number; longestStreak: number; purchaseCount: number; netSpendAmount: number; pointsEarned: number; pointsRedeemed: number; activeSegments: Segment[] };
 type Reward = { id: string; name: string; nameAr?: string; pointsCost: number };
 type Redemption = { id: string; rewardName: string; pointsCost: number; status: string; couponCode: string };
+type Badge = { achievementId: string; name: string; nameAr?: string; icon?: string };
 
 export default function MembersPage() {
   const { lang } = useLang();
@@ -23,6 +24,7 @@ export default function MembersPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
   const [rewardId, setRewardId] = useState("");
   const [err, setErr] = useState("");
 
@@ -32,6 +34,7 @@ export default function MembersPage() {
     setTxns((await api.get<{ items: Txn[] }>(`/api/v1/members/${memberId}/wallet/transactions`)).items);
     try { setProfile(await api.get<Profile>(`/api/v1/members/${memberId}/value-profile`)); } catch { setProfile(null); }
     setRedemptions((await api.get<{ items: Redemption[] }>(`/api/v1/members/${memberId}/redemptions`)).items);
+    try { setBadges((await api.get<{ items: Badge[] }>(`/api/v1/members/${memberId}/achievements`)).items); } catch { setBadges([]); }
     const rw = await api.get<Reward[]>("/api/v1/rewards?activeOnly=true");
     setRewards(rw); if (rw[0]) setRewardId(rw[0].id);
   };
@@ -83,6 +86,8 @@ export default function MembersPage() {
               <tbody>
                 <tr><th>{tr("lifecycleStage", lang)}</th><td><span className="badge ok">{profile.lifecycleStage}</span></td></tr>
                 <tr><th>{tr("tier", lang)}</th><td>{profile.tier ? <span className="badge ok">{(lang === "ar" && profile.tier.nameAr ? profile.tier.nameAr : profile.tier.name)} (×{profile.tier.earnMultiplier})</span> : "—"}</td></tr>
+                <tr><th>{tr("streak", lang)}</th><td>🔥 {profile.currentStreak} (max {profile.longestStreak})</td></tr>
+                <tr><th>{tr("badges", lang)}</th><td>{badges.length > 0 ? badges.map((b) => <span key={b.achievementId} className="badge ok" style={{ marginInlineEnd: 6 }}>🏅 {(lang === "ar" && b.nameAr ? b.nameAr : b.name)}</span>) : "—"}</td></tr>
                 <tr><th>{tr("purchaseCount", lang)}</th><td>{profile.purchaseCount}</td></tr>
                 <tr><th>{tr("netSpend", lang)}</th><td>{profile.netSpendAmount} IQD</td></tr>
                 <tr><th>{tr("pointsEarned", lang)}</th><td>{profile.pointsEarned}</td></tr>

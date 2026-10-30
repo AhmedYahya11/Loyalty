@@ -4,6 +4,7 @@ using Loyalty.Core.Modules.Accounts.Domain;
 using Loyalty.Core.Modules.Applications.Domain;
 using Loyalty.Core.Modules.Campaigns.Domain;
 using Loyalty.Core.Modules.Cvm.Domain;
+using Loyalty.Core.Modules.Gamification.Domain;
 using Loyalty.Core.Modules.Integration.Domain;
 using Loyalty.Core.Modules.Members.Domain;
 using Loyalty.Core.Modules.Notifications.Domain;
@@ -54,6 +55,10 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<TierHistory> TierHistory => Set<TierHistory>();
     public DbSet<Reward> Rewards => Set<Reward>();
     public DbSet<Redemption> Redemptions => Set<Redemption>();
+    public DbSet<Achievement> Achievements => Set<Achievement>();
+    public DbSet<MemberAchievement> MemberAchievements => Set<MemberAchievement>();
+    public DbSet<Challenge> Challenges => Set<Challenge>();
+    public DbSet<MemberChallengeProgress> ChallengeProgress => Set<MemberChallengeProgress>();
     public DbSet<EventLogEntry> EventLog => Set<EventLogEntry>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<RewardDecisionRecord> RewardDecisions => Set<RewardDecisionRecord>();
@@ -361,6 +366,48 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.Property(x => x.CouponCode).HasMaxLength(32).IsRequired();
             e.HasIndex(x => new { x.ApplicationId, x.CouponCode }).IsUnique();
             e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.Status });
+            ApplyScope(e);
+        });
+
+        // ---------------- gamification ----------------
+        b.Entity<Achievement>(e =>
+        {
+            e.ToTable("achievements", "gamification");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(100);
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.Icon).HasMaxLength(64);
+            e.Property(x => x.Metric).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.Threshold).HasPrecision(18, 4);
+            e.HasIndex(x => new { x.ApplicationId, x.IsActive });
+            ApplyScope(e);
+        });
+        b.Entity<MemberAchievement>(e =>
+        {
+            e.ToTable("member_achievements", "gamification");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.AchievementId }).IsUnique();
+            ApplyScope(e);
+        });
+        b.Entity<Challenge>(e =>
+        {
+            e.ToTable("challenges", "gamification");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(100);
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.Metric).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.TargetValue).HasPrecision(18, 4);
+            e.HasIndex(x => new { x.ApplicationId, x.IsActive });
+            ApplyScope(e);
+        });
+        b.Entity<MemberChallengeProgress>(e =>
+        {
+            e.ToTable("member_challenge_progress", "gamification");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Progress).HasPrecision(18, 4);
+            e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.ChallengeId }).IsUnique();
             ApplyScope(e);
         });
 

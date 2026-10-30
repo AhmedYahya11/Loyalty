@@ -73,6 +73,8 @@ public sealed class MemberService(
             memberId = p.MemberId,
             lifecycleStage = p.LifecycleStage.ToString(),
             tier,
+            currentStreak = p.CurrentStreak,
+            longestStreak = p.LongestStreak,
             p.FirstActivityAt,
             p.LastActivityAt,
             p.LastPurchaseAt,
@@ -87,6 +89,18 @@ public sealed class MemberService(
             profileVersion = p.Version,
             activeSegments = segs,
         };
+    }
+
+    public async Task<IReadOnlyList<object>?> GetAchievementsAsync(Guid memberId, CancellationToken ct)
+    {
+        var m = await db.Members.FirstOrDefaultAsync(x => x.Id == memberId, ct);
+        if (m is null) return null;
+        return await (
+            from ma in db.MemberAchievements
+            join a in db.Achievements on ma.AchievementId equals a.Id
+            where ma.MemberId == memberId
+            orderby ma.UnlockedAt descending
+            select (object)new { achievementId = a.Id, name = a.Name, nameAr = a.NameAr, icon = a.Icon, a.BonusPoints, ma.UnlockedAt }).ToListAsync(ct);
     }
 
     public async Task<object?> GetSegmentsAsync(Guid memberId, CancellationToken ct)

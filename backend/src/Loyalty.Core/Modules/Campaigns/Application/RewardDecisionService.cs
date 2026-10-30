@@ -26,10 +26,15 @@ public sealed class RewardDecisionService(ILoyaltyRuleEvaluator evaluator)
         decimal spendAmountPerPoint,
         RoundingPolicy rounding,
         NormalizedEvent normalized,
-        IReadOnlyList<Campaign> candidates)
+        IReadOnlyList<Campaign> candidates,
+        string? lifecycleStage = null,
+        IReadOnlySet<Guid>? activeSegmentIds = null)
     {
-        // keep only campaigns whose conditions match the event facts
+        var segments = activeSegmentIds ?? new HashSet<Guid>();
+
+        // keep only campaigns whose audience + conditions match
         var matched = candidates
+            .Where(c => c.MatchesAudience(lifecycleStage, segments))
             .Where(c => evaluator.Evaluate(c.Conditions, normalized.Facts).Matched)
             .OrderByDescending(c => c.Priority)
             .ThenBy(c => c.Id)

@@ -3,6 +3,7 @@ using Loyalty.Core.BuildingBlocks;
 using Loyalty.Core.Modules.Applications.Application;
 using Loyalty.Core.Modules.Campaigns.Application;
 using Loyalty.Core.Modules.Campaigns.Domain;
+using Loyalty.Core.Modules.Cvm.Application;
 using Loyalty.Core.Modules.Integration.Contracts;
 using Loyalty.Core.Modules.Integration.Domain;
 using Loyalty.Core.Modules.Members.Application;
@@ -21,13 +22,10 @@ public sealed record SettingsSnapshotDto(
 
 /// <summary>
 /// The single asynchronous processing handler (MVP spec §14, PROCESSING_FLOW diagram 3):
-/// restore application scope from the message, provision the member, select and evaluate
-/// campaigns, write balanced ledger postings and the wallet projection, and update request
-/// status — all in one database transaction. Redelivery is a no-op via the terminal-status
-/// check, the reward-effect unique index, and the ledger-transaction unique index.
-///
-/// A dedicated DI scope is created so the DbContext and the ApplicationContext it reads for
-/// the global query filter are guaranteed to be the same instance.
+/// restore scope, provision the member, apply the event to its value profile, evaluate
+/// lifecycle + segments, select audience-targeted campaigns, write balanced ledger postings
+/// and the wallet projection, and update request status — all in one transaction. Redelivery
+/// is a no-op via the terminal-status check and the reward-effect / ledger unique indexes.
 /// </summary>
 public sealed class ProcessLoyaltyEventHandler
 {
@@ -42,33 +40,63 @@ public sealed class ProcessLoyaltyEventHandler
         var provisioning = sp.GetRequiredService<MemberProvisioningService>();
         var ledger = sp.GetRequiredService<LedgerService>();
         var decider = sp.GetRequiredService<RewardDecisionService>();
+        var cvm = sp.GetRequiredService<CvmService>();
+        var cvmSettings = sp.GetRequiredService<CvmSettingsService>();
         var clock = sp.GetRequiredService<IClock>();
 
-        // establish the business scope straight from the message (the app is visible to itself)
         var visible = await RunInSystemScope(scope, () => scopeResolver.ResolveVisibleAsync(message.ApplicationId, ct));
         scope.Establish(message.ApplicationId, message.AccountId, sourceSystem: string.Empty, visible);
 
         var request = await db.IngestionRequests.FirstOrDefaultAsync(r => r.Id == message.RequestId, ct)
             ?? throw new InvalidOperationException($"Ingestion request {message.RequestId} not found.");
 
-        // idempotent no-op on redelivery of an already-finished request
         if (request.Status is RequestStatus.Completed or RequestStatus.Rejected or RequestStatus.Failed)
             return;
 
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-
-        request.MarkProcessing(clock.UtcNow);
+        var now = clock.UtcNow;
+        request.MarkProcessing(now);
 
         var envelope = JsonSerializer.Deserialize<LoyaltyEventEnvelopeV1>(request.Payload, JsonOptionsProvider.Default)!;
         var normalized = registry.Normalize(envelope, request.SourceSystem);
         var snapshot = JsonSerializer.Deserialize<SettingsSnapshotDto>(request.SettingsSnapshot, JsonOptionsProvider.Default)!;
 
-        // provision member + wallet + ledger accounts (idempotent); persist so account ids resolve
+        // provision member + wallet + ledger accounts + value profile (idempotent); persist
         var (member, wallet) = await provisioning.EnsureAsync(
-            request.ApplicationId, envelope.CustomerId, snapshot.PointsUnitCode, ct);
+            request.ApplicationId, envelope.CustomerId, snapshot.PointsUnitCode, snapshot.BaseCurrency, ct);
         await db.SaveChangesAsync(ct);
 
-        // select candidate campaigns for this event type
+        // --- CVM: project event onto the value profile, evaluate lifecycle + segments ---
+        var profile = await db.ValueProfiles.FirstAsync(p => p.MemberId == member.Id, ct);
+        cvm.ApplyEvent(profile, envelope.EventType, normalized.Amount, envelope.OccurredAt);
+        var effectiveCvm = await cvmSettings.ResolveEffectiveAsync(request.ApplicationId, ct);
+        cvm.EvaluateLifecycle(profile, effectiveCvm, now);
+        await cvm.EvaluateSegmentsAsync(profile, now, ct);
+        await db.SaveChangesAsync(ct);
+
+        var activeSegmentIds = (await db.SegmentMemberships
+            .Where(m => m.MemberId == member.Id && m.IsActive).Select(m => m.SegmentId).ToListAsync(ct)).ToHashSet();
+
+        // --- ManualAdjustment: controlled Adjust ledger entry, no campaigns ---
+        if (envelope.EventType == EventTypes.ManualAdjustmentRequested)
+        {
+            var signed = normalized.SignedPoints ?? 0;
+            var alreadyAdjusted = await db.RewardEffects.AnyAsync(
+                e => e.MemberId == member.Id && e.SourceEventId == envelope.EventId && e.EffectId == "manual-adjustment", ct);
+            if (!alreadyAdjusted && signed != 0)
+            {
+                var adjTx = await ledger.PostAdjustAsync(wallet, signed, envelope.EventId, request.SourceSystem,
+                    envelope.SourceTransactionId, normalized.BusinessEventKey, envelope.CorrelationId, "manual-adjustment", envelope.OccurredAt, ct);
+                db.RewardEffects.Add(new RewardEffect(Guid.NewGuid(), request.ApplicationId, member.Id, envelope.EventId,
+                    Guid.Empty, 0, "manual-adjustment", signed, adjTx.Id, now));
+            }
+            request.MarkCompleted(signed, snapshot.PointsUnitCode, clock.UtcNow);
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return;
+        }
+
+        // --- select audience-targeted campaigns for this event type ---
         var candidates = await db.Campaigns
             .Where(c => c.Status == CampaignStatus.Active
                         && c.TriggerEventType == envelope.EventType
@@ -76,9 +104,13 @@ public sealed class ProcessLoyaltyEventHandler
             .ToListAsync(ct);
         candidates = candidates.Where(c => c.IsScheduleOpen(envelope.OccurredAt)).ToList();
 
-        var decision = decider.Decide(snapshot.SpendAmountPerPoint, snapshot.RoundingPolicy, normalized, candidates);
+        var decision = decider.Decide(
+            snapshot.SpendAmountPerPoint, snapshot.RoundingPolicy, normalized, candidates,
+            profile.LifecycleStage.ToString(), activeSegmentIds);
+
         if (!decision.HasReward)
         {
+            // the value-profile changes still commit; only the reward is absent
             request.MarkRejected("NO_ELIGIBLE_CAMPAIGN", clock.UtcNow);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
@@ -106,6 +138,7 @@ public sealed class ProcessLoyaltyEventHandler
             totalAwarded += effect.Points;
         }
 
+        if (totalAwarded > 0) profile.AddPointsEarned(totalAwarded);
         request.MarkCompleted(totalAwarded, snapshot.PointsUnitCode, clock.UtcNow);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);

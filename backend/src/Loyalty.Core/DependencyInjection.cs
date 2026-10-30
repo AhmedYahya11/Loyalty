@@ -11,6 +11,7 @@ using Loyalty.Core.Modules.Wallets.Application;
 using Loyalty.Core.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Wolverine.EntityFrameworkCore;
 
 namespace Loyalty.Core;
@@ -36,6 +37,11 @@ public static class DependencyInjection
         services.AddScoped<ApplicationScopeResolver>();
         services.AddScoped<AccountService>();
         services.AddScoped<LoyaltySettingsService>();
+        services.AddScoped<Modules.Cvm.Application.CvmSettingsService>();
+        services.AddScoped<Modules.Cvm.Application.CvmService>();
+        services.AddScoped<Modules.Cvm.Application.SegmentService>();
+        services.AddScoped<Modules.Cvm.Application.LifecycleSweepService>();
+        services.AddHostedService<Modules.Cvm.Application.LifecycleSweepJob>();
         services.AddScoped<LedgerService>();
         services.AddScoped<MemberProvisioningService>();
         services.AddScoped<MemberService>();

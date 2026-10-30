@@ -29,12 +29,19 @@ public sealed class Campaign : IApplicationScoped
     public List<CampaignCondition> Conditions { get; private set; } = [];
     public List<CampaignEffect> Effects { get; private set; } = [];
 
+    // Audience targeting (MVP spec §11.5). Lifecycle stages are stored as names to keep the
+    // campaigns domain decoupled from the CVM domain.
+    public List<string> RequiredLifecycleStages { get; private set; } = [];
+    public List<Guid> RequiredSegmentIds { get; private set; } = [];
+    public List<Guid> ExcludedSegmentIds { get; private set; } = [];
+
     private Campaign() { }
 
     public static Campaign Create(
         Guid id, Guid applicationId, string name, string? nameAr, string triggerEventType, int minimumEventVersion,
         DateTimeOffset? startsAt, DateTimeOffset? endsAt, int priority, StackingPolicy stacking,
         IEnumerable<CampaignCondition> conditions, IEnumerable<CampaignEffect> effects,
+        IEnumerable<string>? requiredLifecycleStages, IEnumerable<Guid>? requiredSegmentIds, IEnumerable<Guid>? excludedSegmentIds,
         DateTimeOffset now) => new()
     {
         Id = id,
@@ -51,9 +58,23 @@ public sealed class Campaign : IApplicationScoped
         Version = 1,
         Conditions = conditions.ToList(),
         Effects = effects.ToList(),
+        RequiredLifecycleStages = requiredLifecycleStages?.ToList() ?? [],
+        RequiredSegmentIds = requiredSegmentIds?.ToList() ?? [],
+        ExcludedSegmentIds = excludedSegmentIds?.ToList() ?? [],
         CreatedAt = now,
         UpdatedAt = now,
     };
+
+    /// <summary>Audience gate: lifecycle stage + required/excluded segment memberships.</summary>
+    public bool MatchesAudience(string? lifecycleStage, IReadOnlySet<Guid> activeSegmentIds)
+    {
+        if (RequiredLifecycleStages.Count > 0 &&
+            (lifecycleStage is null || !RequiredLifecycleStages.Contains(lifecycleStage, StringComparer.OrdinalIgnoreCase)))
+            return false;
+        if (RequiredSegmentIds.Any(id => !activeSegmentIds.Contains(id))) return false;
+        if (ExcludedSegmentIds.Any(activeSegmentIds.Contains)) return false;
+        return true;
+    }
 
     public void Activate(DateTimeOffset now)
     {

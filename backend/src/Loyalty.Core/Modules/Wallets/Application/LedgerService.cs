@@ -85,4 +85,32 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
         wallet.ApplyDelta(active: points, pending: 0, reserved: 0);
         return tx;
     }
+
+    /// <summary>
+    /// Post a signed Adjust: positive debits adjustment clearing / credits member active
+    /// (+balance); negative debits member active / credits adjustment clearing (−balance).
+    /// </summary>
+    public async Task<PointsLedgerTransaction> PostAdjustAsync(
+        Wallet wallet, long signedPoints, Guid sourceEventId, string sourceSystem, string sourceTransactionId,
+        string businessEventKey, string correlationId, string effectId, DateTimeOffset occurredAt, CancellationToken ct)
+    {
+        if (signedPoints == 0) throw new InvalidOperationException("Adjustment must be non-zero.");
+        var unit = wallet.PointsUnitCode;
+        var adjustment = await ClearingAccountIdAsync(wallet.ApplicationId, LedgerAccountType.AdjustmentClearing, unit, ct);
+        var active = await MemberBucketAccountIdAsync(wallet.ApplicationId, wallet.Id, BalanceBucket.Active, ct);
+        var amount = Math.Abs(signedPoints);
+
+        var (legs, activeDelta) = signedPoints > 0
+            ? (new List<LedgerLeg> { new(adjustment, amount, 0), new(active, 0, amount) }, amount)
+            : (new List<LedgerLeg> { new(active, amount, 0), new(adjustment, 0, amount) }, -amount);
+
+        var tx = PointsLedgerTransaction.Create(
+            Guid.NewGuid(), wallet.ApplicationId, wallet.Id, TransactionType.Adjust, unit,
+            sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
+            campaignId: null, ruleId: null, effectId, reversalOf: null, occurredAt, clock.UtcNow, legs);
+
+        db.LedgerTransactions.Add(tx);
+        wallet.ApplyDelta(active: activeDelta, pending: 0, reserved: 0);
+        return tx;
+    }
 }

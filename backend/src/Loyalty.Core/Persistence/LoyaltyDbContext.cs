@@ -3,6 +3,7 @@ using Loyalty.Core.BuildingBlocks;
 using Loyalty.Core.Modules.Accounts.Domain;
 using Loyalty.Core.Modules.Applications.Domain;
 using Loyalty.Core.Modules.Campaigns.Domain;
+using Loyalty.Core.Modules.Cvm.Domain;
 using Loyalty.Core.Modules.Integration.Domain;
 using Loyalty.Core.Modules.Members.Domain;
 using Loyalty.Core.Modules.Settings.Domain;
@@ -40,6 +41,11 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<IngestionRequest> IngestionRequests => Set<IngestionRequest>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<RewardEffect> RewardEffects => Set<RewardEffect>();
+    public DbSet<ApplicationCvmSettings> CvmSettings => Set<ApplicationCvmSettings>();
+    public DbSet<MemberValueProfile> ValueProfiles => Set<MemberValueProfile>();
+    public DbSet<SegmentDefinition> Segments => Set<SegmentDefinition>();
+    public DbSet<SegmentVersion> SegmentVersions => Set<SegmentVersion>();
+    public DbSet<MemberSegmentMembership> SegmentMemberships => Set<MemberSegmentMembership>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -180,6 +186,9 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
             e.Property(x => x.Conditions).HasConversion(condConverter, condComparer).HasColumnType("jsonb");
             e.Property(x => x.Effects).HasConversion(effConverter, effComparer).HasColumnType("jsonb");
+            e.Property(x => x.RequiredLifecycleStages).HasConversion(JsonListConverter<string>(), JsonListComparer<string>()).HasColumnType("jsonb");
+            e.Property(x => x.RequiredSegmentIds).HasConversion(JsonListConverter<Guid>(), JsonListComparer<Guid>()).HasColumnType("jsonb");
+            e.Property(x => x.ExcludedSegmentIds).HasConversion(JsonListConverter<Guid>(), JsonListComparer<Guid>()).HasColumnType("jsonb");
             e.HasIndex(x => new { x.ApplicationId, x.TriggerEventType, x.Status });
             ApplyScope(e);
         });
@@ -226,6 +235,63 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
                 .IsUnique();
             ApplyScope(e);
         });
+
+        // ---------------- cvm ----------------
+        b.Entity<ApplicationCvmSettings>(e =>
+        {
+            e.ToTable("cvm_settings", "cvm");
+            e.HasKey(x => x.ApplicationId);
+            e.Property(x => x.CvmStatus).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.HighValueNetSpendThreshold).HasPrecision(18, 4);
+            ApplyScope(e);
+        });
+
+        b.Entity<MemberValueProfile>(e =>
+        {
+            e.ToTable("member_value_profiles", "cvm");
+            e.HasKey(x => new { x.ApplicationId, x.MemberId });
+            e.Property(x => x.BaseCurrency).HasMaxLength(8).IsRequired();
+            e.Property(x => x.NetSpendAmount).HasPrecision(18, 4);
+            e.Property(x => x.LifecycleStage).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.Version).IsConcurrencyToken();
+            ApplyScope(e);
+        });
+
+        var segCondConverter = new ValueConverter<List<CampaignCondition>, string>(
+            v => JsonSerializer.Serialize(v, JsonOptionsProvider.Default),
+            v => JsonSerializer.Deserialize<List<CampaignCondition>>(v, JsonOptionsProvider.Default) ?? new());
+        var segCondComparer = new ValueComparer<List<CampaignCondition>>(
+            (a, c) => JsonSerializer.Serialize(a, JsonOptionsProvider.Default) == JsonSerializer.Serialize(c, JsonOptionsProvider.Default),
+            v => JsonSerializer.Serialize(v, JsonOptionsProvider.Default).GetHashCode(),
+            v => JsonSerializer.Deserialize<List<CampaignCondition>>(JsonSerializer.Serialize(v, JsonOptionsProvider.Default), JsonOptionsProvider.Default)!);
+
+        b.Entity<SegmentDefinition>(e =>
+        {
+            e.ToTable("segment_definitions", "cvm");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(200);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            e.HasIndex(x => new { x.ApplicationId, x.Name }).IsUnique();
+            ApplyScope(e);
+        });
+
+        b.Entity<SegmentVersion>(e =>
+        {
+            e.ToTable("segment_versions", "cvm");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Conditions).HasConversion(segCondConverter, segCondComparer).HasColumnType("jsonb");
+            e.HasIndex(x => new { x.ApplicationId, x.SegmentId, x.Version }).IsUnique();
+            ApplyScope(e);
+        });
+
+        b.Entity<MemberSegmentMembership>(e =>
+        {
+            e.ToTable("member_segment_memberships", "cvm");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.SegmentId, x.IsActive });
+            ApplyScope(e);
+        });
     }
 
     /// <summary>Apply the self+descendants global query filter to an IApplicationScoped entity.</summary>
@@ -234,4 +300,13 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     {
         e.HasQueryFilter(x => ScopeBypassed || ScopeVisibleApplicationIds.Contains(x.ApplicationId));
     }
+
+    private static ValueConverter<List<T>, string> JsonListConverter<T>() => new(
+        v => JsonSerializer.Serialize(v, JsonOptionsProvider.Default),
+        v => JsonSerializer.Deserialize<List<T>>(v, JsonOptionsProvider.Default) ?? new());
+
+    private static ValueComparer<List<T>> JsonListComparer<T>() => new(
+        (a, c) => JsonSerializer.Serialize(a, JsonOptionsProvider.Default) == JsonSerializer.Serialize(c, JsonOptionsProvider.Default),
+        v => JsonSerializer.Serialize(v, JsonOptionsProvider.Default).GetHashCode(),
+        v => JsonSerializer.Deserialize<List<T>>(JsonSerializer.Serialize(v, JsonOptionsProvider.Default), JsonOptionsProvider.Default)!);
 }

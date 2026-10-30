@@ -8,6 +8,7 @@ const links = [
   { href: "/", key: "connect" },
   { href: "/applications", key: "applications" },
   { href: "/campaigns", key: "campaigns" },
+  { href: "/segments", key: "segments" },
   { href: "/members", key: "members" },
   { href: "/events", key: "events" },
 ];

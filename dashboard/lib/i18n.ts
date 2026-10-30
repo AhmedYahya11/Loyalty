@@ -42,6 +42,18 @@ export const t: Dict = {
   spendPerPoint: { en: "Spend per point", ar: "الإنفاق لكل نقطة" },
   loyaltySettings: { en: "Loyalty settings", ar: "إعدادات الولاء" },
   saved: { en: "Saved", ar: "تم الحفظ" },
+  segments: { en: "Segments", ar: "الشرائح" },
+  valueProfile: { en: "Value profile", ar: "ملف القيمة" },
+  lifecycleStage: { en: "Lifecycle stage", ar: "مرحلة دورة الحياة" },
+  purchaseCount: { en: "Purchases", ar: "عدد المشتريات" },
+  netSpend: { en: "Net spend", ar: "صافي الإنفاق" },
+  pointsEarned: { en: "Points earned", ar: "النقاط المكتسبة" },
+  activeSegments: { en: "Active segments", ar: "الشرائح الفعّالة" },
+  field: { en: "Field", ar: "الحقل" },
+  operator: { en: "Operator", ar: "العامل" },
+  value: { en: "Value", ar: "القيمة" },
+  validate: { en: "Validate", ar: "تحقّق" },
+  cvmSettings: { en: "CVM settings", ar: "إعدادات إدارة قيمة العميل" },
 };
 
 export function tr(key: string, lang: Lang): string {

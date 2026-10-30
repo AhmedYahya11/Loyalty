@@ -8,12 +8,16 @@ namespace Loyalty.Core.Modules.Campaigns.Application;
 public sealed record CreateCampaignInput(
     string Name, string? NameAr, string TriggerEventType, int MinimumEventVersion,
     DateTimeOffset? StartsAtUtc, DateTimeOffset? EndsAtUtc, int Priority, StackingPolicy StackingPolicy,
-    IReadOnlyList<CampaignCondition> Conditions, IReadOnlyList<CampaignEffect> Effects);
+    IReadOnlyList<CampaignCondition> Conditions, IReadOnlyList<CampaignEffect> Effects,
+    IReadOnlyList<string>? RequiredLifecycleStages = null,
+    IReadOnlyList<Guid>? RequiredSegmentIds = null,
+    IReadOnlyList<Guid>? ExcludedSegmentIds = null);
 
 public sealed record CampaignView(
     Guid Id, Guid ApplicationId, string Name, string? NameAr, string TriggerEventType, int MinimumEventVersion,
     int Priority, string StackingPolicy, string Status, int Version,
-    IReadOnlyList<CampaignCondition> Conditions, IReadOnlyList<CampaignEffect> Effects);
+    IReadOnlyList<CampaignCondition> Conditions, IReadOnlyList<CampaignEffect> Effects,
+    IReadOnlyList<string> RequiredLifecycleStages, IReadOnlyList<Guid> RequiredSegmentIds, IReadOnlyList<Guid> ExcludedSegmentIds);
 
 public sealed class CampaignService(LoyaltyDbContext db, ApplicationContext scope, IClock clock)
 {
@@ -25,7 +29,8 @@ public sealed class CampaignService(LoyaltyDbContext db, ApplicationContext scop
 
         var c = Campaign.Create(Guid.NewGuid(), scope.ApplicationId, input.Name, input.NameAr, input.TriggerEventType,
             input.MinimumEventVersion <= 0 ? 1 : input.MinimumEventVersion, input.StartsAtUtc, input.EndsAtUtc,
-            input.Priority, input.StackingPolicy, input.Conditions, input.Effects, clock.UtcNow);
+            input.Priority, input.StackingPolicy, input.Conditions, input.Effects,
+            input.RequiredLifecycleStages, input.RequiredSegmentIds, input.ExcludedSegmentIds, clock.UtcNow);
         db.Campaigns.Add(c);
         await db.SaveChangesAsync(ct);
         return ToView(c);
@@ -60,5 +65,6 @@ public sealed class CampaignService(LoyaltyDbContext db, ApplicationContext scop
 
     private static CampaignView ToView(Campaign c) =>
         new(c.Id, c.ApplicationId, c.Name, c.NameAr, c.TriggerEventType, c.MinimumEventVersion, c.Priority,
-            c.StackingPolicy.ToString(), c.Status.ToString(), c.Version, c.Conditions, c.Effects);
+            c.StackingPolicy.ToString(), c.Status.ToString(), c.Version, c.Conditions, c.Effects,
+            c.RequiredLifecycleStages, c.RequiredSegmentIds, c.ExcludedSegmentIds);
 }

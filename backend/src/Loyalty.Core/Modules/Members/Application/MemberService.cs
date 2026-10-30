@@ -29,7 +29,7 @@ public sealed class MemberService(
         var effective = await settings.ResolveEffectiveAsync(scope.ApplicationId, ct)
             ?? throw new LoyaltyException(LoyaltyError.LoyaltyNotConfigured());
 
-        var (member, _) = await provisioning.EnsureAsync(scope.ApplicationId, externalCustomerId, effective.PointsUnitCode, ct);
+        var (member, _) = await provisioning.EnsureAsync(scope.ApplicationId, externalCustomerId, effective.PointsUnitCode, effective.BaseCurrency, ct);
         await db.SaveChangesAsync(ct);
         return (await GetAsync(member.Id, ct))!;
     }
@@ -46,6 +46,51 @@ public sealed class MemberService(
     {
         var m = await db.Members.FirstOrDefaultAsync(x => x.ExternalCustomerId == externalCustomerId, ct);
         return m is null ? null : await GetAsync(m.Id, ct);
+    }
+
+    public async Task<object?> GetValueProfileAsync(Guid memberId, CancellationToken ct)
+    {
+        var m = await db.Members.FirstOrDefaultAsync(x => x.Id == memberId, ct);
+        if (m is null) return null;
+        var p = await db.ValueProfiles.FirstOrDefaultAsync(x => x.MemberId == memberId, ct);
+        if (p is null) return null;
+
+        var segs = await (
+            from ms in db.SegmentMemberships
+            join s in db.Segments on ms.SegmentId equals s.Id
+            where ms.MemberId == memberId && ms.IsActive
+            select new { segmentId = s.Id, name = s.Name, nameAr = s.NameAr, segmentVersion = ms.SegmentVersion }).ToListAsync(ct);
+
+        return new
+        {
+            memberId = p.MemberId,
+            lifecycleStage = p.LifecycleStage.ToString(),
+            p.FirstActivityAt,
+            p.LastActivityAt,
+            p.LastPurchaseAt,
+            p.PurchaseCount,
+            p.NetSpendAmount,
+            p.BaseCurrency,
+            p.LoginCount,
+            p.ReferralCount,
+            p.PointsEarned,
+            p.PointsRedeemed,
+            p.PointsExpired,
+            profileVersion = p.Version,
+            activeSegments = segs,
+        };
+    }
+
+    public async Task<object?> GetSegmentsAsync(Guid memberId, CancellationToken ct)
+    {
+        var m = await db.Members.FirstOrDefaultAsync(x => x.Id == memberId, ct);
+        if (m is null) return null;
+        var segs = await (
+            from ms in db.SegmentMemberships
+            join s in db.Segments on ms.SegmentId equals s.Id
+            where ms.MemberId == memberId && ms.IsActive
+            select new { segmentId = s.Id, name = s.Name, nameAr = s.NameAr, segmentVersion = ms.SegmentVersion, ms.EnteredAt }).ToListAsync(ct);
+        return new { items = segs };
     }
 
     public async Task<WalletView?> GetWalletAsync(Guid memberId, CancellationToken ct)

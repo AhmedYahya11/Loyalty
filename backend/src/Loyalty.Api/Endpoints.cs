@@ -69,6 +69,14 @@ public static class Endpoints
         apps.MapDelete("/{appId:guid}/loyalty-settings", async (Guid appId, LoyaltySettingsService svc, CancellationToken ct) =>
             await svc.DeleteAsync(appId, ct) ? Results.NoContent() : Results.NotFound());
 
+        // ---------- CVM settings ----------
+        apps.MapPut("/{appId:guid}/cvm-settings", async (Guid appId, Loyalty.Core.Modules.Cvm.Domain.CvmFields req, Loyalty.Core.Modules.Cvm.Application.CvmSettingsService svc, CancellationToken ct) =>
+            Results.Ok(await svc.PutAsync(appId, req, ct)));
+        apps.MapGet("/{appId:guid}/cvm-settings", async (Guid appId, Loyalty.Core.Modules.Cvm.Application.CvmSettingsService svc, CancellationToken ct) =>
+            await svc.GetEffectiveAsync(appId, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        apps.MapDelete("/{appId:guid}/cvm-settings", async (Guid appId, Loyalty.Core.Modules.Cvm.Application.CvmSettingsService svc, CancellationToken ct) =>
+            await svc.DeleteAsync(appId, ct) ? Results.NoContent() : Results.NotFound());
+
         // ---------- members + wallet ----------
         var members = v1.MapGroup("/members");
         members.MapPost("", async (CreateMemberRequest req, MemberService svc, CancellationToken ct) =>
@@ -77,6 +85,10 @@ public static class Endpoints
             await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         members.MapGet("/by-external-id/{externalId}", async (string externalId, MemberService svc, CancellationToken ct) =>
             await svc.GetByExternalIdAsync(externalId, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        members.MapGet("/{id:guid}/value-profile", async (Guid id, MemberService svc, CancellationToken ct) =>
+            await svc.GetValueProfileAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        members.MapGet("/{id:guid}/segments", async (Guid id, MemberService svc, CancellationToken ct) =>
+            await svc.GetSegmentsAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         members.MapGet("/{id:guid}/wallet", async (Guid id, MemberService svc, CancellationToken ct) =>
             await svc.GetWalletAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         members.MapGet("/{id:guid}/wallet/transactions", async (Guid id, MemberService svc, CancellationToken ct) =>
@@ -94,6 +106,20 @@ public static class Endpoints
         campaigns.MapPost("/{id:guid}/pause", async (Guid id, CampaignService svc, CancellationToken ct) =>
             await svc.PauseAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
 
+        // ---------- segments (CVM) ----------
+        var segments = v1.MapGroup("/segments");
+        segments.MapPost("", async (Loyalty.Core.Modules.Cvm.Application.CreateSegmentInput req, Loyalty.Core.Modules.Cvm.Application.SegmentService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(req, ct), statusCode: 201));
+        segments.MapGet("", async (Loyalty.Core.Modules.Cvm.Application.SegmentService svc, CancellationToken ct) => Results.Ok(await svc.ListAsync(ct)));
+        segments.MapGet("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Cvm.Application.SegmentService svc, CancellationToken ct) =>
+            await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        segments.MapPost("/{id:guid}/validate", async (Guid id, Loyalty.Core.Modules.Cvm.Application.SegmentService svc, CancellationToken ct) =>
+            await svc.ValidateAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        segments.MapPost("/{id:guid}/activate", async (Guid id, Loyalty.Core.Modules.Cvm.Application.SegmentService svc, CancellationToken ct) =>
+            await svc.ActivateAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        segments.MapPost("/{id:guid}/pause", async (Guid id, Loyalty.Core.Modules.Cvm.Application.SegmentService svc, CancellationToken ct) =>
+            await svc.PauseAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+
         // ---------- events + request status ----------
         v1.MapPost("/events", async (LoyaltyEventEnvelopeV1 envelope, [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
             EventIngestionService svc, CancellationToken ct) =>
@@ -104,5 +130,9 @@ public static class Endpoints
         });
         v1.MapGet("/requests/{id:guid}", async (Guid id, EventIngestionService svc, CancellationToken ct) =>
             await svc.GetRequestStatusAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+
+        // ---------- admin: trigger the lifecycle inactivity sweep on demand ----------
+        v1.MapPost("/admin/lifecycle-sweep", async (Loyalty.Core.Modules.Cvm.Application.LifecycleSweepService svc, CancellationToken ct) =>
+            Results.Ok(new { transitions = await svc.RunAsync(ct) }));
     }
 }

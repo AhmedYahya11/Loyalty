@@ -10,14 +10,14 @@ namespace Loyalty.Tests.Unit;
 public class RewardDecisionTests
 {
     private static NormalizedEvent Purchase(decimal amount, Dictionary<string, object?>? facts = null) =>
-        new("PurchaseCompleted", 1, "sys|order-1", amount, "IQD",
+        new("PurchaseCompleted", 1, "sys|order-1", amount, "IQD", null,
             facts ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase) { ["amount"] = amount });
 
     private static Campaign Campaign(IEnumerable<CampaignCondition> conds, IEnumerable<CampaignEffect> effects, StackingPolicy stacking = StackingPolicy.Stackable, int priority = 100)
     {
         var c = Loyalty.Core.Modules.Campaigns.Domain.Campaign.Create(
             Guid.NewGuid(), Guid.NewGuid(), "c", null, "PurchaseCompleted", 1, null, null, priority, stacking,
-            conds, effects, DateTimeOffset.UtcNow);
+            conds, effects, null, null, null, DateTimeOffset.UtcNow);
         c.Activate(DateTimeOffset.UtcNow);
         return c;
     }

@@ -247,3 +247,21 @@ emitter template themselves).
 ## Status
 **P1–P12 complete — 62 tests green.** Generic multi-tenant core (P1–P6) + chaay-style product
 expansion (P7–P12). Messaging/omnichannel hub intentionally out of scope.
+
+- **P13** Promotions depth — points/credit **expiry engine** + **stamp-card conditions & validity**. ✅ DONE
+
+### P13 notes
+- **Points expiry**: `ApplicationLoyaltySettings.PointsExpiryDays` (0 = never). `PointsExpiryService`
+  (daily `PointsExpiryJob` + `POST /admin/expire-points?asOf=`) expires, per wallet, the Earn lots
+  older than `now − PointsExpiryDays`, **FIFO**: `expire = min(oldEarned − (redeemed+reversed+priorExpired), activeBalance)`.
+  So recent points, reserved (mid-redemption) points, and already-redeemed points are never expired;
+  posts a real `Expire` ledger tx (active → expiration clearing), bumps `PointsExpired`, emits
+  `PointsExpiredV1`. Idempotent — a re-run sees the new Expire in "consumed" and computes 0.
+  Simplification: manual positive adjustments aren't treated as expirable (they inflate active but
+  aren't Earn lots); the `min(…, activeBalance)` cap keeps everything consistent.
+- **Stamp-card conditions + validity**: `StampCard` gained `Conditions` (reuses `CampaignCondition`
+  + `ILoyaltyRuleEvaluator`) and `StartsAtUtc/EndsAtUtc`. A qualifying event now earns a stamp only
+  when the card's window is open **and** its attribute conditions match the event facts (e.g.
+  `attributes.service Equals "laser"`) — so "complete 10 *laser* sessions" is expressible.
+- **Deferred**: still not stamp/challenge *reversal* on refund (points reverse; stamps don't), and
+  promotion-level performance reporting (both noted for a later P14).

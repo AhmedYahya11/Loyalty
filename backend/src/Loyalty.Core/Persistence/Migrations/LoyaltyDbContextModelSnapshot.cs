@@ -688,12 +688,19 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.Property<Guid>("ApplicationId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Conditions")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("EndsAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -712,6 +719,9 @@ namespace Loyalty.Core.Persistence.Migrations
 
                     b.Property<int>("StampsRequired")
                         .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("StartsAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TriggerEventType")
                         .IsRequired()
@@ -1391,6 +1401,9 @@ namespace Loyalty.Core.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
+
+                    b.Property<int>("PointsExpiryDays")
+                        .HasColumnType("integer");
 
                     b.Property<string>("PointsUnitCode")
                         .IsRequired()

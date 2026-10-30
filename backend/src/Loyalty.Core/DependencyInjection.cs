@@ -51,6 +51,8 @@ public static class DependencyInjection
         services.AddScoped<Modules.Cvm.Application.RfmService>();
         services.AddHostedService<Modules.Cvm.Application.RfmJob>();
         services.AddScoped<LedgerService>();
+        services.AddScoped<PointsExpiryService>();
+        services.AddHostedService<PointsExpiryJob>();
         services.AddScoped<ReconciliationService>();
         services.AddScoped<MemberProvisioningService>();
         services.AddScoped<MemberService>();

@@ -117,7 +117,13 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
   and **trilingual EN/AR/KU** — Kurdish (Sorani, RTL) across the dashboard, customer app, and API
   error messages (ku→ar script fallback)
 
-The core platform (P1–P6) is complete and generic/multi-tenant. P7–P12 are a **chaay.io-style** SMB
+- **P13** **Promotions depth**: **points/store-credit expiry engine** (per-tenant `PointsExpiryDays`,
+  FIFO — oldest unspent points expire, recent + reserved + redeemed are protected; daily job +
+  `/admin/expire-points` + `PointsExpiredV1`), and **stamp-card conditions + validity** (count only
+  events matching attribute conditions, e.g. one service/category, within an optional date window —
+  reuses the campaign condition model + rule evaluator)
+
+The core platform (P1–P6) is complete and generic/multi-tenant. P7–P13 are a **chaay.io-style** SMB
 product expansion (loyalty features; messaging hub out of scope): **Tiers ✅**, **Rewards &
 Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, **Customer-facing
-app ✅**, **RFM personas + Kurdish ✅**. **62 tests green.**
+app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**. **65 tests green.**

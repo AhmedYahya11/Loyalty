@@ -14,6 +14,7 @@ export default function CampaignsPage() {
   const [apps, setApps] = useState<App[]>([]);
   const [appId, setAppId] = useState("");
   const [spend, setSpend] = useState("1000");
+  const [expiryDays, setExpiryDays] = useState("0");
   const [settingsMsg, setSettingsMsg] = useState("");
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -40,10 +41,16 @@ export default function CampaignsPage() {
     try {
       await api.put(`/api/v1/applications/${appId}/loyalty-settings`, {
         pointsUnitCode: "POINT", baseCurrency: "IQD", spendAmountPerPoint: Number(spend),
-        roundingPolicy: "Floor", loyaltyStatus: "Active",
+        roundingPolicy: "Floor", loyaltyStatus: "Active", pointsExpiryDays: Number(expiryDays) || 0,
       });
       setSettingsMsg(tr("saved", lang));
     } catch (e) { setErr((e as Error).message); }
+  };
+
+  const expireNow = async () => {
+    setSettingsMsg(""); setErr("");
+    try { const r = await api.post<{ expired: number }>("/api/v1/admin/expire-points", {}); setSettingsMsg(`⌛ ${r.expired}`); }
+    catch (e) { setErr((e as Error).message); }
   };
 
   const createCampaign = async () => {
@@ -98,8 +105,12 @@ export default function CampaignsPage() {
             </select>
           </div>
           <div><label>{tr("spendPerPoint", lang)} (IQD)</label><input value={spend} onChange={(e) => setSpend(e.target.value)} /></div>
+          <div><label>{tr("pointsExpiryDays", lang)}</label><input value={expiryDays} onChange={(e) => setExpiryDays(e.target.value)} /></div>
         </div>
-        <button onClick={saveSettings} disabled={!appId}>{tr("save", lang)}</button>
+        <div className="row">
+          <button onClick={saveSettings} disabled={!appId}>{tr("save", lang)}</button>
+          <button className="secondary" onClick={expireNow}>{tr("expirePoints", lang)}</button>
+        </div>
         {settingsMsg && <div className="ok-msg">{settingsMsg}</div>}
       </div>
 

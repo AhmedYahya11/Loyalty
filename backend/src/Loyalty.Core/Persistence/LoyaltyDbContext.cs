@@ -452,6 +452,9 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.Property(x => x.NameAr).HasMaxLength(100);
             e.Property(x => x.Description).HasMaxLength(500);
             e.Property(x => x.TriggerEventType).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Conditions)
+                .HasConversion(JsonListConverter<Modules.Campaigns.Domain.CampaignCondition>(), JsonListComparer<Modules.Campaigns.Domain.CampaignCondition>())
+                .HasColumnType("jsonb");
             e.HasIndex(x => new { x.ApplicationId, x.IsActive });
             ApplyScope(e);
         });

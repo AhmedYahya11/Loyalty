@@ -269,6 +269,10 @@ public static class Endpoints
         v1.MapPost("/admin/lifecycle-sweep", async (Loyalty.Core.Modules.Cvm.Application.LifecycleSweepService svc, CancellationToken ct) =>
             Results.Ok(new { transitions = await svc.RunAsync(ct) }));
 
+        // ---------- points expiry (P13): recompute on demand ----------
+        v1.MapPost("/admin/expire-points", async (string? asOf, Loyalty.Core.Modules.Wallets.Application.PointsExpiryService svc, CancellationToken ct) =>
+            Results.Ok(new { expired = asOf is not null && DateTimeOffset.TryParse(asOf, out var d) ? await svc.RunForAsync(d, ct) : await svc.RunAsync(ct) }));
+
         // ---------- RFM personas (P12): recompute + distribution ----------
         v1.MapPost("/admin/rfm-recompute", async (Loyalty.Core.Modules.Cvm.Application.RfmService svc, CancellationToken ct) =>
             Results.Ok(new { scored = await svc.RunAsync(ct) }));

@@ -15,6 +15,7 @@ export default function EngagementPage() {
   const [cards, setCards] = useState<StampCard[]>([]);
   // stamp-card form
   const [cName, setCName] = useState(""); const [cReq, setCReq] = useState("10"); const [cPts, setCPts] = useState("100");
+  const [cService, setCService] = useState("");
   const [msg, setMsg] = useState(""); const [err, setErr] = useState("");
 
   const loadAll = async () => {
@@ -34,7 +35,13 @@ export default function EngagementPage() {
   };
   const addCard = async () => {
     setErr("");
-    try { await api.post("/api/v1/stamp-cards", { name: cName, stampsRequired: Number(cReq), rewardPoints: Number(cPts), triggerEventType: "PurchaseCompleted" }); setCName(""); await loadAll(); }
+    try {
+      await api.post("/api/v1/stamp-cards", {
+        name: cName, stampsRequired: Number(cReq), rewardPoints: Number(cPts), triggerEventType: "PurchaseCompleted",
+        conditions: cService.trim() ? [{ field: "attributes.service", operator: "Equals", value: cService.trim() }] : [],
+      });
+      setCName(""); setCService(""); await loadAll();
+    }
     catch (e) { setErr((e as Error).message); }
   };
   const delCard = async (id: string) => { try { await api.del(`/api/v1/stamp-cards/${id}`); await loadAll(); } catch (e) { setErr((e as Error).message); } };
@@ -81,6 +88,7 @@ export default function EngagementPage() {
           <div><label>{tr("name", lang)}</label><input value={cName} onChange={(e) => setCName(e.target.value)} placeholder="Buy 10 get bonus" /></div>
           <div><label>{tr("stampsRequired", lang)}</label><input value={cReq} onChange={(e) => setCReq(e.target.value)} /></div>
           <div><label>{tr("rewardPoints", lang)}</label><input value={cPts} onChange={(e) => setCPts(e.target.value)} /></div>
+          <div><label>{tr("serviceCategory", lang)}</label><input value={cService} onChange={(e) => setCService(e.target.value)} placeholder="laser" /></div>
           <button onClick={addCard}>{tr("create", lang)}</button>
         </div>
       </div>

@@ -209,7 +209,7 @@ public sealed class ProcessLoyaltyEventHandler
         if (totalAwarded > 0) profile.AddPointsEarned(totalAwarded);
 
         // stamp cards: add a stamp for qualifying events; award + reset when a card fills (P10)
-        var stamp = await stampCards.EvaluateAsync(wallet, member, profile, envelope.EventType,
+        var stamp = await stampCards.EvaluateAsync(wallet, member, profile, normalized,
             envelope.EventId, request.SourceSystem, envelope.SourceTransactionId, normalized.BusinessEventKey, envelope.CorrelationId,
             envelope.OccurredAt, now, ct);
 

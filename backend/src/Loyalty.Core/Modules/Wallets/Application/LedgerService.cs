@@ -164,6 +164,24 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
         return tx;
     }
 
+    /// <summary>Expire points: debit member active, credit expiration clearing (active −n) — §13, P13.</summary>
+    public async Task<PointsLedgerTransaction> PostExpireAsync(
+        Wallet wallet, long points, Guid sourceEventId, string sourceSystem, string sourceTransactionId,
+        string businessEventKey, string correlationId, string effectId, DateTimeOffset occurredAt, CancellationToken ct)
+    {
+        if (points <= 0) throw new InvalidOperationException("Expire points must be positive.");
+        var active = await MemberBucketAccountIdAsync(wallet.ApplicationId, wallet.Id, BalanceBucket.Active, ct);
+        var expiration = await ClearingAccountIdAsync(wallet.ApplicationId, LedgerAccountType.ExpirationClearing, wallet.PointsUnitCode, ct);
+        var legs = new List<LedgerLeg> { new(active, points, 0), new(expiration, 0, points) };
+        var tx = PointsLedgerTransaction.Create(
+            Guid.NewGuid(), wallet.ApplicationId, wallet.Id, TransactionType.Expire, wallet.PointsUnitCode,
+            sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
+            campaignId: null, ruleId: null, effectId, reversalOf: null, occurredAt, clock.UtcNow, legs);
+        db.LedgerTransactions.Add(tx);
+        wallet.ApplyDelta(active: -points, pending: 0, reserved: 0);
+        return tx;
+    }
+
     /// <summary>
     /// Reverse an Earn: debit member active / credit issuance clearing by the original credit
     /// amount, reducing active balance. References the original via ReversalOfTransactionId (§13).

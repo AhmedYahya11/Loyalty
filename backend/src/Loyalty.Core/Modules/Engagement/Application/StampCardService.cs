@@ -1,9 +1,12 @@
 using System.Text.Json;
 using Loyalty.Core.BuildingBlocks;
+using Loyalty.Core.Modules.Campaigns.Domain;
 using Loyalty.Core.Modules.Cvm.Domain;
 using Loyalty.Core.Modules.Engagement.Domain;
+using Loyalty.Core.Modules.Integration.Domain;
 using Loyalty.Core.Modules.Members.Domain;
 using Loyalty.Core.Modules.Notifications.Domain;
+using Loyalty.Core.Modules.Rules;
 using Loyalty.Core.Modules.Wallets.Application;
 using Loyalty.Core.Modules.Wallets.Domain;
 using Loyalty.Core.Persistence;
@@ -11,9 +14,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Loyalty.Core.Modules.Engagement.Application;
 
-public sealed record CreateStampCardInput(string Name, string? NameAr, string? Description, string? TriggerEventType, int StampsRequired, long RewardPoints);
-public sealed record UpdateStampCardInput(string Name, string? NameAr, string? Description, string? TriggerEventType, int StampsRequired, long RewardPoints, bool IsActive);
-public sealed record StampCardView(Guid Id, string Name, string? NameAr, string? Description, string TriggerEventType, int StampsRequired, long RewardPoints, bool IsActive);
+public sealed record CreateStampCardInput(string Name, string? NameAr, string? Description, string? TriggerEventType, int StampsRequired, long RewardPoints, List<CampaignCondition>? Conditions = null, DateTimeOffset? StartsAtUtc = null, DateTimeOffset? EndsAtUtc = null);
+public sealed record UpdateStampCardInput(string Name, string? NameAr, string? Description, string? TriggerEventType, int StampsRequired, long RewardPoints, bool IsActive, List<CampaignCondition>? Conditions = null, DateTimeOffset? StartsAtUtc = null, DateTimeOffset? EndsAtUtc = null);
+public sealed record StampCardView(Guid Id, string Name, string? NameAr, string? Description, string TriggerEventType, int StampsRequired, long RewardPoints, bool IsActive, IReadOnlyList<CampaignCondition> Conditions, DateTimeOffset? StartsAtUtc, DateTimeOffset? EndsAtUtc);
 public sealed record StampCardResult(long Bonus, int Completed);
 
 /// <summary>
@@ -22,11 +25,11 @@ public sealed record StampCardResult(long Bonus, int Completed);
 /// and when a card fills it awards the reward points through the ledger and resets (keeping the
 /// remainder). Operates on tracked entities in the worker's transaction; does not commit.
 /// </summary>
-public sealed class StampCardService(LoyaltyDbContext db, ApplicationContext scope, LedgerService ledger, IClock clock)
+public sealed class StampCardService(LoyaltyDbContext db, ApplicationContext scope, LedgerService ledger, ILoyaltyRuleEvaluator evaluator, IClock clock)
 {
     public async Task<StampCardView> CreateAsync(CreateStampCardInput i, CancellationToken ct)
     {
-        var c = StampCard.Create(scope.ApplicationId, i.Name, i.NameAr, i.Description, i.TriggerEventType, i.StampsRequired, i.RewardPoints, clock.UtcNow);
+        var c = StampCard.Create(scope.ApplicationId, i.Name, i.NameAr, i.Description, i.TriggerEventType, i.StampsRequired, i.RewardPoints, clock.UtcNow, i.Conditions, i.StartsAtUtc, i.EndsAtUtc);
         db.StampCards.Add(c);
         await db.SaveChangesAsync(ct);
         return ToView(c);
@@ -36,7 +39,7 @@ public sealed class StampCardService(LoyaltyDbContext db, ApplicationContext sco
     {
         var c = await db.StampCards.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (c is null) return null;
-        c.Update(i.Name, i.NameAr, i.Description, i.TriggerEventType, i.StampsRequired, i.RewardPoints, i.IsActive, clock.UtcNow);
+        c.Update(i.Name, i.NameAr, i.Description, i.TriggerEventType, i.StampsRequired, i.RewardPoints, i.IsActive, clock.UtcNow, i.Conditions, i.StartsAtUtc, i.EndsAtUtc);
         await db.SaveChangesAsync(ct);
         return ToView(c);
     }
@@ -64,13 +67,15 @@ public sealed class StampCardService(LoyaltyDbContext db, ApplicationContext sco
         ).ToListAsync(ct);
 
     public async Task<StampCardResult> EvaluateAsync(
-        Wallet wallet, Member member, MemberValueProfile profile, string eventType,
+        Wallet wallet, Member member, MemberValueProfile profile, NormalizedEvent normalized,
         Guid sourceEventId, string sourceSystem, string sourceTransactionId, string businessEventKey, string correlationId,
         DateTimeOffset occurredAt, DateTimeOffset now, CancellationToken ct)
     {
         var cards = await db.StampCards
-            .Where(c => c.ApplicationId == member.ApplicationId && c.IsActive && c.TriggerEventType == eventType)
+            .Where(c => c.ApplicationId == member.ApplicationId && c.IsActive && c.TriggerEventType == normalized.EventType)
             .ToListAsync(ct);
+        // P13: only cards whose validity window is open AND whose attribute conditions match this event
+        cards = cards.Where(c => c.IsScheduleOpen(occurredAt) && evaluator.Evaluate(c.Conditions, normalized.Facts).Matched).ToList();
         if (cards.Count == 0) return new StampCardResult(0, 0);
 
         long bonus = 0; var completed = 0;
@@ -107,5 +112,5 @@ public sealed class StampCardService(LoyaltyDbContext db, ApplicationContext sco
     }
 
     private static StampCardView ToView(StampCard c) =>
-        new(c.Id, c.Name, c.NameAr, c.Description, c.TriggerEventType, c.StampsRequired, c.RewardPoints, c.IsActive);
+        new(c.Id, c.Name, c.NameAr, c.Description, c.TriggerEventType, c.StampsRequired, c.RewardPoints, c.IsActive, c.Conditions, c.StartsAtUtc, c.EndsAtUtc);
 }

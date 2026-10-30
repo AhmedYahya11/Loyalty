@@ -165,6 +165,11 @@ export const t: Dict = {
   color: { en: "Color", ar: "اللون", ku: "ڕەنگ" },
   days: { en: "Days", ar: "الأيام", ku: "ڕۆژەکان" },
   parentId: { en: "Parent ID", ar: "معرّف الأصل", ku: "ناسنامەی باوان" },
+  pointsExpiryDays: { en: "Points expiry (days, 0 = never)", ar: "انتهاء صلاحية النقاط (أيام، 0 = أبدًا)", ku: "بەسەرچوونی خاڵ (ڕۆژ، 0 = هەرگیز)" },
+  expirePoints: { en: "Expire stale points", ar: "إنهاء صلاحية النقاط القديمة", ku: "بەسەرچوونی خاڵە کۆنەکان" },
+  serviceCategory: { en: "Service / category (optional)", ar: "الخدمة / الفئة (اختياري)", ku: "خزمەتگوزاری / پۆل (ئارەزوومەندانە)" },
+  validFrom: { en: "Valid from", ar: "صالح من", ku: "لە بەرواری" },
+  validTo: { en: "Valid to", ar: "صالح حتى", ku: "تا بەرواری" },
 };
 
 export function tr(key: string, lang: Lang): string {

@@ -11,6 +11,7 @@ const links = [
   { href: "/campaigns", key: "campaigns" },
   { href: "/segments", key: "segments" },
   { href: "/tiers", key: "tiers" },
+  { href: "/rewards", key: "rewards" },
   { href: "/members", key: "members" },
   { href: "/events", key: "events" },
   { href: "/notifications", key: "notifications" },

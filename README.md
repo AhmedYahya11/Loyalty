@@ -103,7 +103,9 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
 - **P7** membership **Tiers** (Bronze→Platinum): auto-progression from spend/points/visits,
   earn-multiplier benefits, tier-change events, tier analytics + dashboard page
 
+- **P8** **Rewards & Redemptions**: reward catalog, redeem points, **QR coupons**, reserve→confirm→cancel
+
 The core platform (P1–P6) is complete and generic/multi-tenant. P7+ is a product expansion toward
-**chaay.io-style** SMB loyalty (loyalty features; messaging hub out of scope): **Tiers ✅**, then
-Rewards & Redemptions (QR coupons), Gamification, Referrals/Stamp cards, a customer-facing app, and
-RFM personas. **47 tests green.**
+**chaay.io-style** SMB loyalty (loyalty features; messaging hub out of scope): **Tiers ✅**,
+**Rewards & Redemptions ✅**, then Gamification, Referrals/Stamp cards, a customer-facing app, and
+RFM personas. **49 tests green.**

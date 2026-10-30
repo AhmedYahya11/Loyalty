@@ -10,6 +10,9 @@ public static class ResultEventTypes
     public const string MemberLifecycleChanged = "MemberLifecycleChangedV1";
     public const string MemberTierChanged = "MemberTierChangedV1";
     public const string PointsAdjusted = "PointsAdjustedV1";
+    public const string RedemptionReserved = "RedemptionReservedV1";
+    public const string PointsRedeemed = "PointsRedeemedV1";
+    public const string RedemptionCancelled = "RedemptionCancelledV1";
 }
 
 /// <summary>

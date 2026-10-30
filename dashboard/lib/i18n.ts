@@ -77,6 +77,16 @@ export const t: Dict = {
   threshold: { en: "Threshold", ar: "الحد" },
   multiplier: { en: "Earn ×", ar: "مضاعف الكسب" },
   tierDistribution: { en: "Tier distribution", ar: "توزيع المستويات" },
+  rewards: { en: "Rewards", ar: "المكافآت" },
+  pointsCost: { en: "Points cost", ar: "تكلفة النقاط" },
+  rewardType: { en: "Type", ar: "النوع" },
+  inventory: { en: "Inventory", ar: "المخزون" },
+  redeem: { en: "Redeem", ar: "استبدال" },
+  redemptions: { en: "Redemptions", ar: "عمليات الاستبدال" },
+  couponCode: { en: "Coupon code", ar: "رمز القسيمة" },
+  confirm: { en: "Confirm", ar: "تأكيد" },
+  cancel: { en: "Cancel", ar: "إلغاء" },
+  reserved: { en: "Reserved", ar: "محجوز" },
 };
 
 export function tr(key: string, lang: Lang): string {

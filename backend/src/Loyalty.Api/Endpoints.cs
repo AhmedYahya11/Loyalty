@@ -18,6 +18,8 @@ public sealed record CreateApplicationRequest(string Name, string? NameAr, Guid?
 public sealed record SetStatusRequest(bool IsActive);
 public sealed record CreateAccountRequest(string AccountName, DateTimeOffset? ExpiresAt);
 public sealed record CreateMemberRequest(string ExternalCustomerId);
+public sealed record RedeemRequest(Guid RewardId);
+public sealed record ConfirmByCodeRequest(string CouponCode);
 
 public static class Endpoints
 {
@@ -137,6 +139,33 @@ public static class Endpoints
             await svc.UpdateAsync(id, req, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         tiers.MapDelete("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Tiers.Application.TierService svc, CancellationToken ct) =>
             await svc.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+
+        // ---------- rewards catalog ----------
+        var rewards = v1.MapGroup("/rewards");
+        rewards.MapPost("", async (Loyalty.Core.Modules.Rewards.Application.CreateRewardInput req, Loyalty.Core.Modules.Rewards.Application.RewardService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(req, ct), statusCode: 201));
+        rewards.MapGet("", async (bool? activeOnly, Loyalty.Core.Modules.Rewards.Application.RewardService svc, CancellationToken ct) => Results.Ok(await svc.ListAsync(activeOnly ?? false, ct)));
+        rewards.MapGet("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Rewards.Application.RewardService svc, CancellationToken ct) =>
+            await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        rewards.MapPut("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Rewards.Application.UpdateRewardInput req, Loyalty.Core.Modules.Rewards.Application.RewardService svc, CancellationToken ct) =>
+            await svc.UpdateAsync(id, req, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        rewards.MapDelete("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Rewards.Application.RewardService svc, CancellationToken ct) =>
+            await svc.DeleteAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+
+        // ---------- redemptions (reserve → confirm → cancel) ----------
+        members.MapPost("/{id:guid}/redemptions", async (Guid id, RedeemRequest req, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
+            Results.Json(await svc.ReserveAsync(id, req.RewardId, ct), statusCode: 201));
+        members.MapGet("/{id:guid}/redemptions", async (Guid id, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
+            Results.Ok(new { items = await svc.ListMemberAsync(id, ct) }));
+        var redemptions = v1.MapGroup("/redemptions");
+        redemptions.MapGet("/by-code/{code}", async (string code, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
+            await svc.GetByCodeAsync(code, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        redemptions.MapPost("/{id:guid}/confirm", async (Guid id, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
+            await svc.ConfirmAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        redemptions.MapPost("/confirm-by-code", async (ConfirmByCodeRequest req, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
+            await svc.ConfirmByCodeAsync(req.CouponCode, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        redemptions.MapPost("/{id:guid}/cancel", async (Guid id, Loyalty.Core.Modules.Rewards.Application.RedemptionService svc, CancellationToken ct) =>
+            await svc.CancelAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
 
         // ---------- events + request status ----------
         v1.MapPost("/events", async (LoyaltyEventEnvelopeV1 envelope, [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,

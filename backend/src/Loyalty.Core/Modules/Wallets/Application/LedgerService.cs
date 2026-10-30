@@ -114,6 +114,56 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
         return tx;
     }
 
+    /// <summary>Reserve: debit member active, credit member reserved (active −n, reserved +n) — §13.</summary>
+    public Task<PointsLedgerTransaction> PostReserveAsync(
+        Wallet wallet, long points, Guid sourceEventId, string sourceSystem, string sourceTransactionId,
+        string businessEventKey, string correlationId, string effectId, DateTimeOffset occurredAt, CancellationToken ct) =>
+        PostBucketMoveAsync(wallet, points, TransactionType.Reserve, BalanceBucket.Active, BalanceBucket.Reserved,
+            activeDelta: -points, reservedDelta: points, sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId, effectId, occurredAt, ct);
+
+    /// <summary>Release: debit member reserved, credit member active (reserved −n, active +n) — §13.</summary>
+    public Task<PointsLedgerTransaction> PostReleaseAsync(
+        Wallet wallet, long points, Guid sourceEventId, string sourceSystem, string sourceTransactionId,
+        string businessEventKey, string correlationId, string effectId, DateTimeOffset occurredAt, CancellationToken ct) =>
+        PostBucketMoveAsync(wallet, points, TransactionType.Release, BalanceBucket.Reserved, BalanceBucket.Active,
+            activeDelta: points, reservedDelta: -points, sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId, effectId, occurredAt, ct);
+
+    private async Task<PointsLedgerTransaction> PostBucketMoveAsync(
+        Wallet wallet, long points, TransactionType type, BalanceBucket debitBucket, BalanceBucket creditBucket,
+        long activeDelta, long reservedDelta, Guid sourceEventId, string sourceSystem, string sourceTransactionId,
+        string businessEventKey, string correlationId, string effectId, DateTimeOffset occurredAt, CancellationToken ct)
+    {
+        if (points <= 0) throw new InvalidOperationException("Amount must be positive.");
+        var debit = await MemberBucketAccountIdAsync(wallet.ApplicationId, wallet.Id, debitBucket, ct);
+        var credit = await MemberBucketAccountIdAsync(wallet.ApplicationId, wallet.Id, creditBucket, ct);
+        var legs = new List<LedgerLeg> { new(debit, points, 0), new(credit, 0, points) };
+        var tx = PointsLedgerTransaction.Create(
+            Guid.NewGuid(), wallet.ApplicationId, wallet.Id, type, wallet.PointsUnitCode,
+            sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
+            campaignId: null, ruleId: null, effectId, reversalOf: null, occurredAt, clock.UtcNow, legs);
+        db.LedgerTransactions.Add(tx);
+        wallet.ApplyDelta(active: activeDelta, pending: 0, reserved: reservedDelta);
+        return tx;
+    }
+
+    /// <summary>Redeem reserved points: debit member reserved, credit redemption clearing (reserved −n) — §13.</summary>
+    public async Task<PointsLedgerTransaction> PostRedeemAsync(
+        Wallet wallet, long points, Guid sourceEventId, string sourceSystem, string sourceTransactionId,
+        string businessEventKey, string correlationId, string effectId, DateTimeOffset occurredAt, CancellationToken ct)
+    {
+        if (points <= 0) throw new InvalidOperationException("Redeem points must be positive.");
+        var reserved = await MemberBucketAccountIdAsync(wallet.ApplicationId, wallet.Id, BalanceBucket.Reserved, ct);
+        var redemption = await ClearingAccountIdAsync(wallet.ApplicationId, LedgerAccountType.RedemptionClearing, wallet.PointsUnitCode, ct);
+        var legs = new List<LedgerLeg> { new(reserved, points, 0), new(redemption, 0, points) };
+        var tx = PointsLedgerTransaction.Create(
+            Guid.NewGuid(), wallet.ApplicationId, wallet.Id, TransactionType.Redeem, wallet.PointsUnitCode,
+            sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
+            campaignId: null, ruleId: null, effectId, reversalOf: null, occurredAt, clock.UtcNow, legs);
+        db.LedgerTransactions.Add(tx);
+        wallet.ApplyDelta(active: 0, pending: 0, reserved: -points);
+        return tx;
+    }
+
     /// <summary>
     /// Reverse an Earn: debit member active / credit issuance clearing by the original credit
     /// amount, reducing active balance. References the original via ReversalOfTransactionId (§13).

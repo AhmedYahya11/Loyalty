@@ -7,6 +7,7 @@ using Loyalty.Core.Modules.Cvm.Domain;
 using Loyalty.Core.Modules.Integration.Domain;
 using Loyalty.Core.Modules.Members.Domain;
 using Loyalty.Core.Modules.Notifications.Domain;
+using Loyalty.Core.Modules.Rewards.Domain;
 using Loyalty.Core.Modules.Settings.Domain;
 using Loyalty.Core.Modules.Tiers.Domain;
 using Loyalty.Core.Modules.Wallets.Domain;
@@ -51,6 +52,8 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<MemberSegmentMembership> SegmentMemberships => Set<MemberSegmentMembership>();
     public DbSet<Tier> Tiers => Set<Tier>();
     public DbSet<TierHistory> TierHistory => Set<TierHistory>();
+    public DbSet<Reward> Rewards => Set<Reward>();
+    public DbSet<Redemption> Redemptions => Set<Redemption>();
     public DbSet<EventLogEntry> EventLog => Set<EventLogEntry>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<RewardDecisionRecord> RewardDecisions => Set<RewardDecisionRecord>();
@@ -333,6 +336,31 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.ToTable("tier_history", "tiers");
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.EvaluatedAt });
+            ApplyScope(e);
+        });
+
+        // ---------------- rewards + redemptions ----------------
+        b.Entity<Reward>(e =>
+        {
+            e.ToTable("rewards", "rewards");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(200);
+            e.Property(x => x.Description).HasMaxLength(1000);
+            e.Property(x => x.RewardType).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.Value).HasPrecision(18, 4);
+            e.HasIndex(x => new { x.ApplicationId, x.IsActive });
+            ApplyScope(e);
+        });
+
+        b.Entity<Redemption>(e =>
+        {
+            e.ToTable("redemptions", "rewards");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.CouponCode).HasMaxLength(32).IsRequired();
+            e.HasIndex(x => new { x.ApplicationId, x.CouponCode }).IsUnique();
+            e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.Status });
             ApplyScope(e);
         });
 

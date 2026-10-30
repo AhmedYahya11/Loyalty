@@ -6,6 +6,25 @@ result events + webhooks/notifications + analytics + snapshots; Phase 5 = **reli
 (EF migrations, Postgres transport + dedicated worker, reconciliation, rate limiting, health,
 dead-letter replay, OpenTelemetry). Bilingual (AR/EN) throughout. Documented deltas below.
 
+## Phase 8 status (done) — Rewards & Redemptions
+
+Points are now **spendable** (previously earn-only):
+- Reward catalog (name, points cost, type Coupon/Voucher/Discount/FreeItem, value, inventory,
+  per-member limit, bilingual) + CRUD endpoints ✅
+- Redemption **reserve→confirm→cancel** with a unique coupon code (QR payload) + 24h hold ✅
+- Remaining ledger transaction types implemented (§13): **Reserve** (active→reserved), **Release**
+  (reserved→active), **Redeem** (reserved→redemption clearing) — balanced postings + wallet buckets ✅
+- Balance/inventory/per-member-limit checks; profile **PointsRedeemed** updated on confirm;
+  result events RedemptionReservedV1 / PointsRedeemedV1 / RedemptionCancelledV1 ✅
+- Dashboard Rewards page + member redeem action with **QR coupon** (qrcode.react) + confirm/cancel ✅
+- Tests: 2 Testcontainers E2E (earn→reserve→confirm spends points; cancel releases; insufficient
+  points rejected) — 49 green total
+
+Roadmap: P7 Tiers ✅ · **P8 Rewards & Redemptions ✅** → P9 Gamification → P10 Referrals/Stamp
+cards/Birthday → P11 Customer-facing app → P12 richer dashboard + RFM + Kurdish.
+
+---
+
 ## Phase 7 status (done) — Tiers (product expansion toward chaay-parity)
 
 Target: match a chaay.io-style SMB loyalty product (loyalty features; messaging hub excluded).

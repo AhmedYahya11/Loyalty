@@ -55,6 +55,13 @@ public static class DependencyInjection
         services.AddScoped<RewardDecisionService>();
         services.AddScoped<EventIngestionService>();
 
+        // notifications + webhooks + analytics (P4)
+        services.AddHttpClient();
+        services.AddScoped<Modules.Notifications.Application.NotificationService>();
+        services.AddScoped<Modules.Notifications.Application.WebhookDispatcher>();
+        services.AddHostedService<Modules.Notifications.Application.WebhookDispatcherJob>();
+        services.AddScoped<Modules.Analytics.AnalyticsService>();
+
         return services;
     }
 }

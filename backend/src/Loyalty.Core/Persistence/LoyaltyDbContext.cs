@@ -6,6 +6,7 @@ using Loyalty.Core.Modules.Campaigns.Domain;
 using Loyalty.Core.Modules.Cvm.Domain;
 using Loyalty.Core.Modules.Integration.Domain;
 using Loyalty.Core.Modules.Members.Domain;
+using Loyalty.Core.Modules.Notifications.Domain;
 using Loyalty.Core.Modules.Settings.Domain;
 using Loyalty.Core.Modules.Wallets.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,9 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<SegmentDefinition> Segments => Set<SegmentDefinition>();
     public DbSet<SegmentVersion> SegmentVersions => Set<SegmentVersion>();
     public DbSet<MemberSegmentMembership> SegmentMemberships => Set<MemberSegmentMembership>();
+    public DbSet<EventLogEntry> EventLog => Set<EventLogEntry>();
+    public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
+    public DbSet<RewardDecisionRecord> RewardDecisions => Set<RewardDecisionRecord>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -217,6 +221,7 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.Property(x => x.CorrelationId).HasMaxLength(200).IsRequired();
             e.Property(x => x.Payload).HasColumnType("jsonb").IsRequired();
             e.Property(x => x.SettingsSnapshot).HasColumnType("jsonb").IsRequired();
+            e.Property(x => x.CvmSettingsSnapshot).HasColumnType("jsonb");
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
             e.Property(x => x.PointsUnitCode).HasMaxLength(16);
             // source-event identity (§9.2) and business-event identity (§9.3)
@@ -301,6 +306,39 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.ToTable("member_segment_memberships", "cvm");
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.SegmentId, x.IsActive });
+            ApplyScope(e);
+        });
+
+        // ---------------- notifications ----------------
+        b.Entity<EventLogEntry>(e =>
+        {
+            e.ToTable("event_log", "notifications");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.EventType).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Payload).HasColumnType("jsonb").IsRequired();
+            e.HasIndex(x => new { x.ApplicationId, x.DeliveredAt });
+            e.HasIndex(x => new { x.ApplicationId, x.CreatedAt });
+            ApplyScope(e);
+        });
+
+        b.Entity<WebhookSubscription>(e =>
+        {
+            e.ToTable("webhook_subscriptions", "notifications");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Url).HasMaxLength(500).IsRequired();
+            e.Property(x => x.Secret).HasMaxLength(200).IsRequired();
+            e.Property(x => x.EventTypes).HasConversion(JsonListConverter<string>(), JsonListComparer<string>()).HasColumnType("jsonb");
+            ApplyScope(e);
+        });
+
+        b.Entity<RewardDecisionRecord>(e =>
+        {
+            e.ToTable("reward_decisions", "campaigns");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.LifecycleStage).HasMaxLength(16).IsRequired();
+            e.Property(x => x.Outcome).HasMaxLength(32).IsRequired();
+            e.Property(x => x.SegmentVersions).HasConversion(JsonListConverter<SegmentVersionRef>(), JsonListComparer<SegmentVersionRef>()).HasColumnType("jsonb");
+            e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.CreatedAt });
             ApplyScope(e);
         });
     }

@@ -32,14 +32,17 @@ public sealed class CvmService(LoyaltyDbContext db, ILoyaltyRuleEvaluator evalua
     public bool EvaluateLifecycle(MemberValueProfile profile, ApplicationCvmSettings? cvm, DateTimeOffset evaluatedAt)
     {
         if (cvm is null || !cvm.IsActive) return false;
-        var stage = LifecycleEvaluator.Evaluate(profile, cvm, evaluatedAt);
-        if (stage == profile.LifecycleStage)
-        {
-            profile.SetLifecycle(stage, evaluatedAt); // record evaluation time without a transition
-            return false;
-        }
+        return EvaluateLifecycle(profile, new CvmThresholds(cvm.NewPeriodDays, cvm.AtRiskAfterDays, cvm.DormantAfterDays, cvm.ChurnedAfterDays), evaluatedAt);
+    }
+
+    /// <summary>Evaluate the lifecycle stage from frozen thresholds. Returns true on change.</summary>
+    public bool EvaluateLifecycle(MemberValueProfile profile, CvmThresholds? thresholds, DateTimeOffset evaluatedAt)
+    {
+        if (thresholds is null) return false;
+        var stage = LifecycleEvaluator.Evaluate(profile, thresholds, evaluatedAt);
+        var changed = stage != profile.LifecycleStage;
         profile.SetLifecycle(stage, evaluatedAt);
-        return true;
+        return changed;
     }
 
     /// <summary>Enter/retain/exit segment memberships for a member based on its current profile.</summary>

@@ -72,6 +72,9 @@ POST   /api/v1/events                             # the generic ingestion endpoi
 GET    /api/v1/requests/{id}                      # processing status
 GET    /api/v1/members/{id}/wallet                # balances + immutable ledger
 GET    /api/v1/members/{id}/value-profile         # lifecycle stage, counts, net spend, active segments
+GET    /api/v1/analytics/overview                 # members, points issued/reversed, lifecycle mix
+GET    /api/v1/notifications                       # result-event feed (PointsAwardedV1, …)
+POST   /api/v1/webhooks                            # register an HMAC-signed webhook endpoint
 ```
 
 Event types: `PurchaseCompleted`, `OrderRefunded`, `CustomerRegistered`, `ApplicationLogin`,
@@ -81,11 +84,12 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
 
 ## Status
 
-**Phases 1–3 complete and verified — 31 tests** (25 unit + 6 Testcontainers end-to-end):
+**Phases 1–4 complete and verified — 33 tests** (25 unit + 8 Testcontainers end-to-end):
 - **P1** core pipeline (ingestion → ledger, 4-boundary idempotency)
 - **P2** CVM (value profiles, lifecycle, rule-based segments, audience targeting, all six event types)
-- **P3** full campaign engine (cross-campaign stacking, member limits, global budgets,
-  validate/simulate), Microsoft **RulesEngine adapter** (toggle `LOYALTY_RULES_ENGINE`), and **refund reversal**
+- **P3** full campaign engine (stacking, member limits, global budgets, validate/simulate),
+  Microsoft **RulesEngine adapter** (toggle `LOYALTY_RULES_ENGINE`), and **refund reversal**
+- **P4** result events + **webhooks** (HMAC-signed delivery), **analytics** overview, frozen CVM
+  snapshot + explainable reward decisions, and dashboard depth (Overview / Notifications / Webhooks)
 
-See `docs/DEVIATIONS.md` for the roadmap (P4 dashboard/analytics + snapshots + result events,
-P5 ops/dedicated worker, P6 live Hareer integration).
+See `docs/DEVIATIONS.md` for the roadmap (P5 ops/dedicated worker + migrations, P6 live Hareer integration).

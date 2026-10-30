@@ -6,7 +6,9 @@ using Loyalty.Core.Modules.Campaigns.Domain;
 using Loyalty.Core.Modules.Cvm.Application;
 using Loyalty.Core.Modules.Integration.Contracts;
 using Loyalty.Core.Modules.Integration.Domain;
+using Loyalty.Core.Modules.Cvm.Domain;
 using Loyalty.Core.Modules.Members.Application;
+using Loyalty.Core.Modules.Notifications.Domain;
 using Loyalty.Core.Modules.Settings.Domain;
 using Loyalty.Core.Modules.Wallets.Application;
 using Loyalty.Core.Persistence;
@@ -42,7 +44,6 @@ public sealed class ProcessLoyaltyEventHandler
         var decider = sp.GetRequiredService<RewardDecisionService>();
         var engine = sp.GetRequiredService<CampaignEngine>();
         var cvm = sp.GetRequiredService<CvmService>();
-        var cvmSettings = sp.GetRequiredService<CvmSettingsService>();
         var clock = sp.GetRequiredService<IClock>();
 
         var visible = await RunInSystemScope(scope, () => scopeResolver.ResolveVisibleAsync(message.ApplicationId, ct));
@@ -67,16 +68,23 @@ public sealed class ProcessLoyaltyEventHandler
             request.ApplicationId, envelope.CustomerId, snapshot.PointsUnitCode, snapshot.BaseCurrency, ct);
         await db.SaveChangesAsync(ct);
 
-        // --- CVM: project event onto the value profile, evaluate lifecycle + segments ---
+        // --- CVM: project event onto the value profile, evaluate lifecycle (frozen) + segments ---
         var profile = await db.ValueProfiles.FirstAsync(p => p.MemberId == member.Id, ct);
+        var previousStage = profile.LifecycleStage;
         cvm.ApplyEvent(profile, envelope.EventType, normalized.Amount, envelope.OccurredAt);
-        var effectiveCvm = await cvmSettings.ResolveEffectiveAsync(request.ApplicationId, ct);
-        cvm.EvaluateLifecycle(profile, effectiveCvm, now);
+        var thresholds = ParseCvmThresholds(request.CvmSettingsSnapshot);
+        var lifecycleChanged = cvm.EvaluateLifecycle(profile, thresholds, now);
         await cvm.EvaluateSegmentsAsync(profile, now, ct);
         await db.SaveChangesAsync(ct);
 
-        var activeSegmentIds = (await db.SegmentMemberships
-            .Where(m => m.MemberId == member.Id && m.IsActive).Select(m => m.SegmentId).ToListAsync(ct)).ToHashSet();
+        if (lifecycleChanged)
+            EmitEvent(db, request, ResultEventTypes.MemberLifecycleChanged, member.Id,
+                new { memberId = member.Id, from = previousStage.ToString(), to = profile.LifecycleStage.ToString() }, now);
+
+        var activeMemberships = await db.SegmentMemberships
+            .Where(m => m.MemberId == member.Id && m.IsActive).ToListAsync(ct);
+        var activeSegmentIds = activeMemberships.Select(m => m.SegmentId).ToHashSet();
+        var segmentVersionRefs = activeMemberships.Select(m => new SegmentVersionRef(m.SegmentId, m.SegmentVersion)).ToList();
 
         // --- ManualAdjustment: controlled Adjust ledger entry, no campaigns ---
         if (envelope.EventType == EventTypes.ManualAdjustmentRequested)
@@ -90,6 +98,8 @@ public sealed class ProcessLoyaltyEventHandler
                     envelope.SourceTransactionId, normalized.BusinessEventKey, envelope.CorrelationId, "manual-adjustment", envelope.OccurredAt, ct);
                 db.RewardEffects.Add(new RewardEffect(Guid.NewGuid(), request.ApplicationId, member.Id, envelope.EventId,
                     Guid.Empty, 0, "manual-adjustment", signed, adjTx.Id, now));
+                EmitEvent(db, request, ResultEventTypes.PointsAdjusted, member.Id,
+                    new { memberId = member.Id, requestId = request.Id, signedPoints = signed, pointsUnitCode = snapshot.PointsUnitCode }, now);
             }
             request.MarkCompleted(signed, snapshot.PointsUnitCode, clock.UtcNow);
             await db.SaveChangesAsync(ct);
@@ -118,6 +128,9 @@ public sealed class ProcessLoyaltyEventHandler
                     earn.CampaignId ?? Guid.Empty, 0, effectId, -earn.TotalCredit, revTx.Id, now));
                 reversed += earn.TotalCredit;
             }
+            if (reversed > 0)
+                EmitEvent(db, request, ResultEventTypes.PointsReversed, member.Id,
+                    new { memberId = member.Id, requestId = request.Id, reversedPoints = reversed, pointsUnitCode = snapshot.PointsUnitCode }, now);
             request.MarkCompleted(-reversed, snapshot.PointsUnitCode, clock.UtcNow);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
@@ -171,6 +184,8 @@ public sealed class ProcessLoyaltyEventHandler
 
         if (totalAwarded <= 0)
         {
+            db.RewardDecisions.Add(RewardDecisionRecord.Create(request.ApplicationId, member.Id, request.Id, envelope.EventId,
+                profile.Version, profile.LifecycleStage.ToString(), segmentVersionRefs, 0, "Rejected", now));
             request.MarkRejected("NO_ELIGIBLE_CAMPAIGN", clock.UtcNow);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
@@ -178,6 +193,10 @@ public sealed class ProcessLoyaltyEventHandler
         }
 
         profile.AddPointsEarned(totalAwarded);
+        db.RewardDecisions.Add(RewardDecisionRecord.Create(request.ApplicationId, member.Id, request.Id, envelope.EventId,
+            profile.Version, profile.LifecycleStage.ToString(), segmentVersionRefs, totalAwarded, "Completed", now));
+        EmitEvent(db, request, ResultEventTypes.PointsAwarded, member.Id,
+            new { memberId = member.Id, requestId = request.Id, awardedPoints = totalAwarded, pointsUnitCode = snapshot.PointsUnitCode }, now);
         request.MarkCompleted(totalAwarded, snapshot.PointsUnitCode, clock.UtcNow);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -188,5 +207,23 @@ public sealed class ProcessLoyaltyEventHandler
         scope.EnterSystemScope();
         try { return await action(); }
         finally { scope.LeaveSystemScope(); }
+    }
+
+    /// <summary>Write a result event to the transactional outbox (event log).</summary>
+    private static void EmitEvent(LoyaltyDbContext db, IngestionRequest request, string eventType, Guid memberId, object payload, DateTimeOffset now)
+    {
+        var json = JsonSerializer.Serialize(payload, JsonOptionsProvider.Default);
+        db.EventLog.Add(EventLogEntry.Create(request.ApplicationId, eventType, memberId, request.Id, json, request.OccurredAt, now));
+    }
+
+    private sealed record CvmSnapshotParse(string CvmStatus, int NewPeriodDays, int AtRiskAfterDays, int DormantAfterDays, int ChurnedAfterDays);
+
+    /// <summary>Parse frozen CVM thresholds from the request snapshot; null when absent/inactive.</summary>
+    private static CvmThresholds? ParseCvmThresholds(string? snapshot)
+    {
+        if (string.IsNullOrWhiteSpace(snapshot)) return null;
+        var dto = JsonSerializer.Deserialize<CvmSnapshotParse>(snapshot, JsonOptionsProvider.Default);
+        if (dto is null || !string.Equals(dto.CvmStatus, "Active", StringComparison.OrdinalIgnoreCase)) return null;
+        return new CvmThresholds(dto.NewPeriodDays, dto.AtRiskAfterDays, dto.DormantAfterDays, dto.ChurnedAfterDays);
     }
 }

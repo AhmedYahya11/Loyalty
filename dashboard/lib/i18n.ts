@@ -54,6 +54,22 @@ export const t: Dict = {
   value: { en: "Value", ar: "القيمة" },
   validate: { en: "Validate", ar: "تحقّق" },
   cvmSettings: { en: "CVM settings", ar: "إعدادات إدارة قيمة العميل" },
+  overview: { en: "Overview", ar: "نظرة عامة" },
+  notifications: { en: "Notifications", ar: "الإشعارات" },
+  webhooks: { en: "Webhooks", ar: "الويب هوك" },
+  totalMembers: { en: "Members", ar: "الأعضاء" },
+  pointsIssued: { en: "Points issued", ar: "النقاط الصادرة" },
+  pointsReversed: { en: "Points reversed", ar: "النقاط المعكوسة" },
+  activeBalanceTotal: { en: "Active balance (total)", ar: "إجمالي الرصيد الفعّال" },
+  lifecycleDistribution: { en: "Lifecycle distribution", ar: "توزيع دورة الحياة" },
+  eventType: { en: "Event", ar: "الحدث" },
+  deliveredAt: { en: "Delivered", ar: "تم التسليم" },
+  url: { en: "URL", ar: "الرابط" },
+  secret: { en: "Secret", ar: "السر" },
+  addWebhook: { en: "Add webhook", ar: "إضافة ويب هوك" },
+  dispatch: { en: "Dispatch now", ar: "إرسال الآن" },
+  delete: { en: "Delete", ar: "حذف" },
+  when: { en: "When", ar: "الوقت" },
 };
 
 export function tr(key: string, lang: Lang): string {

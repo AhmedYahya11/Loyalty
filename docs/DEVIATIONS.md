@@ -1,10 +1,29 @@
-# Deviations from the MVP spec (Phases 1–3)
+# Deviations from the MVP spec (Phases 1–4)
 
 The authoritative design is `docs/design/MVP_IMPLEMENTATION_PLAN.md`. Phase 1 = core pipeline;
-Phase 2 = CVM (value profiles, lifecycle, segments, audience targeting, all event types);
-Phase 3 = **full campaign engine** (cross-campaign stacking, member limits, global budgets,
-validate/simulate), the **RulesEngine adapter**, and **refund reversal**. Bilingual (AR/EN)
-throughout. These are the intentional, documented deltas.
+Phase 2 = CVM; Phase 3 = full campaign engine + RulesEngine + refund reversal; Phase 4 =
+**result events + webhooks/notifications, analytics, CVM/segment-version snapshots, dashboard
+depth**. Bilingual (AR/EN) throughout. These are the intentional, documented deltas.
+
+## Phase 4 status (done)
+- Result events (PointsAwardedV1 / PointsReversedV1 / PointsAdjustedV1 / MemberLifecycleChangedV1)
+  written to an `event_log` in the processing transaction (hand-rolled transactional outbox) ✅
+- Notifications feed endpoint + dashboard page ✅
+- Webhook subscriptions (CRUD) + background dispatcher with HMAC-SHA256 signing + bounded retry;
+  signed delivery verified end-to-end against a real listener ✅
+- Analytics overview endpoint (members, active campaigns/segments, points issued/reversed,
+  active balance, lifecycle distribution) + dashboard Overview page ✅
+- Frozen **CVM settings snapshot** on the ingestion request; lifecycle now evaluated from the
+  snapshot in the worker (retry-consistent) ✅
+- **RewardDecisionRecord** persisted (profile version, lifecycle, segment versions, outcome) for
+  explainability ✅
+
+### Phase 4 remaining deltas
+| Area | Spec | Phase 4 choice | When |
+|---|---|---|---|
+| Webhook delivery | durable outbox + retry queues | hand-rolled event_log outbox + polling dispatcher (at-least-once, bounded attempts) | fine; move to Wolverine/Kafka transport in P5 |
+| Segment-version binding in campaigns | versioned refs stored in CampaignVersion at activation | decision records the versions used; campaigns still evaluate against current active memberships | P5 |
+| Consent/marketing policy checks | required before outbound marketing | not enforced (webhooks are system integration, not end-user marketing) | when notifications target end users |
 
 ## Phase 3 status (done)
 - Cross-campaign stacking: one base × highest eligible multiplier + summed stackable bonuses ✅
@@ -66,6 +85,6 @@ throughout. These are the intentional, documented deltas.
 ## Roadmap
 - **P2** CVM (value profile, lifecycle job, segments, audience targeting) + remaining event types. ✅ DONE
 - **P3** Campaign engine (stacking, member limits, global budget, validate/simulate) + RulesEngine adapter + refund reversal. ✅ DONE (CVM/segment-version snapshots moved to P4).
-- **P4** Dashboard depth + analytics + CVM/segment-version snapshots + result events.
-- **P5** Reliability/ops: Postgres transport (dedicated worker), retries/dead-letter ops, reconciliation, rate limits, OpenTelemetry, migrations, load tests.
+- **P4** Dashboard depth + analytics + CVM snapshot + result events + webhooks. ✅ DONE
+- **P5** Reliability/ops: Postgres transport (dedicated worker), retries/dead-letter ops, reconciliation, rate limits, OpenTelemetry, EF migrations, load tests + segment-version binding.
 - **P6** Hareer live integration (emit from the real repo, map tenants→applications, backfill).

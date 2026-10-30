@@ -6,11 +6,14 @@ import { tr } from "@/lib/i18n";
 
 const links = [
   { href: "/", key: "connect" },
+  { href: "/overview", key: "overview" },
   { href: "/applications", key: "applications" },
   { href: "/campaigns", key: "campaigns" },
   { href: "/segments", key: "segments" },
   { href: "/members", key: "members" },
   { href: "/events", key: "events" },
+  { href: "/notifications", key: "notifications" },
+  { href: "/webhooks", key: "webhooks" },
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {

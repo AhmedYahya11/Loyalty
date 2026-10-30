@@ -138,5 +138,27 @@ public static class Endpoints
         // ---------- admin: trigger the lifecycle inactivity sweep on demand ----------
         v1.MapPost("/admin/lifecycle-sweep", async (Loyalty.Core.Modules.Cvm.Application.LifecycleSweepService svc, CancellationToken ct) =>
             Results.Ok(new { transitions = await svc.RunAsync(ct) }));
+
+        // ---------- analytics ----------
+        v1.MapGet("/analytics/overview", async (Loyalty.Core.Modules.Analytics.AnalyticsService svc, CancellationToken ct) =>
+            Results.Ok(await svc.OverviewAsync(ct)));
+
+        // ---------- notifications (result-event feed) ----------
+        v1.MapGet("/notifications", async (int? limit, Loyalty.Core.Modules.Notifications.Application.NotificationService svc, CancellationToken ct) =>
+            Results.Ok(new { items = await svc.ListEventsAsync(limit ?? 50, ct) }));
+
+        // ---------- webhooks ----------
+        var webhooks = v1.MapGroup("/webhooks");
+        webhooks.MapPost("", async (Loyalty.Core.Modules.Notifications.Application.CreateWebhookInput req, Loyalty.Core.Modules.Notifications.Application.NotificationService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateWebhookAsync(req, ct), statusCode: 201));
+        webhooks.MapGet("", async (Loyalty.Core.Modules.Notifications.Application.NotificationService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListWebhooksAsync(ct)));
+        webhooks.MapPatch("/{id:guid}/status", async (Guid id, SetStatusRequest req, Loyalty.Core.Modules.Notifications.Application.NotificationService svc, CancellationToken ct) =>
+            await svc.SetWebhookActiveAsync(id, req.IsActive, ct) ? Results.NoContent() : Results.NotFound());
+        webhooks.MapDelete("/{id:guid}", async (Guid id, Loyalty.Core.Modules.Notifications.Application.NotificationService svc, CancellationToken ct) =>
+            await svc.DeleteWebhookAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+        // on-demand delivery (ops/testing)
+        webhooks.MapPost("/dispatch", async (Loyalty.Core.Modules.Notifications.Application.WebhookDispatcher d, CancellationToken ct) =>
+            Results.Ok(new { dispatched = await d.DispatchPendingAsync(ct) }));
     }
 }

@@ -42,6 +42,11 @@ public sealed class IngestionRequest : IApplicationScoped
     public int SettingsVersion { get; private set; }
     public string SettingsSnapshot { get; private set; } = default!;
 
+    // frozen effective CVM settings snapshot (null when no CVM settings are configured)
+    public Guid? ResolvedCvmSettingsApplicationId { get; private set; }
+    public int? CvmSettingsVersion { get; private set; }
+    public string? CvmSettingsSnapshot { get; private set; }
+
     // result
     public long? AwardedPoints { get; private set; }
     public string? PointsUnitCode { get; private set; }
@@ -57,6 +62,7 @@ public sealed class IngestionRequest : IApplicationScoped
         Guid eventId, string eventType, int eventVersion, string sourceTransactionId,
         string businessEventKey, string customerId, DateTimeOffset occurredAt, string correlationId,
         string payload, Guid resolvedSettingsApplicationId, int settingsVersion, string settingsSnapshot,
+        Guid? resolvedCvmSettingsApplicationId, int? cvmSettingsVersion, string? cvmSettingsSnapshot,
         DateTimeOffset now) => new()
     {
         Id = id,
@@ -76,6 +82,9 @@ public sealed class IngestionRequest : IApplicationScoped
         ResolvedSettingsApplicationId = resolvedSettingsApplicationId,
         SettingsVersion = settingsVersion,
         SettingsSnapshot = settingsSnapshot,
+        ResolvedCvmSettingsApplicationId = resolvedCvmSettingsApplicationId,
+        CvmSettingsVersion = cvmSettingsVersion,
+        CvmSettingsSnapshot = cvmSettingsSnapshot,
         CreatedAt = now,
         UpdatedAt = now,
     };

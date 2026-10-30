@@ -23,6 +23,7 @@ public sealed class EventIngestionService(
     IApplicationContext scope,
     EventRegistry registry,
     LoyaltySettingsService settings,
+    Cvm.Application.CvmSettingsService cvmSettings,
     IDbContextOutbox<LoyaltyDbContext> outbox,
     IClock clock)
 {
@@ -77,11 +78,30 @@ public sealed class EventIngestionService(
             loyaltyStatus = effective.LoyaltyStatus.ToString(),
         }, JsonOptionsProvider.Default);
 
+        // freeze the effective CVM settings snapshot too (null when CVM is not configured)
+        var effectiveCvm = await cvmSettings.ResolveEffectiveAsync(scope.ApplicationId, ct);
+        Guid? cvmAppId = effectiveCvm?.ApplicationId;
+        int? cvmVersion = effectiveCvm?.Version;
+        string? cvmSnapshot = effectiveCvm is null ? null : JsonSerializer.Serialize(new
+        {
+            sourceApplicationId = effectiveCvm.ApplicationId,
+            version = effectiveCvm.Version,
+            cvmStatus = effectiveCvm.CvmStatus.ToString(),
+            effectiveCvm.NewPeriodDays,
+            effectiveCvm.AtRiskAfterDays,
+            effectiveCvm.DormantAfterDays,
+            effectiveCvm.ChurnedAfterDays,
+            effectiveCvm.HighValueNetSpendThreshold,
+            effectiveCvm.FrequentPurchaseThreshold,
+            effectiveCvm.EvaluationWindowDays,
+        }, JsonOptionsProvider.Default);
+
         var request = IngestionRequest.Accept(
             requestId, scope.ApplicationId, scope.AccountId, scope.SourceSystem,
             envelope.EventId, envelope.EventType, envelope.EventVersion, envelope.SourceTransactionId,
             normalized.BusinessEventKey, envelope.CustomerId, envelope.OccurredAt, envelope.CorrelationId,
-            rawPayloadJson, effective.ApplicationId, effective.Version, settingsSnapshot, now);
+            rawPayloadJson, effective.ApplicationId, effective.Version, settingsSnapshot,
+            cvmAppId, cvmVersion, cvmSnapshot, now);
 
         var responseBody = JsonSerializer.Serialize(
             AcceptedPayload(requestId, RequestStatus.Accepted, false), JsonOptionsProvider.Default);

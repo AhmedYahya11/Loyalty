@@ -67,7 +67,7 @@ export default function EventsPage() {
             <tbody>
               <tr><th>{tr("status", lang)}</th><td>{status.status === "Completed" ? <span className="badge ok">{status.status}</span> : <span className="badge">{status.status}</span>}</td></tr>
               <tr><th>{tr("awardedPoints", lang)}</th><td>{status.awardedPoints ?? "—"} {status.pointsUnitCode ?? ""}</td></tr>
-              {status.statusReason && <tr><th>Reason</th><td>{status.statusReason}</td></tr>}
+              {status.statusReason && <tr><th>{tr("reason", lang)}</th><td>{status.statusReason}</td></tr>}
             </tbody>
           </table>
         )}

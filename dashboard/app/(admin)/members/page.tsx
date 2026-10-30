@@ -106,7 +106,7 @@ export default function MembersPage() {
                 <tr><th>{tr("purchaseCount", lang)}</th><td>{profile.purchaseCount}</td></tr>
                 <tr><th>{tr("netSpend", lang)}</th><td>{profile.netSpendAmount} IQD</td></tr>
                 <tr><th>{tr("pointsEarned", lang)}</th><td>{profile.pointsEarned}</td></tr>
-                <tr><th>Points redeemed</th><td>{profile.pointsRedeemed}</td></tr>
+                <tr><th>{tr("pointsRedeemed", lang)}</th><td>{profile.pointsRedeemed}</td></tr>
                 <tr><th>{tr("activeSegments", lang)}</th><td>{profile.activeSegments.map((s) => (lang === "ar" && s.nameAr ? s.nameAr : s.name)).join("، ") || "—"}</td></tr>
               </tbody>
             </table>
@@ -122,18 +122,18 @@ export default function MembersPage() {
             <table>
               <tbody>
                 <tr><th>{tr("activeBalance", lang)}</th><td>{member.wallet.activeBalance} {member.wallet.pointsUnitCode}</td></tr>
-                <tr><th>Pending</th><td>{member.wallet.pendingBalance}</td></tr>
+                <tr><th>{tr("pending", lang)}</th><td>{member.wallet.pendingBalance}</td></tr>
                 <tr><th>{tr("reserved", lang)}</th><td>{member.wallet.reservedBalance}</td></tr>
                 {member.referralCode && <tr><th>{tr("referralCode", lang)}</th><td><span className="badge ok" style={{ letterSpacing: 1 }}>🎁 {member.referralCode}</span></td></tr>}
                 {member.birthDate && <tr><th>{tr("birthDate", lang)}</th><td>🎂 {member.birthDate}</td></tr>}
               </tbody>
             </table>
-            <button className="secondary" onClick={customerLink}>💳 Customer app link</button>
+            <button className="secondary" onClick={customerLink}>💳 {tr("customerAppLink", lang)}</button>
             {custLink && (
               <div style={{ marginTop: 12, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ background: "#fff", padding: 10, borderRadius: 8 }}><QRCodeSVG value={custLink} size={110} /></div>
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  <div className="muted">Share this link / QR with the customer</div>
+                  <div className="muted">{tr("shareCustomerLink", lang)}</div>
                   <a href={custLink} target="_blank" rel="noreferrer" style={{ wordBreak: "break-all", fontSize: 13 }}>{custLink}</a>
                 </div>
               </div>
@@ -161,7 +161,7 @@ export default function MembersPage() {
 
           <h2>{tr("redeem", lang)}</h2>
           <div className="card">
-            {rewards.length === 0 ? <p className="muted">No active rewards. Create one on the Rewards page.</p> : (
+            {rewards.length === 0 ? <p className="muted">{tr("noActiveRewards", lang)}</p> : (
               <div className="row" style={{ alignItems: "end" }}>
                 <div>
                   <label>{tr("rewards", lang)}</label>
@@ -213,7 +213,7 @@ export default function MembersPage() {
             <>
               <h2>{tr("transactions", lang)}</h2>
               <table>
-                <thead><tr><th>Type</th><th>Debit</th><th>Credit</th><th>Occurred</th></tr></thead>
+                <thead><tr><th>{tr("type", lang)}</th><th>{tr("debit", lang)}</th><th>{tr("credit", lang)}</th><th>{tr("occurred", lang)}</th></tr></thead>
                 <tbody>
                   {txns.map((t) => (
                     <tr key={t.transactionId}>

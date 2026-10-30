@@ -82,7 +82,7 @@ export default function GamificationPage() {
           <div><label>{tr("metric", lang)}</label><select value={cMetric} onChange={(e) => setCMetric(e.target.value)}>{METRICS.map((m) => <option key={m}>{m}</option>)}</select></div>
           <div><label>{tr("target", lang)}</label><input value={cTarget} onChange={(e) => setCTarget(e.target.value)} /></div>
           <div><label>{tr("bonusPoints", lang)}</label><input value={cBonus} onChange={(e) => setCBonus(e.target.value)} /></div>
-          <div><label>Days</label><input value={cDays} onChange={(e) => setCDays(e.target.value)} /></div>
+          <div><label>{tr("days", lang)}</label><input value={cDays} onChange={(e) => setCDays(e.target.value)} /></div>
         </div>
         <button onClick={createChallenge}>{tr("create", lang)}</button>
       </div>

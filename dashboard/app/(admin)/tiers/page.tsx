@@ -50,7 +50,7 @@ export default function TiersPage() {
           <div><label>{tr("metric", lang)}</label><select value={metric} onChange={(e) => setMetric(e.target.value)}>{METRICS.map((m) => <option key={m}>{m}</option>)}</select></div>
           <div><label>{tr("threshold", lang)}</label><input value={threshold} onChange={(e) => setThreshold(e.target.value)} /></div>
           <div><label>{tr("multiplier", lang)}</label><input value={mult} onChange={(e) => setMult(e.target.value)} /></div>
-          <div><label>Color</label><input value={color} onChange={(e) => setColor(e.target.value)} /></div>
+          <div><label>{tr("color", lang)}</label><input value={color} onChange={(e) => setColor(e.target.value)} /></div>
         </div>
         <button onClick={create}>{tr("create", lang)}</button>
         {err && <div className="err">{err}</div>}

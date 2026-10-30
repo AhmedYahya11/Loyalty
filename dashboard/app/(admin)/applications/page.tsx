@@ -40,7 +40,7 @@ export default function ApplicationsPage() {
         <div className="row">
           <div><label>{tr("name", lang)}</label><input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div><label>{tr("nameAr", lang)}</label><input value={nameAr} onChange={(e) => setNameAr(e.target.value)} dir="rtl" /></div>
-          <div><label>Parent ID</label><input value={parentId} onChange={(e) => setParentId(e.target.value)} placeholder="(root if empty)" /></div>
+          <div><label>{tr("parentId", lang)}</label><input value={parentId} onChange={(e) => setParentId(e.target.value)} placeholder="(root if empty)" /></div>
         </div>
         <button onClick={create}>{tr("create", lang)}</button>
         {err && <div className="err">{err}</div>}

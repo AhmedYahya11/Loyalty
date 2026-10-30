@@ -132,7 +132,7 @@ export default function CampaignsPage() {
                 {c.status !== "Active"
                   ? <button className="secondary" style={{ margin: 0 }} onClick={() => act(c.id, "activate")}>{tr("activate", lang)}</button>
                   : <button className="secondary" style={{ margin: 0 }} onClick={() => act(c.id, "pause")}>{tr("pause", lang)}</button>}
-                <button className="secondary" style={{ margin: 0 }} onClick={() => simulate(c.id)}>Simulate</button>
+                <button className="secondary" style={{ margin: 0 }} onClick={() => simulate(c.id)}>{tr("simulate", lang)}</button>
               </td>
             </tr>
           ))}

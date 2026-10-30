@@ -1,0 +1,108 @@
+using System.Text.Json;
+using Loyalty.Core.BuildingBlocks;
+using Loyalty.Core.Modules.Accounts.Application;
+using Loyalty.Core.Modules.Applications.Application;
+using Loyalty.Core.Modules.Campaigns.Application;
+using Loyalty.Core.Modules.Integration.Application;
+using Loyalty.Core.Modules.Integration.Contracts;
+using Loyalty.Core.Modules.Members.Application;
+using Loyalty.Core.Modules.Settings.Application;
+using Loyalty.Core.Persistence;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Loyalty.Api;
+
+// Request DTOs (bilingual where user-facing)
+public sealed record BootstrapRequest(string Name, string? NameAr);
+public sealed record CreateApplicationRequest(string Name, string? NameAr, Guid? ParentId);
+public sealed record SetStatusRequest(bool IsActive);
+public sealed record CreateAccountRequest(string AccountName, DateTimeOffset? ExpiresAt);
+public sealed record CreateMemberRequest(string ExternalCustomerId);
+
+public static class Endpoints
+{
+    public static void MapLoyaltyEndpoints(this WebApplication app)
+    {
+        var v1 = app.MapGroup("/api/v1");
+
+        // ---------- bootstrap (one-time, guarded by X-Bootstrap-Token) ----------
+        v1.MapPost("/bootstrap", async (BootstrapRequest req, HttpContext ctx, IConfiguration cfg,
+            ApplicationService apps, AccountService accounts, CancellationToken ct) =>
+        {
+            var token = cfg["Bootstrap:Token"];
+            if (string.IsNullOrEmpty(token) || ctx.Request.Headers["X-Bootstrap-Token"].ToString() != token)
+                return Results.Json(new { code = "invalid_credential", message = "Invalid bootstrap token." }, statusCode: 401);
+
+            var (root, created) = await apps.BootstrapRootAsync(req.Name, req.NameAr, ct);
+            AccountWithKey? key = created ? await accounts.CreateAsync(root.Id, "root-admin", null, ct) : null;
+            return Results.Json(new { application = root, created, rootAccount = key }, statusCode: created ? 201 : 200);
+        });
+
+        // ---------- applications ----------
+        var apps = v1.MapGroup("/applications");
+        apps.MapPost("", async (CreateApplicationRequest req, ApplicationService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(req.Name, req.NameAr, req.ParentId, ct), statusCode: 201));
+        apps.MapGet("", async (ApplicationService svc, CancellationToken ct) => Results.Ok(await svc.ListVisibleAsync(ct)));
+        apps.MapGet("/{id:guid}", async (Guid id, ApplicationService svc, CancellationToken ct) =>
+            await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        apps.MapPatch("/{id:guid}/status", async (Guid id, SetStatusRequest req, ApplicationService svc, CancellationToken ct) =>
+        { await svc.SetStatusAsync(id, req.IsActive, ct); return Results.NoContent(); });
+
+        // ---------- accounts ----------
+        apps.MapPost("/{appId:guid}/accounts", async (Guid appId, CreateAccountRequest req, AccountService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(appId, req.AccountName, req.ExpiresAt, ct), statusCode: 201));
+        apps.MapGet("/{appId:guid}/accounts", async (Guid appId, AccountService svc, CancellationToken ct) =>
+            Results.Ok(await svc.ListAsync(appId, ct)));
+        var accts = v1.MapGroup("/accounts");
+        accts.MapPatch("/{id:guid}/status", async (Guid id, SetStatusRequest req, AccountService svc, CancellationToken ct) =>
+        { await svc.SetStatusAsync(id, req.IsActive, ct); return Results.NoContent(); });
+        accts.MapPost("/{id:guid}/rotate-key", async (Guid id, AccountService svc, CancellationToken ct) =>
+            Results.Ok(await svc.RotateKeyAsync(id, ct)));
+        accts.MapPost("/{id:guid}/revoke", async (Guid id, AccountService svc, CancellationToken ct) =>
+        { await svc.RevokeAsync(id, ct); return Results.NoContent(); });
+
+        // ---------- loyalty settings ----------
+        apps.MapPut("/{appId:guid}/loyalty-settings", async (Guid appId, PutLoyaltySettingsInput req, LoyaltySettingsService svc, CancellationToken ct) =>
+            Results.Ok(await svc.PutAsync(appId, req, ct)));
+        apps.MapGet("/{appId:guid}/loyalty-settings", async (Guid appId, LoyaltySettingsService svc, CancellationToken ct) =>
+            await svc.GetEffectiveAsync(appId, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        apps.MapDelete("/{appId:guid}/loyalty-settings", async (Guid appId, LoyaltySettingsService svc, CancellationToken ct) =>
+            await svc.DeleteAsync(appId, ct) ? Results.NoContent() : Results.NotFound());
+
+        // ---------- members + wallet ----------
+        var members = v1.MapGroup("/members");
+        members.MapPost("", async (CreateMemberRequest req, MemberService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(req.ExternalCustomerId, ct), statusCode: 201));
+        members.MapGet("/{id:guid}", async (Guid id, MemberService svc, CancellationToken ct) =>
+            await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        members.MapGet("/by-external-id/{externalId}", async (string externalId, MemberService svc, CancellationToken ct) =>
+            await svc.GetByExternalIdAsync(externalId, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        members.MapGet("/{id:guid}/wallet", async (Guid id, MemberService svc, CancellationToken ct) =>
+            await svc.GetWalletAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        members.MapGet("/{id:guid}/wallet/transactions", async (Guid id, MemberService svc, CancellationToken ct) =>
+            await svc.GetTransactionsAsync(id, ct) is { } v ? Results.Ok(new { items = v }) : Results.NotFound());
+
+        // ---------- campaigns ----------
+        var campaigns = v1.MapGroup("/campaigns");
+        campaigns.MapPost("", async (CreateCampaignInput req, CampaignService svc, CancellationToken ct) =>
+            Results.Json(await svc.CreateAsync(req, ct), statusCode: 201));
+        campaigns.MapGet("", async (CampaignService svc, CancellationToken ct) => Results.Ok(await svc.ListAsync(ct)));
+        campaigns.MapGet("/{id:guid}", async (Guid id, CampaignService svc, CancellationToken ct) =>
+            await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        campaigns.MapPost("/{id:guid}/activate", async (Guid id, CampaignService svc, CancellationToken ct) =>
+            await svc.ActivateAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        campaigns.MapPost("/{id:guid}/pause", async (Guid id, CampaignService svc, CancellationToken ct) =>
+            await svc.PauseAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+
+        // ---------- events + request status ----------
+        v1.MapPost("/events", async (LoyaltyEventEnvelopeV1 envelope, [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+            EventIngestionService svc, CancellationToken ct) =>
+        {
+            var canonical = JsonSerializer.Serialize(envelope, JsonOptionsProvider.Default);
+            var result = await svc.SubmitAsync(envelope, canonical, idempotencyKey, ct);
+            return Results.Json(result.Body, statusCode: result.StatusCode);
+        });
+        v1.MapGet("/requests/{id:guid}", async (Guid id, EventIngestionService svc, CancellationToken ct) =>
+            await svc.GetRequestStatusAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+    }
+}

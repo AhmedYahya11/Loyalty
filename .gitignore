@@ -1,0 +1,24 @@
+# .NET
+bin/
+obj/
+*.user
+[Dd]ebug/
+[Rr]elease/
+.vs/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+
+# Local tooling
+.dotnet/

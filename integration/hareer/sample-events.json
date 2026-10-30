@@ -1,0 +1,43 @@
+{
+  "_comment": "Canonical Hareer→Loyalty event payloads. POST each to /api/v1/events with X-Api-Key and a stable Idempotency-Key.",
+  "PurchaseCompleted": {
+    "eventId": "11111111-1111-5111-8111-111111111111",
+    "eventType": "PurchaseCompleted",
+    "eventVersion": 1,
+    "sourceTransactionId": "ORDER-5001",
+    "customerId": "hareer-user-100",
+    "occurredAt": "2026-10-30T10:00:00Z",
+    "correlationId": "ORDER-5001",
+    "attributes": { "orderId": "ORDER-5001", "amount": 50000, "currency": "IQD", "category": "beauty" }
+  },
+  "OrderRefunded": {
+    "eventId": "22222222-2222-5222-8222-222222222222",
+    "eventType": "OrderRefunded",
+    "eventVersion": 1,
+    "sourceTransactionId": "REFUND-9001",
+    "customerId": "hareer-user-100",
+    "occurredAt": "2026-10-31T09:00:00Z",
+    "correlationId": "ORDER-5001",
+    "attributes": { "refundId": "REFUND-9001", "originalOrderId": "ORDER-5001", "amount": 50000, "currency": "IQD" }
+  },
+  "CustomerRegistered": {
+    "eventId": "33333333-3333-5333-8333-333333333333",
+    "eventType": "CustomerRegistered",
+    "eventVersion": 1,
+    "sourceTransactionId": "hareer-user-100",
+    "customerId": "hareer-user-100",
+    "occurredAt": "2026-10-01T08:00:00Z",
+    "correlationId": "hareer-user-100",
+    "attributes": { "registrationChannel": "app" }
+  },
+  "ApplicationLogin": {
+    "eventId": "44444444-4444-5444-8444-444444444444",
+    "eventType": "ApplicationLogin",
+    "eventVersion": 1,
+    "sourceTransactionId": "SESSION-70001",
+    "customerId": "hareer-user-100",
+    "occurredAt": "2026-10-30T07:00:00Z",
+    "correlationId": "SESSION-70001",
+    "attributes": { "channel": "app", "sessionId": "SESSION-70001" }
+  }
+}

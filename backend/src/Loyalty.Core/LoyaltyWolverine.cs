@@ -1,4 +1,5 @@
 using Loyalty.Core.Modules.Integration.Contracts;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.ErrorHandling;
@@ -27,6 +28,12 @@ public static class LoyaltyWolverine
         // retry transient failures (e.g. reading the ingestion row just after commit) with backoff
         opts.OnException<InvalidOperationException>()
             .RetryWithCooldown(TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
+
+        // concurrent events for a brand-new member can race on provisioning (unique-constraint
+        // violation) — the loser retries, finds the now-existing member, and completes. Safe
+        // because effect/ledger uniqueness + the terminal-status check make reprocessing a no-op.
+        opts.OnException<DbUpdateException>()
+            .RetryWithCooldown(TimeSpan.FromMilliseconds(250), TimeSpan.FromMilliseconds(750), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4));
 
         // publish to and listen on the durable Postgres queue (every host both publishes and
         // can consume; run Loyalty.Worker for a dedicated processor pool)

@@ -50,7 +50,7 @@ public class CvmE2ETests(ApiFixture fx)
             effects = new[] { new { effectId = "base-earn", type = "AwardBasePoints" } },
             requiredSegmentIds = new[] { segId },
         }, auth);
-        await fx.Post($"/api/v1/campaigns/{targeted.GetProperty("id").GetString()}/activate", new { }, auth);
+        await fx.ActivateCampaign(targeted.GetProperty("id").GetString()!, auth);
 
         // high-value-only bonus campaign: member is NOT high value → must be gated out
         var highValueSeg = await fx.Post("/api/v1/segments", new
@@ -68,7 +68,7 @@ public class CvmE2ETests(ApiFixture fx)
             effects = new[] { new { effectId = "hv-bonus", type = "AwardPoints", points = 999 } },
             requiredSegmentIds = new[] { hvId },
         }, auth);
-        await fx.Post($"/api/v1/campaigns/{bonus.GetProperty("id").GetString()}/activate", new { }, auth);
+        await fx.ActivateCampaign(bonus.GetProperty("id").GetString()!, auth);
 
         // submit a purchase: member is New (in New Customer) but not High Value
         var submitAuth = new Dictionary<string, string> { ["X-Api-Key"] = apiKey, ["Idempotency-Key"] = "cvm-order-1" };
@@ -110,7 +110,7 @@ public class CvmE2ETests(ApiFixture fx)
             priority = 100, stackingPolicy = "Stackable", conditions = Array.Empty<object>(),
             effects = new[] { new { effectId = "welcome-100", type = "AwardPoints", points = 100 } },
         }, auth);
-        await fx.Post($"/api/v1/campaigns/{welcome.GetProperty("id").GetString()}/activate", new { }, auth);
+        await fx.ActivateCampaign(welcome.GetProperty("id").GetString()!, auth);
 
         // register a brand-new customer (member auto-provisioned by the worker)
         var submitAuth = new Dictionary<string, string> { ["X-Api-Key"] = apiKey, ["Idempotency-Key"] = "reg-new-1" };

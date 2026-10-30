@@ -113,4 +113,28 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
         wallet.ApplyDelta(active: activeDelta, pending: 0, reserved: 0);
         return tx;
     }
+
+    /// <summary>
+    /// Reverse an Earn: debit member active / credit issuance clearing by the original credit
+    /// amount, reducing active balance. References the original via ReversalOfTransactionId (§13).
+    /// </summary>
+    public async Task<PointsLedgerTransaction> PostReverseAsync(
+        Wallet wallet, PointsLedgerTransaction original, Guid sourceEventId, string sourceSystem, string sourceTransactionId,
+        string businessEventKey, string correlationId, string effectId, DateTimeOffset occurredAt, CancellationToken ct)
+    {
+        var unit = wallet.PointsUnitCode;
+        var issuance = await ClearingAccountIdAsync(wallet.ApplicationId, LedgerAccountType.IssuanceClearing, unit, ct);
+        var active = await MemberBucketAccountIdAsync(wallet.ApplicationId, wallet.Id, BalanceBucket.Active, ct);
+        var amount = original.TotalCredit;
+
+        var legs = new List<LedgerLeg> { new(active, amount, 0), new(issuance, 0, amount) };
+        var tx = PointsLedgerTransaction.Create(
+            Guid.NewGuid(), wallet.ApplicationId, wallet.Id, TransactionType.Reverse, unit,
+            sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
+            campaignId: original.CampaignId, ruleId: null, effectId, reversalOf: original.Id, occurredAt, clock.UtcNow, legs);
+
+        db.LedgerTransactions.Add(tx);
+        wallet.ApplyDelta(active: -amount, pending: 0, reserved: 0);
+        return tx;
+    }
 }

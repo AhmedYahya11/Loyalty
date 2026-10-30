@@ -38,6 +38,21 @@ public sealed record CampaignEffect(
 
 public enum StackingPolicy { Exclusive = 0, Stackable = 1 }
 
+/// <summary>The window a member limit resets over (MVP spec §12).</summary>
+public enum LimitPeriod { AllTime = 0, CalendarDay = 1, CalendarMonth = 2 }
+
+/// <summary>Max executions of a campaign for one member within a period.</summary>
+public sealed record MemberLimit(LimitPeriod Period, int MaximumExecutions)
+{
+    /// <summary>Deterministic usage key for the period from the event's OccurredAt.</summary>
+    public string PeriodKey(DateTimeOffset occurredAt) => Period switch
+    {
+        LimitPeriod.CalendarDay => occurredAt.UtcDateTime.ToString("yyyy-MM-dd"),
+        LimitPeriod.CalendarMonth => occurredAt.UtcDateTime.ToString("yyyy-MM"),
+        _ => "all",
+    };
+}
+
 public enum CampaignStatus
 {
     Draft = 0,

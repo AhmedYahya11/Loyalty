@@ -1,9 +1,32 @@
-# Deviations from the MVP spec (Phase 1 + Phase 2)
+# Deviations from the MVP spec (Phases 1–3)
 
-The authoritative design is `docs/design/MVP_IMPLEMENTATION_PLAN.md`. Phase 1 delivered the
-**core pipeline vertical slice**; Phase 2 adds **CVM** (value profiles, lifecycle, segments),
-**audience targeting**, and the **remaining event types**. Bilingual (AR/EN) throughout.
-These are the intentional, documented deltas.
+The authoritative design is `docs/design/MVP_IMPLEMENTATION_PLAN.md`. Phase 1 = core pipeline;
+Phase 2 = CVM (value profiles, lifecycle, segments, audience targeting, all event types);
+Phase 3 = **full campaign engine** (cross-campaign stacking, member limits, global budgets,
+validate/simulate), the **RulesEngine adapter**, and **refund reversal**. Bilingual (AR/EN)
+throughout. These are the intentional, documented deltas.
+
+## Phase 3 status (done)
+- Cross-campaign stacking: one base × highest eligible multiplier + summed stackable bonuses ✅
+  (reference case 149.50 ×1.5 +50 → 273; base counted once across campaigns)
+- Member limits via CampaignUsage (CalendarDay/Month/AllTime), enforced + incremented ✅
+- Global budget with atomic conditional reservation (`UPDATE … WHERE remaining >= n`) ✅
+- Campaign validate + simulate; activation requires Validated ✅
+- Refund reversal: compensating ledger Reverse of the original earn (idempotent) ✅
+- Microsoft RulesEngine adapter behind the same `ILoyaltyRuleEvaluator` port, toggled by
+  `LOYALTY_RULES_ENGINE=rulesengine` (default remains the deterministic operator evaluator);
+  parity unit-tested ✅
+
+### Phase 3 remaining deltas
+| Area | Spec | Phase 3 choice | When |
+|---|---|---|---|
+| Budget attribution under stacking | budget charged on the campaign's issued points | per-campaign independent points for budget/usage; member award uses combined stacking | acceptable approximation; revisit if needed |
+| CVM/segment-version snapshot | freeze on request / store in RewardDecision | still resolved live; RewardDecision not persisted as a row | P4 |
+| Simulate | 202-style + full pipeline | synchronous single-campaign eligibility + computed effects | fine for admin preview |
+
+---
+
+## Phases 1–2 deltas
 
 ## Phase 2 status (done)
 - ApplicationCvmSettings with nearest-ancestor inheritance ✅
@@ -42,7 +65,7 @@ These are the intentional, documented deltas.
 
 ## Roadmap
 - **P2** CVM (value profile, lifecycle job, segments, audience targeting) + remaining event types. ✅ DONE
-- **P3** Campaign engine (priority/stacking/exclusivity, member limits, global budget, validate/simulate) + RulesEngine adapter + refund reversal + CVM/segment-version snapshots.
-- **P4** Dashboard depth + analytics.
+- **P3** Campaign engine (stacking, member limits, global budget, validate/simulate) + RulesEngine adapter + refund reversal. ✅ DONE (CVM/segment-version snapshots moved to P4).
+- **P4** Dashboard depth + analytics + CVM/segment-version snapshots + result events.
 - **P5** Reliability/ops: Postgres transport (dedicated worker), retries/dead-letter ops, reconciliation, rate limits, OpenTelemetry, migrations, load tests.
 - **P6** Hareer live integration (emit from the real repo, map tenants→applications, backfill).

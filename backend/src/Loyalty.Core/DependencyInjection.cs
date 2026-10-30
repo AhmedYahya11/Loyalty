@@ -30,7 +30,12 @@ public static class DependencyInjection
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<EventRegistry>();
-        services.AddSingleton<ILoyaltyRuleEvaluator, OperatorRuleEvaluator>();
+        // Default: deterministic operator evaluator. Set LOYALTY_RULES_ENGINE=rulesengine to use
+        // the Microsoft RulesEngine adapter (same ILoyaltyRuleEvaluator port).
+        if (string.Equals(Environment.GetEnvironmentVariable("LOYALTY_RULES_ENGINE"), "rulesengine", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<ILoyaltyRuleEvaluator, RulesEngineRuleEvaluator>();
+        else
+            services.AddSingleton<ILoyaltyRuleEvaluator, OperatorRuleEvaluator>();
 
         // module services
         services.AddScoped<ApplicationService>();
@@ -46,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<MemberProvisioningService>();
         services.AddScoped<MemberService>();
         services.AddScoped<CampaignService>();
+        services.AddScoped<CampaignEngine>();
         services.AddScoped<RewardDecisionService>();
         services.AddScoped<EventIngestionService>();
 

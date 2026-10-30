@@ -55,6 +55,13 @@ public sealed class ApiFixture : IAsyncLifetime
 
     public static Dictionary<string, string> Auth(string key) => new() { ["X-Api-Key"] = key };
 
+    /// <summary>Validate then activate a campaign (activation requires Validated — §12).</summary>
+    public async Task ActivateCampaign(string id, Dictionary<string, string> auth)
+    {
+        await Post($"/api/v1/campaigns/{id}/validate", new { }, auth);
+        await Post($"/api/v1/campaigns/{id}/activate", new { }, auth);
+    }
+
     public Task<JsonElement> Post(string url, object body, Dictionary<string, string>? headers = null) =>
         Send(new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(body) }, headers);
     public Task<JsonElement> Put(string url, object body, Dictionary<string, string>? headers = null) =>

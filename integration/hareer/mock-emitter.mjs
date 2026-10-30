@@ -52,6 +52,7 @@ async function main() {
     triggerEventType: "PurchaseCompleted", minimumEventVersion: 1, priority: 100, stackingPolicy: "Stackable",
     conditions: [], effects: [{ effectId: "base-earn", type: "AwardBasePoints" }],
   }, auth);
+  await call("POST", `/api/v1/campaigns/${campaign.id}/validate`, {}, auth);
   await call("POST", `/api/v1/campaigns/${campaign.id}/activate`, {}, auth);
   console.log(`✓ Campaign ${campaign.id} active`);
 

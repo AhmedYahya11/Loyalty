@@ -101,6 +101,10 @@ public static class Endpoints
         campaigns.MapGet("", async (CampaignService svc, CancellationToken ct) => Results.Ok(await svc.ListAsync(ct)));
         campaigns.MapGet("/{id:guid}", async (Guid id, CampaignService svc, CancellationToken ct) =>
             await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        campaigns.MapPost("/{id:guid}/validate", async (Guid id, CampaignService svc, CancellationToken ct) =>
+            await svc.ValidateAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        campaigns.MapPost("/{id:guid}/simulate", async (Guid id, SimulateInput req, CampaignService svc, CancellationToken ct) =>
+            await svc.SimulateAsync(id, req, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         campaigns.MapPost("/{id:guid}/activate", async (Guid id, CampaignService svc, CancellationToken ct) =>
             await svc.ActivateAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         campaigns.MapPost("/{id:guid}/pause", async (Guid id, CampaignService svc, CancellationToken ct) =>

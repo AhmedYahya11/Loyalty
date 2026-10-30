@@ -35,6 +35,11 @@ public sealed class Campaign : IApplicationScoped
     public List<Guid> RequiredSegmentIds { get; private set; } = [];
     public List<Guid> ExcludedSegmentIds { get; private set; } = [];
 
+    // Limits + budget (MVP spec §12).
+    public List<MemberLimit> MemberLimits { get; private set; } = [];
+    public long? GlobalBudgetInitial { get; private set; }
+    public long? GlobalBudgetRemaining { get; private set; }
+
     private Campaign() { }
 
     public static Campaign Create(
@@ -42,8 +47,12 @@ public sealed class Campaign : IApplicationScoped
         DateTimeOffset? startsAt, DateTimeOffset? endsAt, int priority, StackingPolicy stacking,
         IEnumerable<CampaignCondition> conditions, IEnumerable<CampaignEffect> effects,
         IEnumerable<string>? requiredLifecycleStages, IEnumerable<Guid>? requiredSegmentIds, IEnumerable<Guid>? excludedSegmentIds,
+        IEnumerable<MemberLimit>? memberLimits, long? globalBudget,
         DateTimeOffset now) => new()
     {
+        MemberLimits = memberLimits?.ToList() ?? [],
+        GlobalBudgetInitial = globalBudget,
+        GlobalBudgetRemaining = globalBudget,
         Id = id,
         ApplicationId = applicationId,
         Name = name.Trim(),
@@ -76,8 +85,18 @@ public sealed class Campaign : IApplicationScoped
         return true;
     }
 
+    public void Validate(DateTimeOffset now)
+    {
+        if (Status is not (CampaignStatus.Draft or CampaignStatus.Validated))
+            throw new InvalidOperationException($"Cannot validate a campaign in status {Status}.");
+        Status = CampaignStatus.Validated;
+        UpdatedAt = now;
+    }
+
     public void Activate(DateTimeOffset now)
     {
+        if (Status is not (CampaignStatus.Validated or CampaignStatus.Paused))
+            throw new InvalidOperationException($"Cannot activate a campaign in status {Status}; validate it first.");
         Status = CampaignStatus.Active;
         UpdatedAt = now;
     }
@@ -86,6 +105,15 @@ public sealed class Campaign : IApplicationScoped
     {
         Status = CampaignStatus.Paused;
         UpdatedAt = now;
+    }
+
+    /// <summary>Reserve budget in memory (the atomic DB reservation happens in the handler).</summary>
+    public bool TryReserveBudget(long points)
+    {
+        if (GlobalBudgetRemaining is null) return true; // unlimited
+        if (GlobalBudgetRemaining < points) return false;
+        GlobalBudgetRemaining -= points;
+        return true;
     }
 
     public bool IsScheduleOpen(DateTimeOffset occurredAt) =>

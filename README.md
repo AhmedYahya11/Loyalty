@@ -81,7 +81,11 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
 
 ## Status
 
-**Phase 1** (core pipeline) and **Phase 2** (CVM: value profiles, lifecycle stages, rule-based
-segments, campaign audience targeting, all six event types) are complete and verified — 20 tests
-(17 unit + 3 Testcontainers end-to-end). See `docs/DEVIATIONS.md` for the roadmap (P3 full campaign
-engine + RulesEngine, P4 dashboard/analytics, P5 ops/dedicated worker, P6 live Hareer integration).
+**Phases 1–3 complete and verified — 31 tests** (25 unit + 6 Testcontainers end-to-end):
+- **P1** core pipeline (ingestion → ledger, 4-boundary idempotency)
+- **P2** CVM (value profiles, lifecycle, rule-based segments, audience targeting, all six event types)
+- **P3** full campaign engine (cross-campaign stacking, member limits, global budgets,
+  validate/simulate), Microsoft **RulesEngine adapter** (toggle `LOYALTY_RULES_ENGINE`), and **refund reversal**
+
+See `docs/DEVIATIONS.md` for the roadmap (P4 dashboard/analytics + snapshots + result events,
+P5 ops/dedicated worker, P6 live Hareer integration).

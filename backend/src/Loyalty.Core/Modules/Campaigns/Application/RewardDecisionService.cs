@@ -13,26 +13,23 @@ public sealed record RewardDecisionResult(IReadOnlyList<RewardComputedEffect> Ef
 
 /// <summary>
 /// Pure reward computation over loaded state (MVP spec §12, PROCESSING_FLOW diagram 4). No
-/// writes happen here — it returns typed effects that the handler persists. Selects matching
-/// campaigns, applies exclusivity by priority, and computes points per effect.
+/// writes happen here. Eligibility (audience + conditions + exclusivity) is separated from the
+/// stacked effect computation so the handler can apply member limits and budget reservation to
+/// the eligible set in between.
 ///
-/// NOTE (Phase 1): per-campaign-effect computation (base × multiplier, fixed bonuses). The
-/// full cross-campaign stacking algorithm (one base + stackable bonuses × highest eligible
-/// multiplier), member limits, and budgets are completed with the campaign engine in P3.
+/// Stacking (§12/§14): one base calculation counted once × the highest eligible multiplier,
+/// plus the sum of stackable fixed bonuses. The multiplier applies to the base only.
 /// </summary>
 public sealed class RewardDecisionService(ILoyaltyRuleEvaluator evaluator)
 {
-    public RewardDecisionResult Decide(
-        decimal spendAmountPerPoint,
-        RoundingPolicy rounding,
+    /// <summary>Audience + condition match, ordered by priority; exclusivity suppresses the rest.</summary>
+    public IReadOnlyList<Campaign> SelectEligible(
         NormalizedEvent normalized,
         IReadOnlyList<Campaign> candidates,
         string? lifecycleStage = null,
         IReadOnlySet<Guid>? activeSegmentIds = null)
     {
         var segments = activeSegmentIds ?? new HashSet<Guid>();
-
-        // keep only campaigns whose audience + conditions match
         var matched = candidates
             .Where(c => c.MatchesAudience(lifecycleStage, segments))
             .Where(c => evaluator.Evaluate(c.Conditions, normalized.Facts).Matched)
@@ -40,32 +37,43 @@ public sealed class RewardDecisionService(ILoyaltyRuleEvaluator evaluator)
             .ThenBy(c => c.Id)
             .ToList();
 
-        if (matched.Count == 0) return new RewardDecisionResult([]);
+        if (matched.Count == 0) return matched;
+        return matched[0].StackingPolicy == StackingPolicy.Exclusive ? [matched[0]] : matched;
+    }
 
-        // exclusivity: if the highest-priority match is exclusive, suppress the rest
-        var eligible = matched[0].StackingPolicy == StackingPolicy.Exclusive
-            ? [matched[0]]
-            : matched;
+    /// <summary>Compute stacked effects over an already-eligible, limit/budget-surviving set.</summary>
+    public RewardDecisionResult ComputeStackedEffects(
+        decimal spendAmountPerPoint, RoundingPolicy rounding, NormalizedEvent normalized, IReadOnlyList<Campaign> eligible)
+    {
+        if (eligible.Count == 0) return new RewardDecisionResult([]);
 
         var effects = new List<RewardComputedEffect>();
         var basePoints = normalized.Amount is { } amt
             ? PointsMath.CalculateBasePoints(amt, spendAmountPerPoint, rounding)
             : 0;
 
-        foreach (var c in eligible)
+        // one base calculation × the highest eligible multiplier, attributed to the highest-priority base campaign
+        var baseCampaigns = eligible
+            .Where(c => c.Effects.Any(e => e.Type == EffectType.AwardBasePoints))
+            .ToList();
+        if (basePoints > 0 && baseCampaigns.Count > 0)
         {
-            foreach (var e in c.Effects)
-            {
-                long points = e.Type switch
-                {
-                    EffectType.AwardBasePoints => (long)Math.Floor(basePoints * (double)(e.Multiplier ?? 1m)),
-                    EffectType.AwardPoints => e.Points ?? 0,
-                    _ => 0, // ReversePoints / AdjustPoints / NoReward not applied in the purchase-earn slice
-                };
-                if (points > 0)
-                    effects.Add(new RewardComputedEffect(c.Id, c.Version, e.EffectId, points));
-            }
+            var highestMultiplier = baseCampaigns
+                .SelectMany(c => c.Effects)
+                .Where(e => e.Type == EffectType.AwardBasePoints)
+                .Max(e => e.Multiplier ?? 1m);
+            var multipliedBase = (long)Math.Floor(basePoints * highestMultiplier);
+            var baseCampaign = baseCampaigns[0];
+            var baseEffectId = baseCampaign.Effects.First(e => e.Type == EffectType.AwardBasePoints).EffectId;
+            if (multipliedBase > 0)
+                effects.Add(new RewardComputedEffect(baseCampaign.Id, baseCampaign.Version, baseEffectId, multipliedBase));
         }
+
+        // stackable fixed bonuses are added afterwards and never multiplied
+        foreach (var c in eligible)
+            foreach (var e in c.Effects.Where(e => e.Type == EffectType.AwardPoints))
+                if ((e.Points ?? 0) > 0)
+                    effects.Add(new RewardComputedEffect(c.Id, c.Version, e.EffectId, e.Points!.Value));
 
         return new RewardDecisionResult(effects);
     }

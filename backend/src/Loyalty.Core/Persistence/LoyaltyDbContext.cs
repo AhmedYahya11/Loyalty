@@ -38,6 +38,7 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<PointsLedgerTransaction> LedgerTransactions => Set<PointsLedgerTransaction>();
     public DbSet<PointsLedgerPosting> LedgerPostings => Set<PointsLedgerPosting>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
+    public DbSet<CampaignUsage> CampaignUsages => Set<CampaignUsage>();
     public DbSet<IngestionRequest> IngestionRequests => Set<IngestionRequest>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<RewardEffect> RewardEffects => Set<RewardEffect>();
@@ -189,7 +190,17 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.Property(x => x.RequiredLifecycleStages).HasConversion(JsonListConverter<string>(), JsonListComparer<string>()).HasColumnType("jsonb");
             e.Property(x => x.RequiredSegmentIds).HasConversion(JsonListConverter<Guid>(), JsonListComparer<Guid>()).HasColumnType("jsonb");
             e.Property(x => x.ExcludedSegmentIds).HasConversion(JsonListConverter<Guid>(), JsonListComparer<Guid>()).HasColumnType("jsonb");
+            e.Property(x => x.MemberLimits).HasConversion(JsonListConverter<MemberLimit>(), JsonListComparer<MemberLimit>()).HasColumnType("jsonb");
             e.HasIndex(x => new { x.ApplicationId, x.TriggerEventType, x.Status });
+            ApplyScope(e);
+        });
+
+        b.Entity<CampaignUsage>(e =>
+        {
+            e.ToTable("campaign_usage", "campaigns");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.PeriodKey).HasMaxLength(16).IsRequired();
+            e.HasIndex(x => new { x.ApplicationId, x.CampaignId, x.MemberId, x.PeriodKey }).IsUnique();
             ApplyScope(e);
         });
 

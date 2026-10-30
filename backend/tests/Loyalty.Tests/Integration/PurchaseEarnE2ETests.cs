@@ -31,6 +31,7 @@ public class PurchaseEarnE2ETests(ApiFixture fx)
             conditions = Array.Empty<object>(), effects = new[] { new { effectId = "base-earn", type = "AwardBasePoints" } },
         }, auth);
         var campaignId = campaign.GetProperty("id").GetString()!;
+        await fx.Post($"/api/v1/campaigns/{campaignId}/validate", new { }, auth);
         await fx.Post($"/api/v1/campaigns/{campaignId}/activate", new { }, auth);
 
         var envelope = new

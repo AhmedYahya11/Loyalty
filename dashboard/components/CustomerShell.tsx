@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLang } from "@/app/providers";
-import { tr } from "@/lib/i18n";
+import { tr, langName, nextLang } from "@/lib/i18n";
 import { isCustConnected, clearCustSession } from "@/lib/customer";
 
 const tabs = [
@@ -22,8 +22,8 @@ export function CustomerShell({ children }: { children: React.ReactNode }) {
       <div className="cust-head">
         <div className="brand">💠 {tr("appTitle", lang)}</div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="lang-toggle" onClick={() => setLang(lang === "en" ? "ar" : "en")}>
-            {lang === "en" ? "العربية" : "English"}
+          <button className="lang-toggle" onClick={() => setLang(nextLang[lang])}>
+            🌐 {langName[nextLang[lang]]}
           </button>
           {connected && (
             <button className="lang-toggle" onClick={() => { clearCustSession(); router.push("/card"); location.reload(); }}>

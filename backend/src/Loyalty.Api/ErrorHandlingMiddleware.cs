@@ -2,7 +2,7 @@ using Loyalty.Core.BuildingBlocks;
 
 namespace Loyalty.Api;
 
-/// <summary>Maps <see cref="LoyaltyException"/> to a localized JSON error (bilingual AR/EN).</summary>
+/// <summary>Maps <see cref="LoyaltyException"/> to a localized JSON error (EN / AR / KU).</summary>
 public sealed class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext ctx)
@@ -13,14 +13,17 @@ public sealed class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorH
         }
         catch (LoyaltyException ex)
         {
-            await WriteAsync(ctx, ex.Error.StatusCode, ex.Error.Code, ex.Error.Localized(RequestLanguage.IsArabic(ctx)));
+            await WriteAsync(ctx, ex.Error.StatusCode, ex.Error.Code, ex.Error.Localized(RequestLanguage.Lang(ctx)));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled exception");
-            var message = RequestLanguage.IsArabic(ctx)
-                ? "حدث خطأ غير متوقع."
-                : "An unexpected error occurred.";
+            var message = RequestLanguage.Lang(ctx) switch
+            {
+                "ar" => "حدث خطأ غير متوقع.",
+                "ku" => "هەڵەیەکی چاوەڕواننەکراو ڕوویدا.",
+                _ => "An unexpected error occurred.",
+            };
             await WriteAsync(ctx, 500, "internal_error", message);
         }
     }

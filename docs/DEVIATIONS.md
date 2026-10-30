@@ -224,3 +224,26 @@ emitter template themselves).
   "Customer app link" button (Members page, QR + URL) is the handoff.
 - **Deferred**: real end-customer identity (host-app SSO / OTP) — tokens are admin-minted + shared
   for now; token self-service (list/revoke own sessions) and push notifications are later.
+- **P12** RFM personas + Kurdish (trilingual EN/AR/KU). ✅ DONE
+
+### P12 notes
+- **RFM**: per-member Recency/Frequency/Monetary scores (1–5) are **relative quintiles within each
+  application's own population** (so the segmentation self-calibrates per tenant), stored on the value
+  profile (`RfmRecency/Frequency/Monetary/Persona/EvaluatedAt`). Recency uses `LastPurchaseAt`
+  (fallback `LastActivityAt`); the persona is the standard matrix from R and combined F/M →
+  Champions, LoyalCustomers, PotentialLoyalist, NewCustomers, Promising, NeedAttention, AtRisk,
+  Hibernating, Lost. Recomputed by a daily `RfmJob` + `POST /admin/rfm-recompute`; distribution at
+  `GET /analytics/rfm`; persona shown on the member profile + a `/rfm` dashboard page.
+- **Kurdish (Sorani)**: third language alongside EN/AR, RTL, Arabic script. `LoyaltyError` gained an
+  optional `MessageKu` and a `Localized(lang)` overload; `RequestLanguage.Lang()` maps
+  `Accept-Language` → en/ar/ku; **ku falls back to the Arabic message** where a dedicated string isn't
+  provided (shared script). Frontend `i18n` is now trilingual (`Lang = en|ar|ku`, `dir()` RTL for
+  ar+ku, 3-way language cycle); Kurdish strings provided for nav + buttons + the customer card + RFM
+  personas, with Arabic fallback elsewhere.
+- **Deferred**: dedicated Kurdish for every admin string + entity `NameKu` (entities stay EN/AR, as
+  the original bilingual scope); configurable RFM cutoffs / absolute thresholds; persona-targeted
+  campaigns (reuse the audience-targeting hook) are a natural next step.
+
+## Status
+**P1–P12 complete — 62 tests green.** Generic multi-tenant core (P1–P6) + chaay-style product
+expansion (P7–P12). Messaging/omnichannel hub intentionally out of scope.

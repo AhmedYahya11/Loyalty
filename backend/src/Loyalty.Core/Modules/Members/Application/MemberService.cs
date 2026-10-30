@@ -85,6 +85,7 @@ public sealed class MemberService(
             tier,
             currentStreak = p.CurrentStreak,
             longestStreak = p.LongestStreak,
+            rfm = new { recency = p.RfmRecency, frequency = p.RfmFrequency, monetary = p.RfmMonetary, persona = p.RfmPersona, evaluatedAt = p.RfmEvaluatedAt },
             p.FirstActivityAt,
             p.LastActivityAt,
             p.LastPurchaseAt,

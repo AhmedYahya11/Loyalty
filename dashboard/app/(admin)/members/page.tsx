@@ -12,7 +12,8 @@ type Stamp = { stampCardId: string; name: string; nameAr?: string; stamps: numbe
 type Txn = { transactionId: string; transactionType: string; totalDebit: number; totalCredit: number; occurredAt: string };
 type Segment = { segmentId: string; name: string; nameAr?: string };
 type Tier = { name: string; nameAr?: string; rank: number; earnMultiplier: number };
-type Profile = { lifecycleStage: string; tier?: Tier | null; currentStreak: number; longestStreak: number; purchaseCount: number; netSpendAmount: number; pointsEarned: number; pointsRedeemed: number; activeSegments: Segment[] };
+type Rfm = { recency: number; frequency: number; monetary: number; persona?: string | null };
+type Profile = { lifecycleStage: string; tier?: Tier | null; currentStreak: number; longestStreak: number; purchaseCount: number; netSpendAmount: number; pointsEarned: number; pointsRedeemed: number; activeSegments: Segment[]; rfm?: Rfm };
 type Reward = { id: string; name: string; nameAr?: string; pointsCost: number };
 type Redemption = { id: string; rewardName: string; pointsCost: number; status: string; couponCode: string };
 type Badge = { achievementId: string; name: string; nameAr?: string; icon?: string };
@@ -100,6 +101,7 @@ export default function MembersPage() {
                 <tr><th>{tr("lifecycleStage", lang)}</th><td><span className="badge ok">{profile.lifecycleStage}</span></td></tr>
                 <tr><th>{tr("tier", lang)}</th><td>{profile.tier ? <span className="badge ok">{(lang === "ar" && profile.tier.nameAr ? profile.tier.nameAr : profile.tier.name)} (×{profile.tier.earnMultiplier})</span> : "—"}</td></tr>
                 <tr><th>{tr("streak", lang)}</th><td>🔥 {profile.currentStreak} (max {profile.longestStreak})</td></tr>
+                {profile.rfm?.persona && <tr><th>{tr("persona", lang)}</th><td><span className="badge ok">🧭 {tr(profile.rfm.persona, lang)}</span> <span className="muted">R{profile.rfm.recency} F{profile.rfm.frequency} M{profile.rfm.monetary}</span></td></tr>}
                 <tr><th>{tr("badges", lang)}</th><td>{badges.length > 0 ? badges.map((b) => <span key={b.achievementId} className="badge ok" style={{ marginInlineEnd: 6 }}>🏅 {(lang === "ar" && b.nameAr ? b.nameAr : b.name)}</span>) : "—"}</td></tr>
                 <tr><th>{tr("purchaseCount", lang)}</th><td>{profile.purchaseCount}</td></tr>
                 <tr><th>{tr("netSpend", lang)}</th><td>{profile.netSpendAmount} IQD</td></tr>

@@ -4,13 +4,22 @@ namespace Loyalty.Core.BuildingBlocks;
 /// A machine-readable error with the HTTP status and bilingual (English + Arabic) messages.
 /// The API selects the message language from the Accept-Language header. النظام ثنائي اللغة.
 /// </summary>
-public sealed record LoyaltyError(int StatusCode, string Code, string MessageEn, string MessageAr)
+public sealed record LoyaltyError(int StatusCode, string Code, string MessageEn, string MessageAr, string? MessageKu = null)
 {
     /// <summary>Default message (English), used for exception text and logs.</summary>
     public string Message => MessageEn;
 
     /// <summary>Localized message: Arabic when <paramref name="arabic"/> is true, else English.</summary>
     public string Localized(bool arabic) => arabic ? MessageAr : MessageEn;
+
+    /// <summary>Localized message by language code ("en"/"ar"/"ku"). Kurdish falls back to Arabic
+    /// (shared script) when a dedicated message is not provided.</summary>
+    public string Localized(string lang) => lang switch
+    {
+        "ku" => MessageKu ?? MessageAr,
+        "ar" => MessageAr,
+        _ => MessageEn,
+    };
 
     // Auth / scope
     public static LoyaltyError InvalidCredential() => new(401, "invalid_credential",

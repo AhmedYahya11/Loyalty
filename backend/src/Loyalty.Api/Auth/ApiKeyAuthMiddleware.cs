@@ -106,7 +106,7 @@ public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
     {
         ctx.Response.StatusCode = error.StatusCode;
         ctx.Response.ContentType = "application/json";
-        var message = error.Localized(RequestLanguage.IsArabic(ctx));
+        var message = error.Localized(RequestLanguage.Lang(ctx));
         return ctx.Response.WriteAsJsonAsync(new { code = error.Code, message });
     }
 }

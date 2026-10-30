@@ -2,11 +2,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLang } from "@/app/providers";
-import { tr } from "@/lib/i18n";
+import { tr, langName, nextLang } from "@/lib/i18n";
 
 const links = [
   { href: "/", key: "connect" },
   { href: "/overview", key: "overview" },
+  { href: "/rfm", key: "rfm" },
   { href: "/applications", key: "applications" },
   { href: "/campaigns", key: "campaigns" },
   { href: "/segments", key: "segments" },
@@ -35,8 +36,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
         ))}
         <div style={{ flex: 1 }} />
         <Link href="/card" className="navlink" style={{ marginBottom: 8 }}>💳 {tr("myCard", lang)}</Link>
-        <button className="lang-toggle" onClick={() => setLang(lang === "en" ? "ar" : "en")}>
-          {lang === "en" ? "العربية" : "English"}
+        <button className="lang-toggle" onClick={() => setLang(nextLang[lang])}>
+          🌐 {langName[nextLang[lang]]}
         </button>
       </nav>
       <main className="main">{children}</main>

@@ -112,8 +112,12 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
   one member), a `/api/v1/customer/*` self-service API (own points/tier/streak/badges, rewards +
   redeem, coupons, stamp progress, history), and a mobile-style **digital loyalty card** at `/card`
   (QR, redeem, history) — same Next.js app, admin mints a shareable link/QR from the Members page
+- **P12** **RFM personas + Kurdish**: relative R/F/M quintile scoring per tenant → 9 marketing
+  **personas** (Champions … Lost), daily recompute + `/analytics/rfm` distribution + dashboard page;
+  and **trilingual EN/AR/KU** — Kurdish (Sorani, RTL) across the dashboard, customer app, and API
+  error messages (ku→ar script fallback)
 
-The core platform (P1–P6) is complete and generic/multi-tenant. P7+ is a product expansion toward
-**chaay.io-style** SMB loyalty (loyalty features; messaging hub out of scope): **Tiers ✅**,
-**Rewards & Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**,
-**Customer-facing app ✅**, then RFM personas + Kurdish. **60 tests green.**
+The core platform (P1–P6) is complete and generic/multi-tenant. P7–P12 are a **chaay.io-style** SMB
+product expansion (loyalty features; messaging hub out of scope): **Tiers ✅**, **Rewards &
+Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, **Customer-facing
+app ✅**, **RFM personas + Kurdish ✅**. **62 tests green.**

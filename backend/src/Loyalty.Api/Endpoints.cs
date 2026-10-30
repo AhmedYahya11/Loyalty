@@ -269,6 +269,12 @@ public static class Endpoints
         v1.MapPost("/admin/lifecycle-sweep", async (Loyalty.Core.Modules.Cvm.Application.LifecycleSweepService svc, CancellationToken ct) =>
             Results.Ok(new { transitions = await svc.RunAsync(ct) }));
 
+        // ---------- RFM personas (P12): recompute + distribution ----------
+        v1.MapPost("/admin/rfm-recompute", async (Loyalty.Core.Modules.Cvm.Application.RfmService svc, CancellationToken ct) =>
+            Results.Ok(new { scored = await svc.RunAsync(ct) }));
+        v1.MapGet("/analytics/rfm", async (Loyalty.Core.Modules.Cvm.Application.RfmService svc, CancellationToken ct) =>
+            Results.Ok(await svc.SummaryAsync(ct)));
+
         // ---------- admin: trigger the daily birthday reward sweep on demand (P10) ----------
         v1.MapPost("/admin/birthday-sweep", async (string? asOf, Loyalty.Core.Modules.Engagement.Application.BirthdaySweepService svc, CancellationToken ct) =>
             Results.Ok(new { rewarded = asOf is not null && DateTimeOffset.TryParse(asOf, out var d) ? await svc.RunForAsync(d, ct) : await svc.RunAsync(ct) }));

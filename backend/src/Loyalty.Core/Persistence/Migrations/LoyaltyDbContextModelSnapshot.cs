@@ -467,6 +467,21 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.Property<long>("ReferralCount")
                         .HasColumnType("bigint");
 
+                    b.Property<DateTimeOffset?>("RfmEvaluatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("RfmFrequency")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RfmMonetary")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RfmPersona")
+                        .HasColumnType("text");
+
+                    b.Property<int>("RfmRecency")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset?>("TierEvaluatedAt")
                         .HasColumnType("timestamp with time zone");
 

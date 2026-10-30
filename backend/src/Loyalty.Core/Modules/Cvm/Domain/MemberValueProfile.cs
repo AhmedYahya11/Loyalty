@@ -31,6 +31,11 @@ public sealed class MemberValueProfile : IApplicationScoped
     public int CurrentStreak { get; private set; }
     public int LongestStreak { get; private set; }
     public DateOnly? LastStreakDate { get; private set; }
+    public int RfmRecency { get; private set; }
+    public int RfmFrequency { get; private set; }
+    public int RfmMonetary { get; private set; }
+    public string? RfmPersona { get; private set; }
+    public DateTimeOffset? RfmEvaluatedAt { get; private set; }
     public int Version { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -110,6 +115,17 @@ public sealed class MemberValueProfile : IApplicationScoped
         CurrentTierId = tierId;
         CurrentTierRank = rank;
         TierEvaluatedAt = evaluatedAt;
+        UpdatedAt = evaluatedAt;
+    }
+
+    /// <summary>Set the RFM scores (1–5) and derived persona label (P12).</summary>
+    public void SetRfm(int recency, int frequency, int monetary, string persona, DateTimeOffset evaluatedAt)
+    {
+        RfmRecency = recency;
+        RfmFrequency = frequency;
+        RfmMonetary = monetary;
+        RfmPersona = persona;
+        RfmEvaluatedAt = evaluatedAt;
         UpdatedAt = evaluatedAt;
     }
 }

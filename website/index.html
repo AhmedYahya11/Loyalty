@@ -67,8 +67,10 @@
   .loyalty-card .row{display:flex;justify-content:space-between;align-items:center}
   .loyalty-card .pts{font-size:46px;font-weight:800;line-height:1;margin:6px 0 2px}
   .pill{background:rgba(255,255,255,.22);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600}
-  .qr{background:#fff;border-radius:12px;padding:10px;width:92px;height:92px;display:grid;
-    grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:3px;margin-top:18px}
+  .qr{background:#fff;border-radius:12px;padding:9px;width:104px;height:104px;display:grid;
+    grid-template-columns:repeat(13,1fr);grid-template-rows:repeat(13,1fr);gap:2px;margin-top:18px}
+  .qr i{background:#0b1020;border-radius:1px}
+  .qr i.off{background:transparent}
   .floaty{position:absolute;background:var(--panel);border:1px solid var(--border);border-radius:14px;
     padding:12px 14px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);display:flex;gap:8px;align-items:center}
   .floaty.a{top:4%;left:-6%}.floaty.b{bottom:2%;right:-4%}
@@ -141,16 +143,16 @@
     <nav>
       <a class="logo" href="#top">💠 Walaa</a>
       <div class="navlinks" id="nav">
-        <a href="#features" data-ar="المزايا">Features</a>
-        <a href="#industries" data-ar="لمن">Who it's for</a>
-        <a href="#how" data-ar="كيف يعمل">How it works</a>
-        <a href="#pricing" data-ar="الأسعار">Pricing</a>
-        <a href="#faq" data-ar="الأسئلة الشائعة">FAQ</a>
+        <a href="#features" data-ar="المزايا" data-ku="مزایاکان">Features</a>
+        <a href="#industries" data-ar="لمن" data-ku="بۆ کێ">Who it's for</a>
+        <a href="#how" data-ar="كيف يعمل" data-ku="چۆن کار دەکات">How it works</a>
+        <a href="#pricing" data-ar="الأسعار" data-ku="نرخەکان">Pricing</a>
+        <a href="#faq" data-ar="الأسئلة الشائعة" data-ku="پرسیارە باوەکان">FAQ</a>
       </div>
       <div class="nav-cta">
         <button class="lang" id="langBtn" aria-label="Language">العربية</button>
-        <a class="btn btn-ghost" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="تسجيل الدخول">Log in</a>
-        <a class="btn btn-primary" href="#pricing" data-ar="ابدأ الآن">Get started</a>
+        <a class="btn btn-ghost" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="تسجيل الدخول" data-ku="چوونەژوورەوە">Log in</a>
+        <a class="btn btn-primary" href="#pricing" data-ar="ابدأ الآن" data-ku="دەستپێبکە">Get started</a>
         <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
       </div>
     </nav>
@@ -161,27 +163,27 @@
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow" data-ar="منصة الولاء والمكافآت">Loyalty &amp; Rewards Platform</span>
-      <h1 data-ar-html="حوّل المشتري لمرة واحدة إلى <span class='grad'>عميل دائم</span>.">Turn one-time buyers into <span class="grad">lifelong regulars</span>.</h1>
-      <p class="sub" data-ar="والاء هو محرك الولاء المتكامل للأعمال الحديثة — نقاط، ومستويات، ومكافآت، وتحفيز، وإحالات، وبطاقات أختام، وسحوبات جوائز. مبني على الـ API، متعدد المستأجرين، وثنائي اللغة.">Walaa is the complete loyalty engine for modern businesses — points, tiers, rewards,
+      <span class="eyebrow" data-ar="منصة الولاء والمكافآت" data-ku="پلاتفۆڕمی دڵسۆزی و خەڵات">Loyalty &amp; Rewards Platform</span>
+      <h1 data-ar-html="حوّل المشتري لمرة واحدة إلى <span class='grad'>عميل دائم</span>." data-ku-html="یەکجار کڕیار بکە بە <span class='grad'>کڕیارێکی هەمیشەیی</span>.">Turn one-time buyers into <span class="grad">lifelong regulars</span>.</h1>
+      <p class="sub" data-ar="ولاء هو محرك الولاء المتكامل للأعمال الحديثة — نقاط، ومستويات، ومكافآت، وتحفيز، وإحالات، وبطاقات أختام، وسحوبات جوائز. مبني على الـ API، متعدد المستأجرين، وثنائي اللغة." data-ku="ولاء بزوێنەری تەواوی دڵسۆزییە بۆ بزنسە مۆدێرنەکان — خاڵ، ئاست، خەڵات، یاری، ناردن، کارتی مۆر و کێشانی خەڵات. لەسەر API بنیاتنراوە، فرە-بەکارهێنەر و دووزمانە.">Walaa is the complete loyalty engine for modern businesses — points, tiers, rewards,
         gamification, referrals, stamp cards and prize draws. API-first, multi-tenant, and bilingual.</p>
       <div class="hero-ctas">
-        <a class="btn btn-primary btn-lg" href="#pricing" data-ar="ابدأ مجانًا">Start free</a>
-        <a class="btn btn-ghost btn-lg" href="#how" data-ar="شاهد كيف يعمل">See how it works</a>
+        <a class="btn btn-primary btn-lg" href="#pricing" data-ar="ابدأ مجانًا" data-ku="بەخۆڕایی دەستپێبکە">Start free</a>
+        <a class="btn btn-ghost btn-lg" href="#how" data-ar="شاهد كيف يعمل" data-ku="ببینە چۆن کار دەکات">See how it works</a>
       </div>
-      <p class="hero-note" data-ar="بلا بطاقات ولا تعقيد. محفظة ولاء رقمية يستخدمها عملاؤك فعلًا.">No cards. No clutter. A digital loyalty wallet your customers actually use.</p>
-      <p class="tagline grad rtl" dir="rtl" data-ar="حوّل زبائنك إلى عملاء دائمين · بەکڕیارە دڵسۆزەکان">Turn shoppers into regulars · بەکڕیارە دڵسۆزەکان</p>
+      <p class="hero-note" data-ar="بلا بطاقات ولا تعقيد. محفظة ولاء رقمية يستخدمها عملاؤك فعلًا." data-ku="بێ کارت و بێ ئاڵۆزی. جزدانی دڵسۆزیی دیجیتاڵ کە کڕیارەکانت بەکاری دەهێنن.">No cards. No clutter. A digital loyalty wallet your customers actually use.</p>
+      <p class="tagline grad rtl" dir="rtl" data-ar="حوّل زبائنك إلى عملاء دائمين · بەکڕیارە دڵسۆزەکان" data-ku="کڕیارەکانت بکە بە دڵسۆز · بەکڕیارە دڵسۆزەکان">Turn shoppers into regulars · بەکڕیارە دڵسۆزەکان</p>
     </div>
     <div class="mock">
-      <div class="floaty a"><span class="dot"></span> <span data-ar="+50 نقطة مكتسبة">+50 points earned</span></div>
+      <div class="floaty a"><span class="dot"></span> <span data-ar="+50 نقطة مكتسبة" data-ku="+50 خاڵ بەدەستهات">+50 points earned</span></div>
       <div class="loyalty-card">
-        <div class="row"><span style="opacity:.9" data-ar="بطاقة ولاء">Walaa Card</span><span class="pill" data-ar="⭐ ذهبي ×1.5">⭐ Gold ×1.5</span></div>
-        <div style="opacity:.85;font-size:13px;margin-top:14px" data-ar="النقاط المتاحة">Available points</div>
+        <div class="row"><span style="opacity:.9" data-ar="بطاقة ولاء" data-ku="کارتی ولاء">Walaa Card</span><span class="pill" data-ar="⭐ ذهبي ×1.5" data-ku="⭐ زێڕین ×1.5">⭐ Gold ×1.5</span></div>
+        <div style="opacity:.85;font-size:13px;margin-top:14px" data-ar="النقاط المتاحة" data-ku="خاڵە بەردەستەکان">Available points</div>
         <div class="pts">6,154</div>
-        <div style="opacity:.85;font-size:13px" data-ar="🔥 سلسلة 12 يومًا · 🏅 4 أوسمة">🔥 12-day streak · 🏅 4 badges</div>
+        <div style="opacity:.85;font-size:13px" data-ar="🔥 سلسلة 12 يومًا · 🏅 4 أوسمة" data-ku="🔥 زنجیرەی 12 ڕۆژ · 🏅 4 نیشان">🔥 12-day streak · 🏅 4 badges</div>
         <div class="qr" aria-hidden="true"></div>
       </div>
-      <div class="floaty b" data-ar="🎁 قهوة مجانية">🎁 Free coffee unlocked</div>
+      <div class="floaty b" data-ar="🎁 قهوة مجانية" data-ku="🎁 قاوەی بەخۆڕایی">🎁 Free coffee unlocked</div>
     </div>
   </div>
 </section>
@@ -189,10 +191,10 @@
 <section style="padding-top:0">
   <div class="wrap">
     <div class="stats">
-      <div class="stat"><span class="grad">×3</span><p data-ar="معدل شراء متكرر أعلى مع المستويات والمكافآت">higher repeat-purchase rate with tiers + rewards</p></div>
-      <div class="stat"><span class="grad">API</span><p data-ar="واجهة واحدة — أرسل أي حدث ونتولّى منطق الولاء">1 API — send any event, we handle the loyalty logic</p></div>
-      <div class="stat"><span class="grad">3</span><p data-ar="لغات جاهزة — الإنجليزية والعربية والكردية (RTL)">languages out of the box — EN · AR · KU (RTL)</p></div>
-      <div class="stat"><span class="grad">∞</span><p data-ar="علامات تجارية وفروع على منصة واحدة متعددة المستأجرين">brands &amp; branches on one multi-tenant platform</p></div>
+      <div class="stat"><span class="grad">×3</span><p data-ar="معدل شراء متكرر أعلى مع المستويات والمكافآت" data-ku="ڕێژەی کڕینی دووبارەی بەرزتر لەگەڵ ئاست و خەڵات">higher repeat-purchase rate with tiers + rewards</p></div>
+      <div class="stat"><span class="grad">API</span><p data-ar="واجهة واحدة — أرسل أي حدث ونتولّى منطق الولاء" data-ku="یەک API — هەر ڕووداوێک بنێرە، ئێمە لۆجیکی دڵسۆزی دەکەین">1 API — send any event, we handle the loyalty logic</p></div>
+      <div class="stat"><span class="grad">3</span><p data-ar="لغات جاهزة — الإنجليزية والعربية والكردية (RTL)" data-ku="زمانە ئامادەکان — ئینگلیزی · عەرەبی · کوردی (RTL)">languages out of the box — EN · AR · KU (RTL)</p></div>
+      <div class="stat"><span class="grad">∞</span><p data-ar="علامات تجارية وفروع على منصة واحدة متعددة المستأجرين" data-ku="براند و لق لەسەر یەک پلاتفۆڕمی فرە-بەکارهێنەر">brands &amp; branches on one multi-tenant platform</p></div>
     </div>
   </div>
 </section>
@@ -200,39 +202,39 @@
 <section id="features">
   <div class="wrap">
     <div class="center" style="max-width:640px">
-      <span class="eyebrow" data-ar="كل ما تحتاجه">Everything you need</span>
-      <h2 data-ar="منصة واحدة لدورة الولاء كاملة">One platform for the whole loyalty loop</h2>
-      <p class="sub center" data-ar="اكسب ← تفاعل ← كافئ ← احتفظ. اضبط كل برنامج بنفسك — دون برمجة لكل حملة.">Earn → engage → reward → retain. Configure every program yourself — no code per campaign.</p>
+      <span class="eyebrow" data-ar="كل ما تحتاجه" data-ku="هەرچی پێویستتە">Everything you need</span>
+      <h2 data-ar="منصة واحدة لدورة الولاء كاملة" data-ku="یەک پلاتفۆڕم بۆ تەواوی خولی دڵسۆزی">One platform for the whole loyalty loop</h2>
+      <p class="sub center" data-ar="اكسب ← تفاعل ← كافئ ← احتفظ. اضبط كل برنامج بنفسك — دون برمجة لكل حملة." data-ku="بەدەستبهێنە ← بەشداری ← خەڵات ← ڕاگرتن. هەر پڕۆگرامێک خۆت ڕێکبخە — بەبێ کۆد بۆ هەر کەمپینێک.">Earn → engage → reward → retain. Configure every program yourself — no code per campaign.</p>
     </div>
     <div class="grid cols-3" style="margin-top:44px">
-      <div class="card"><span class="ic">💰</span><h3 data-ar="النقاط والمحفظة">Points &amp; wallet</h3><p data-ar="دفتر نقاط مزدوج القيد غير قابل للتعديل مع أرصدة فعّالة ومعلّقة ومحجوزة — دقيق حتى آخر نقطة.">An immutable double-entry points ledger with active, pending and reserved balances — accurate to the last point.</p></div>
-      <div class="card"><span class="ic">⭐</span><h3 data-ar="المستويات">Tiers</h3><p data-ar="مستويات من البرونزي إلى البلاتيني تتدرّج تلقائيًا حسب الإنفاق أو النقاط أو الزيارات وتضاعف سرعة الكسب.">Bronze→Platinum tiers that auto-progress on spend, points or visits and multiply how fast members earn.</p></div>
-      <div class="card"><span class="ic">🎁</span><h3 data-ar="المكافآت وقسائم QR">Rewards &amp; QR coupons</h3><p data-ar="كتالوج مكافآت يستبدله العملاء بالنقاط — حجز ثم تأكيد عند الكاشير برمز QR.">A reward catalog customers redeem for points — reserve → confirm at the counter with a QR coupon.</p></div>
-      <div class="card"><span class="ic">🏅</span><h3 data-ar="التحفيز والألعاب">Gamification</h3><p data-ar="إنجازات وأوسمة، وسلاسل يومية، وتحديات زمنية، ولوحات متصدرين تُعيد العملاء دائمًا.">Achievements, daily streaks, time-boxed challenges and leaderboards that keep customers coming back.</p></div>
-      <div class="card"><span class="ic">👥</span><h3 data-ar="الإحالات">Referrals</h3><p data-ar="لكل عضو رمز/‏QR قابل للمشاركة؛ ويُكافأ الطرفان تلقائيًا عند اكتمال الإحالة.">Every member gets a shareable code/QR; both sides are rewarded automatically when a referral completes.</p></div>
-      <div class="card"><span class="ic">🎟️</span><h3 data-ar="بطاقات الأختام الرقمية">Digital stamp cards</h3><p data-ar="«اشترِ 10 واحصل على 1 مجانًا» — مشروطة بالخدمة/الفئة، تُكافئ وتُعاد عند الاكتمال.">"Buy 10, get 1 free" punch cards — conditioned by service/category, award &amp; reset when full.</p></div>
-      <div class="card"><span class="ic">🎲</span><h3 data-ar="سحوبات الجوائز">Prize draws</h3><p data-ar="المشتريات أو الحجوزات أو مشاركة التطبيق تمنح تذاكر مرجّحة؛ واختيار فائز عشوائي عادل مرجّح.">Purchases, bookings or app-shares earn weighted entries; pick a fair, weighted-random winner.</p></div>
-      <div class="card"><span class="ic">🎂</span><h3 data-ar="أعياد الميلاد والحملات">Birthday &amp; campaigns</h3><p data-ar="مكافآت عيد ميلاد مجدولة ومحرك حملات كامل بشروط وتراكم وحدود وميزانيات.">Scheduled birthday rewards and a full campaign engine with conditions, stacking, limits and budgets.</p></div>
-      <div class="card"><span class="ic">🧭</span><h3 data-ar="شخصيات RFM">RFM personas</h3><p data-ar="تقييم تلقائي للحداثة والتكرار والقيمة يصنّف الأعضاء إلى أبطال ومعرّضين للخطر ومفقودين وغيرها.">Automatic Recency/Frequency/Monetary scoring sorts members into Champions, At-Risk, Lost and more.</p></div>
-      <div class="card"><span class="ic">📱</span><h3 data-ar="تطبيق العميل">Customer app</h3><p data-ar="بطاقة ولاء على الجوال: الرصيد والمستوى والأوسمة والقسائم والسجل — تُفتح برابط آمن.">A mobile loyalty card: balance, tier, badges, coupons and history — opened from a secure link.</p></div>
-      <div class="card"><span class="ic">🌍</span><h3 data-ar="ثنائي اللغة وRTL">Bilingual &amp; RTL</h3><p data-ar="الإنجليزية والعربية والكردية (سوراني) في لوحة التحكم وتطبيق العميل ورسائل الـ API.">English, Arabic and Kurdish (Sorani) across the dashboard, customer app and API messages.</p></div>
-      <div class="card"><span class="ic">🔌</span><h3 data-ar="الـ API وويب هوك">API &amp; webhooks</h3><p data-ar="واجهة أحداث واحدة، وويب هوك موقّع بـ HMAC، وحزمة تكامل لربطها بأي نقطة بيع أو تطبيق.">One generic events API, HMAC-signed webhooks, and an integration kit to plug into any POS or app.</p></div>
+      <div class="card"><span class="ic">💰</span><h3 data-ar="النقاط والمحفظة" data-ku="خاڵ و جزدان">Points &amp; wallet</h3><p data-ar="دفتر نقاط مزدوج القيد غير قابل للتعديل مع أرصدة فعّالة ومعلّقة ومحجوزة — دقيق حتى آخر نقطة." data-ku="دەفتەرێکی خاڵی دووجار-تۆمارکراوی ناگۆڕ لەگەڵ باڵانسی چالاک، چاوەڕوان و حیجزکراو — ورد تا دوا خاڵ.">An immutable double-entry points ledger with active, pending and reserved balances — accurate to the last point.</p></div>
+      <div class="card"><span class="ic">⭐</span><h3 data-ar="المستويات" data-ku="ئاستەکان">Tiers</h3><p data-ar="مستويات من البرونزي إلى البلاتيني تتدرّج تلقائيًا حسب الإنفاق أو النقاط أو الزيارات وتضاعف سرعة الكسب." data-ku="ئاست لە برۆنزەوە بۆ پلاتینیۆم کە خۆکارانە بەرز دەبنەوە بەپێی خەرجی، خاڵ یان سەردان و خێرایی بەدەستهێنان چەند بەرابەر دەکەن.">Bronze→Platinum tiers that auto-progress on spend, points or visits and multiply how fast members earn.</p></div>
+      <div class="card"><span class="ic">🎁</span><h3 data-ar="المكافآت وقسائم QR" data-ku="خەڵات و کۆبۆنی QR">Rewards &amp; QR coupons</h3><p data-ar="كتالوج مكافآت يستبدله العملاء بالنقاط — حجز ثم تأكيد عند الكاشير برمز QR." data-ku="کەتەلۆگی خەڵات کە کڕیار بە خاڵ دەیگۆڕنەوە — حیجز ← پشتڕاستکردنەوە لە کاتی پارەدان بە کۆبۆنی QR.">A reward catalog customers redeem for points — reserve → confirm at the counter with a QR coupon.</p></div>
+      <div class="card"><span class="ic">🏅</span><h3 data-ar="التحفيز والألعاب" data-ku="یاریکردن">Gamification</h3><p data-ar="إنجازات وأوسمة، وسلاسل يومية، وتحديات زمنية، ولوحات متصدرين تُعيد العملاء دائمًا." data-ku="دەستکەوت و نیشان، زنجیرەی ڕۆژانە، ئاستەنگی کاتدار و لیستی پێشەنگان کە کڕیار دەهێننەوە.">Achievements, daily streaks, time-boxed challenges and leaderboards that keep customers coming back.</p></div>
+      <div class="card"><span class="ic">👥</span><h3 data-ar="الإحالات" data-ku="ناردنەکان">Referrals</h3><p data-ar="لكل عضو رمز/‏QR قابل للمشاركة؛ ويُكافأ الطرفان تلقائيًا عند اكتمال الإحالة." data-ku="هەر ئەندامێک کۆد/QRـی هاوبەشکردنی هەیە؛ هەردوو لا خۆکارانە خەڵات دەکرێن کاتێک ناردن تەواو دەبێت.">Every member gets a shareable code/QR; both sides are rewarded automatically when a referral completes.</p></div>
+      <div class="card"><span class="ic">🎟️</span><h3 data-ar="بطاقات الأختام الرقمية" data-ku="کارتی مۆری دیجیتاڵ">Digital stamp cards</h3><p data-ar="«اشترِ 10 واحصل على 1 مجانًا» — مشروطة بالخدمة/الفئة، تُكافئ وتُعاد عند الاكتمال." data-ku="«10 بکڕە، 1 بەخۆڕایی وەربگرە» — بەپێی خزمەتگوزاری/پۆل، خەڵات دەدات و ڕیسێت دەبێتەوە کاتێک پڕ دەبێت.">"Buy 10, get 1 free" punch cards — conditioned by service/category, award &amp; reset when full.</p></div>
+      <div class="card"><span class="ic">🎲</span><h3 data-ar="سحوبات الجوائز" data-ku="کێشانی خەڵات">Prize draws</h3><p data-ar="المشتريات أو الحجوزات أو مشاركة التطبيق تمنح تذاكر مرجّحة؛ واختيار فائز عشوائي عادل مرجّح." data-ku="کڕین، حیجز یان هاوبەشکردنی ئەپ بلیتی هاوسەنگ دەبەخشن؛ براوەیەکی هەڕەمەکیی دادپەروەرانە هەڵبژێرە.">Purchases, bookings or app-shares earn weighted entries; pick a fair, weighted-random winner.</p></div>
+      <div class="card"><span class="ic">🎂</span><h3 data-ar="أعياد الميلاد والحملات" data-ku="لەدایکبوون و کەمپینەکان">Birthday &amp; campaigns</h3><p data-ar="مكافآت عيد ميلاد مجدولة ومحرك حملات كامل بشروط وتراكم وحدود وميزانيات." data-ku="خەڵاتی لەدایکبوونی خشتەکراو و بزوێنەری تەواوی کەمپین لەگەڵ مەرج، کۆکردنەوە، سنوور و بودجە.">Scheduled birthday rewards and a full campaign engine with conditions, stacking, limits and budgets.</p></div>
+      <div class="card"><span class="ic">🧭</span><h3 data-ar="شخصيات RFM" data-ku="کەسایەتییەکانی RFM">RFM personas</h3><p data-ar="تقييم تلقائي للحداثة والتكرار والقيمة يصنّف الأعضاء إلى أبطال ومعرّضين للخطر ومفقودين وغيرها." data-ku="هەڵسەنگاندنی خۆکاری نوێیی/دووبارەیی/پارە ئەندامان دابەش دەکات بۆ پاڵەوانان، لە مەترسیدا، لەدەستچوو و زیاتر.">Automatic Recency/Frequency/Monetary scoring sorts members into Champions, At-Risk, Lost and more.</p></div>
+      <div class="card"><span class="ic">📱</span><h3 data-ar="تطبيق العميل" data-ku="ئەپی کڕیار">Customer app</h3><p data-ar="بطاقة ولاء على الجوال: الرصيد والمستوى والأوسمة والقسائم والسجل — تُفتح برابط آمن." data-ku="کارتی دڵسۆزی لەسەر مۆبایل: باڵانس، ئاست، نیشان، کۆبۆن و مێژوو — بە لینکێکی پارێزراوەوە دەکرێتەوە.">A mobile loyalty card: balance, tier, badges, coupons and history — opened from a secure link.</p></div>
+      <div class="card"><span class="ic">🌍</span><h3 data-ar="ثنائي اللغة وRTL" data-ku="دووزمانە و RTL">Bilingual &amp; RTL</h3><p data-ar="الإنجليزية والعربية والكردية (سوراني) في لوحة التحكم وتطبيق العميل ورسائل الـ API." data-ku="ئینگلیزی، عەرەبی و کوردی (سۆرانی) لە داشبۆرد، ئەپی کڕیار و پەیامەکانی API.">English, Arabic and Kurdish (Sorani) across the dashboard, customer app and API messages.</p></div>
+      <div class="card"><span class="ic">🔌</span><h3 data-ar="الـ API وويب هوك" data-ku="API و ویبهووک">API &amp; webhooks</h3><p data-ar="واجهة أحداث واحدة، وويب هوك موقّع بـ HMAC، وحزمة تكامل لربطها بأي نقطة بيع أو تطبيق." data-ku="یەک API بۆ ڕووداوەکان، ویبهووکی واژووکراو بە HMAC، و کیتی تەواوکاری بۆ بەستن بە هەر POS یان ئەپێک.">One generic events API, HMAC-signed webhooks, and an integration kit to plug into any POS or app.</p></div>
     </div>
   </div>
 </section>
 
 <section id="industries" style="background:var(--bg2)">
   <div class="wrap center" style="max-width:720px">
-    <span class="eyebrow" data-ar="مصمم لأجل">Built for</span>
-    <h2 data-ar="ولاء يناسب عملك">Loyalty that fits your business</h2>
-    <p class="sub center" data-ar="من صالون واحد إلى سوق متعدد العلامات — المحرّك نفسه يتكيّف معك.">From a single salon to a multi-brand marketplace — the same engine adapts to you.</p>
+    <span class="eyebrow" data-ar="مصمم لأجل" data-ku="دروستکراوە بۆ">Built for</span>
+    <h2 data-ar="ولاء يناسب عملك" data-ku="دڵسۆزی کە لەگەڵ بزنسەکەت دەگونجێت">Loyalty that fits your business</h2>
+    <p class="sub center" data-ar="من صالون واحد إلى سوق متعدد العلامات — المحرّك نفسه يتكيّف معك." data-ku="لە یەک سالۆنەوە بۆ بازاڕێکی فرە-براند — هەمان بزوێنەر خۆی لەگەڵت دەگونجێنێت.">From a single salon to a multi-brand marketplace — the same engine adapts to you.</p>
     <div class="chips">
-      <span class="chip" data-ar="☕ المقاهي والمطاعم">☕ Cafés &amp; restaurants</span>
-      <span class="chip" data-ar="💇 الصالونات والتجميل">💇 Salons &amp; beauty</span>
-      <span class="chip" data-ar="🛍️ التجزئة">🛍️ Retail</span>
-      <span class="chip" data-ar="🛒 التجارة الإلكترونية">🛒 E-commerce</span>
-      <span class="chip" data-ar="🏢 المجموعات متعددة العلامات">🏢 Multi-brand groups</span>
-      <span class="chip" data-ar="💊 الصيدليات">💊 Pharmacies</span>
+      <span class="chip" data-ar="☕ المقاهي والمطاعم" data-ku="☕ قاوەخانە و چێشتخانە">☕ Cafés &amp; restaurants</span>
+      <span class="chip" data-ar="💇 الصالونات والتجميل" data-ku="💇 سالۆن و جوانکاری">💇 Salons &amp; beauty</span>
+      <span class="chip" data-ar="🛍️ التجزئة" data-ku="🛍️ فرۆشتن">🛍️ Retail</span>
+      <span class="chip" data-ar="🛒 التجارة الإلكترونية" data-ku="🛒 بازرگانی ئەلیکترۆنی">🛒 E-commerce</span>
+      <span class="chip" data-ar="🏢 المجموعات متعددة العلامات" data-ku="🏢 گرووپی فرە-براند">🏢 Multi-brand groups</span>
+      <span class="chip" data-ar="💊 الصيدليات" data-ku="💊 دەرمانخانە">💊 Pharmacies</span>
     </div>
   </div>
 </section>
@@ -240,13 +242,13 @@
 <section id="how">
   <div class="wrap">
     <div class="center" style="max-width:640px">
-      <span class="eyebrow" data-ar="كيف يعمل">How it works</span>
-      <h2 data-ar="جاهز في ثلاث خطوات">Live in three steps</h2>
+      <span class="eyebrow" data-ar="كيف يعمل" data-ku="چۆن کار دەکات">How it works</span>
+      <h2 data-ar="جاهز في ثلاث خطوات" data-ku="لە سێ هەنگاودا ئامادە">Live in three steps</h2>
     </div>
     <div class="steps">
-      <div class="step"><div class="n">1</div><h3 data-ar="أرسل أحداثك">Send your events</h3><p data-ar="وجّه نقطة البيع أو التطبيق أو المتجر إلى واجهة واحدة — مشتريات، زيارات، تسجيلات، مشاركات. ونتكفّل بالباقي.">Point your POS, app or store at one API — purchases, visits, sign-ups, logins, shares. We do the rest.</p></div>
-      <div class="step"><div class="n">2</div><h3 data-ar="اضبط برامجك">Configure your programs</h3><p data-ar="حدّد قواعد النقاط والمستويات والمكافآت والحملات وبطاقات الأختام والسحوبات من لوحة التحكم — كلها ديناميكية.">Set points rules, tiers, rewards, campaigns, stamp cards and draws from the dashboard — all dynamic.</p></div>
-      <div class="step"><div class="n">3</div><h3 data-ar="تفاعل وانمُ">Engage &amp; grow</h3><p data-ar="يكسب العملاء ويستبدلون ويرتقون في المستويات عبر بطاقتهم الرقمية؛ وتتابع كل ذلك في التقارير وتحليل RFM.">Customers earn, redeem and climb tiers via their digital card; you watch it all in reports &amp; RFM.</p></div>
+      <div class="step"><div class="n">1</div><h3 data-ar="أرسل أحداثك" data-ku="ڕووداوەکانت بنێرە">Send your events</h3><p data-ar="وجّه نقطة البيع أو التطبيق أو المتجر إلى واجهة واحدة — مشتريات، زيارات، تسجيلات، مشاركات. ونتكفّل بالباقي." data-ku="POS، ئەپ یان فرۆشگاکەت ئاراستەی یەک API بکە — کڕین، سەردان، تۆمارکردن، چوونەژوورەوە، هاوبەشکردن. ئێمە ئەوانی تر دەکەین.">Point your POS, app or store at one API — purchases, visits, sign-ups, logins, shares. We do the rest.</p></div>
+      <div class="step"><div class="n">2</div><h3 data-ar="اضبط برامجك" data-ku="پڕۆگرامەکانت ڕێکبخە">Configure your programs</h3><p data-ar="حدّد قواعد النقاط والمستويات والمكافآت والحملات وبطاقات الأختام والسحوبات من لوحة التحكم — كلها ديناميكية." data-ku="یاساکانی خاڵ، ئاست، خەڵات، کەمپین، کارتی مۆر و کێشان لە داشبۆردەوە دابنێ — هەمووی داینامیک.">Set points rules, tiers, rewards, campaigns, stamp cards and draws from the dashboard — all dynamic.</p></div>
+      <div class="step"><div class="n">3</div><h3 data-ar="تفاعل وانمُ" data-ku="بەشداری و گەشە">Engage &amp; grow</h3><p data-ar="يكسب العملاء ويستبدلون ويرتقون في المستويات عبر بطاقتهم الرقمية؛ وتتابع كل ذلك في التقارير وتحليل RFM." data-ku="کڕیارەکان بەدەست دەهێنن، دەگۆڕنەوە و لە ئاستەکاندا بەرز دەبنەوە بە کارتە دیجیتاڵەکەیان؛ تۆش هەمووی لە ڕاپۆرت و RFM دا دەبینیت.">Customers earn, redeem and climb tiers via their digital card; you watch it all in reports &amp; RFM.</p></div>
     </div>
   </div>
 </section>
@@ -254,32 +256,32 @@
 <section id="pricing" style="background:var(--bg2)">
   <div class="wrap">
     <div class="center" style="max-width:640px">
-      <span class="eyebrow" data-ar="الأسعار">Pricing</span>
-      <h2 data-ar="خطط بسيطة تنمو معك">Simple plans that scale</h2>
-      <p class="sub center" data-ar="ابدأ مجانًا، وانمُ معنا، أو استضِف المنصة بالكامل بنفسك.">Start free, grow as you do, or self-host the whole platform.</p>
+      <span class="eyebrow" data-ar="الأسعار" data-ku="نرخەکان">Pricing</span>
+      <h2 data-ar="خطط بسيطة تنمو معك" data-ku="پلانی سادە کە گەشە دەکەن">Simple plans that scale</h2>
+      <p class="sub center" data-ar="ابدأ مجانًا، وانمُ معنا، أو استضِف المنصة بالكامل بنفسك." data-ku="بەخۆڕایی دەستپێبکە، لەگەڵ خۆت گەشە بکە، یان تەواوی پلاتفۆڕمەکە خۆت هۆست بکە.">Start free, grow as you do, or self-host the whole platform.</p>
     </div>
     <div class="prices">
       <div class="price">
-        <h3 data-ar="المبتدئ">Starter</h3>
-        <div class="amt" data-ar="مجانًا">Free</div>
-        <p class="muted" data-ar="لمتجر واحد يبدأ الآن.">For a single store getting started.</p>
-        <ul><li data-ar="نقاط ومستويات ومكافآت">Points, tiers &amp; rewards</li><li data-ar="بطاقة عميل رقمية">Digital customer card</li><li data-ar="علامة واحدة · حتى 1,000 عضو">1 brand · up to 1,000 members</li><li data-ar="دعم المجتمع">Community support</li></ul>
-        <a class="btn btn-ghost" style="width:100%;justify-content:center" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="ابدأ الآن">Get started</a>
+        <h3 data-ar="المبتدئ" data-ku="دەستپێک">Starter</h3>
+        <div class="amt" data-ar="مجانًا" data-ku="بەخۆڕایی">Free</div>
+        <p class="muted" data-ar="لمتجر واحد يبدأ الآن." data-ku="بۆ یەک فرۆشگا کە دەستپێدەکات.">For a single store getting started.</p>
+        <ul><li data-ar="نقاط ومستويات ومكافآت" data-ku="خاڵ، ئاست و خەڵات">Points, tiers &amp; rewards</li><li data-ar="بطاقة عميل رقمية" data-ku="کارتی دیجیتاڵی کڕیار">Digital customer card</li><li data-ar="علامة واحدة · حتى 1,000 عضو" data-ku="یەک براند · تا 1,000 ئەندام">1 brand · up to 1,000 members</li><li data-ar="دعم المجتمع" data-ku="پشتگیری کۆمەڵگا">Community support</li></ul>
+        <a class="btn btn-ghost" style="width:100%;justify-content:center" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="ابدأ الآن" data-ku="دەستپێبکە">Get started</a>
       </div>
       <div class="price pop">
-        <span class="tag" data-ar="الأكثر شيوعًا">Most popular</span>
-        <h3 data-ar="النمو">Growth</h3>
-        <div class="amt" data-ar-html="$49<span>/شهر</span>">$49<span>/mo</span></div>
-        <p class="muted" data-ar="للأعمال المتنامية التي تريد كل شيء.">For growing businesses that want it all.</p>
-        <ul><li data-ar="كل ما في المبتدئ">Everything in Starter</li><li data-ar="تحفيز وإحالات وبطاقات أختام وسحوبات">Gamification, referrals, stamp cards &amp; draws</li><li data-ar="حملات وتحليل RFM وتقارير">Campaigns, RFM &amp; reports</li><li data-ar="ويب هوك وAPI · أعضاء بلا حدود">Webhooks &amp; API · unlimited members</li></ul>
-        <a class="btn btn-primary" style="width:100%;justify-content:center" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="ابدأ التجربة المجانية">Start free trial</a>
+        <span class="tag" data-ar="الأكثر شيوعًا" data-ku="زۆرترین بەکارهاتوو">Most popular</span>
+        <h3 data-ar="النمو" data-ku="گەشە">Growth</h3>
+        <div class="amt" data-ar-html="$49<span>/شهر</span>" data-ku-html="$49<span>/مانگ</span>">$49<span>/mo</span></div>
+        <p class="muted" data-ar="للأعمال المتنامية التي تريد كل شيء." data-ku="بۆ بزنسە گەشەکەرەکان کە هەمووی دەیانەوێت.">For growing businesses that want it all.</p>
+        <ul><li data-ar="كل ما في المبتدئ" data-ku="هەرچی لە دەستپێکدایە">Everything in Starter</li><li data-ar="تحفيز وإحالات وبطاقات أختام وسحوبات" data-ku="یاری، ناردن، کارتی مۆر و کێشان">Gamification, referrals, stamp cards &amp; draws</li><li data-ar="حملات وتحليل RFM وتقارير" data-ku="کەمپین، RFM و ڕاپۆرت">Campaigns, RFM &amp; reports</li><li data-ar="ويب هوك وAPI · أعضاء بلا حدود" data-ku="ویبهووک و API · ئەندامی بێسنوور">Webhooks &amp; API · unlimited members</li></ul>
+        <a class="btn btn-primary" style="width:100%;justify-content:center" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="ابدأ التجربة المجانية" data-ku="تاقیکردنەوەی بەخۆڕایی دەستپێبکە">Start free trial</a>
       </div>
       <div class="price">
-        <h3 data-ar="المؤسسات">Enterprise</h3>
-        <div class="amt" data-ar="حسب الطلب">Custom</div>
-        <p class="muted" data-ar="للمجموعات متعددة العلامات والاستضافة الذاتية.">Multi-brand groups &amp; self-hosting.</p>
-        <ul><li data-ar="تسلسل متعدد المستأجرين وصلاحيات RBAC">Multi-tenant hierarchy &amp; RBAC</li><li data-ar="استضافة ذاتية (Docker) أو سحابة مُدارة">Self-host (Docker) or managed cloud</li><li data-ar="اتفاقية مستوى خدمة وSSO وتكاملات مخصّصة">SLA, SSO &amp; custom integrations</li><li data-ar="دعم مخصّص">Dedicated support</li></ul>
-        <a class="btn btn-ghost" style="width:100%;justify-content:center" href="#contact" data-ar="تواصل مع المبيعات">Contact sales</a>
+        <h3 data-ar="المؤسسات" data-ku="دامەزراوە">Enterprise</h3>
+        <div class="amt" data-ar="حسب الطلب" data-ku="بەپێی داواکاری">Custom</div>
+        <p class="muted" data-ar="للمجموعات متعددة العلامات والاستضافة الذاتية." data-ku="بۆ گرووپی فرە-براند و هۆستکردنی خۆیی.">Multi-brand groups &amp; self-hosting.</p>
+        <ul><li data-ar="تسلسل متعدد المستأجرين وصلاحيات RBAC" data-ku="زنجیرەی فرە-بەکارهێنەر و RBAC">Multi-tenant hierarchy &amp; RBAC</li><li data-ar="استضافة ذاتية (Docker) أو سحابة مُدارة" data-ku="هۆستی خۆیی (Docker) یان هەوری بەڕێوەبراو">Self-host (Docker) or managed cloud</li><li data-ar="اتفاقية مستوى خدمة وSSO وتكاملات مخصّصة" data-ku="SLA، SSO و تەواوکاری تایبەت">SLA, SSO &amp; custom integrations</li><li data-ar="دعم مخصّص" data-ku="پشتگیری تایبەت">Dedicated support</li></ul>
+        <a class="btn btn-ghost" style="width:100%;justify-content:center" href="#contact" data-ar="تواصل مع المبيعات" data-ku="پەیوەندی بە فرۆشتنەوە">Contact sales</a>
       </div>
     </div>
   </div>
@@ -288,18 +290,18 @@
 <section id="faq">
   <div class="wrap">
     <div class="center" style="max-width:640px">
-      <span class="eyebrow" data-ar="الأسئلة الشائعة">FAQ</span>
-      <h2 data-ar="أسئلة وإجاباتها">Questions, answered</h2>
+      <span class="eyebrow" data-ar="الأسئلة الشائعة" data-ku="پرسیارە باوەکان">FAQ</span>
+      <h2 data-ar="أسئلة وإجاباتها" data-ku="پرسیارەکان، وەڵامدراوە">Questions, answered</h2>
     </div>
     <div class="faq" id="faqList">
-      <div class="q"><button><span data-ar="ما هو والاء؟">What is Walaa?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="والاء منصة ولاء ومكافآت كاملة ومتعددة المستأجرين. ترسل إليها أحداث العملاء (مشتريات، زيارات، تسجيلات…) عبر واجهة واحدة فتدير دفتر النقاط والمستويات والمكافآت والتحفيز والإحالات وبطاقات الأختام وسحوبات الجوائز والتحليلات — مع لوحة تحكم وتطبيق للعميل.">Walaa is a complete, multi-tenant loyalty &amp; rewards platform. You send it customer events (purchases, visits, sign-ups…) through one API and it runs the points ledger, tiers, rewards, gamification, referrals, stamp cards, prize draws and analytics — with an admin dashboard and a customer-facing app.</p></div></div>
-      <div class="q"><button><span data-ar="لأي أنواع الأعمال هو؟">What kinds of businesses is it for?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="المقاهي والمطاعم، والصالونات ومراكز التجميل، والتجزئة، والتجارة الإلكترونية، والصيدليات، والمجموعات متعددة العلامات. المحرّك نفسه يتوسّع من فرع واحد إلى سوق كامل من العلامات على منصة واحدة.">Cafés and restaurants, salons &amp; beauty centers, retail, e-commerce, pharmacies, and multi-brand groups. The same engine scales from a single branch to a whole marketplace of brands on one platform.</p></div></div>
-      <div class="q"><button><span data-ar="كيف يكسب العملاء ويستبدلون؟">How do customers earn and redeem?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="يكسبون النقاط تلقائيًا عند الأحداث المؤهّلة ويرتقون في المستويات التي ترفع سرعة كسبهم. ويستبدلون من كتالوج المكافآت للحصول على قسيمة QR يؤكّدها الموظف عند الكاشير — وكل ذلك ظاهر في بطاقة الولاء الرقمية.">They earn points automatically on qualifying events and climb tiers that boost their earn rate. They redeem from a reward catalog for a QR coupon that staff confirm at the counter — all visible in their digital loyalty card.</p></div></div>
-      <div class="q"><button><span data-ar="هل يمكنني تشغيل المستويات والإحالات وبطاقات الأختام وسحوبات الجوائز؟">Can I run tiers, referrals, stamp cards and prize draws?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="نعم — كلها، قابلة للضبط بالكامل من لوحة التحكم دون برمجة. أضف مستويات عضوية، وإحالات ثنائية الطرف، وبطاقات أختام رقمية، ومكافآت عيد ميلاد مجدولة، وسحوبات مرجّحة متى شئت.">Yes — all of them, fully configurable from the dashboard with no code. Add membership tiers, dual-sided referrals, digital stamp cards, scheduled birthday rewards, and weighted prize draws whenever you like.</p></div></div>
-      <div class="q"><button><span data-ar="هل تدعمون العربية والكردية (RTL)؟">Do you support Arabic and Kurdish (RTL)?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="نعم. لوحة التحكم وتطبيق العميل ورسائل الـ API بثلاث لغات — الإنجليزية والعربية والكردية (سوراني) — مع تخطيط كامل من اليمين إلى اليسار.">Yes. The dashboard, customer app and API messages are trilingual — English, Arabic and Kurdish (Sorani) — with full right-to-left layout.</p></div></div>
-      <div class="q"><button><span data-ar="كيف أربطه بنقطة البيع أو تطبيقي؟">How do I integrate it with my POS or app?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="أرسل الأحداث إلى واجهة واحدة. نوفّر حزمة تكامل، وويب هوك موقّعًا بـ HMAC لأحداث النتائج، وأدوات تهيئة وتعبئة رجعية لتبدأ سريعًا على بيانات طلباتك الحالية.">Send events to one generic API endpoint. We provide an integration kit, HMAC-signed webhooks for result events, and onboarding/backfill tools so you can go live against your existing order data quickly.</p></div></div>
-      <div class="q"><button><span data-ar="هل بياناتي معزولة وآمنة؟">Is my data isolated and secure?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="كل سجلّ ينتمي إلى تطبيق ومعزول بنطاق صارم متعدد المستأجرين. الوصول قائم على الأدوار (من مُشاهد إلى مدير عام)، والمفاتيح والرموز مُجزّأة، ودفتر النقاط غير قابل للتعديل ويمنع التكرار.">Every record belongs to an application and is isolated by a strict multi-tenant scope. Access is role-based (Viewer → SuperAdmin), API keys and tokens are hashed, and the points ledger is immutable and idempotent.</p></div></div>
-      <div class="q"><button><span data-ar="هل يمكنني استضافته ذاتيًا؟">Can I self-host it?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="بالتأكيد. تُشحن المنصة كاملةً كحاويات Docker (قاعدة بيانات، API، معالج، لوحة تحكم) — شغّلها على خادمك أو استخدم استضافة سحابية مُدارة.">Absolutely. The whole platform ships as Docker containers (database, API, worker, dashboard) — run it on your own server or use a managed cloud deployment.</p></div></div>
+      <div class="q"><button><span data-ar="ما هو ولاء؟" data-ku="ولاء چییە؟">What is Walaa?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="ولاء منصة ولاء ومكافآت كاملة ومتعددة المستأجرين. ترسل إليها أحداث العملاء (مشتريات، زيارات، تسجيلات…) عبر واجهة واحدة فتدير دفتر النقاط والمستويات والمكافآت والتحفيز والإحالات وبطاقات الأختام وسحوبات الجوائز والتحليلات — مع لوحة تحكم وتطبيق للعميل." data-ku="ولاء پلاتفۆڕمێکی تەواو و فرە-بەکارهێنەری دڵسۆزی و خەڵاتە. ڕووداوەکانی کڕیار (کڕین، سەردان، تۆمارکردن…) بە یەک API دەنێریت و ئەویش دەفتەری خاڵ، ئاست، خەڵات، یاری، ناردن، کارتی مۆر، کێشانی خەڵات و شیکارییەکان بەڕێوە دەبات — لەگەڵ داشبۆردێک و ئەپێکی کڕیار.">Walaa is a complete, multi-tenant loyalty &amp; rewards platform. You send it customer events (purchases, visits, sign-ups…) through one API and it runs the points ledger, tiers, rewards, gamification, referrals, stamp cards, prize draws and analytics — with an admin dashboard and a customer-facing app.</p></div></div>
+      <div class="q"><button><span data-ar="لأي أنواع الأعمال هو؟" data-ku="بۆ چ جۆرە بزنسێکە؟">What kinds of businesses is it for?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="المقاهي والمطاعم، والصالونات ومراكز التجميل، والتجزئة، والتجارة الإلكترونية، والصيدليات، والمجموعات متعددة العلامات. المحرّك نفسه يتوسّع من فرع واحد إلى سوق كامل من العلامات على منصة واحدة." data-ku="قاوەخانە و چێشتخانە، سالۆن و ناوەندی جوانکاری، فرۆشتن، بازرگانی ئەلیکترۆنی، دەرمانخانە و گرووپی فرە-براند. هەمان بزوێنەر لە یەک لقەوە بۆ بازاڕێکی تەواوی براندەکان لەسەر یەک پلاتفۆڕم گەشە دەکات.">Cafés and restaurants, salons &amp; beauty centers, retail, e-commerce, pharmacies, and multi-brand groups. The same engine scales from a single branch to a whole marketplace of brands on one platform.</p></div></div>
+      <div class="q"><button><span data-ar="كيف يكسب العملاء ويستبدلون؟" data-ku="کڕیارەکان چۆن بەدەست دەهێنن و دەیگۆڕنەوە؟">How do customers earn and redeem?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="يكسبون النقاط تلقائيًا عند الأحداث المؤهّلة ويرتقون في المستويات التي ترفع سرعة كسبهم. ويستبدلون من كتالوج المكافآت للحصول على قسيمة QR يؤكّدها الموظف عند الكاشير — وكل ذلك ظاهر في بطاقة الولاء الرقمية." data-ku="خۆکارانە خاڵ بەدەست دەهێنن لە کاتی ڕووداوە گونجاوەکان و لە ئاستەکاندا بەرز دەبنەوە کە خێرایی بەدەستهێنانیان زیاد دەکات. لە کەتەلۆگی خەڵاتەوە دەیگۆڕنەوە بۆ کۆبۆنی QR کە ستاف لە کاتی پارەدان پشتڕاستی دەکاتەوە — هەمووی لە کارتی دڵسۆزی دیجیتاڵدا دیارە.">They earn points automatically on qualifying events and climb tiers that boost their earn rate. They redeem from a reward catalog for a QR coupon that staff confirm at the counter — all visible in their digital loyalty card.</p></div></div>
+      <div class="q"><button><span data-ar="هل يمكنني تشغيل المستويات والإحالات وبطاقات الأختام وسحوبات الجوائز؟" data-ku="دەتوانم ئاست، ناردن، کارتی مۆر و کێشان بەکاربهێنم؟">Can I run tiers, referrals, stamp cards and prize draws?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="نعم — كلها، قابلة للضبط بالكامل من لوحة التحكم دون برمجة. أضف مستويات عضوية، وإحالات ثنائية الطرف، وبطاقات أختام رقمية، ومكافآت عيد ميلاد مجدولة، وسحوبات مرجّحة متى شئت." data-ku="بەڵێ — هەمووی، بە تەواوی لە داشبۆردەوە ڕێکدەخرێن بەبێ کۆد. ئاستی ئەندامەتی، ناردنی دوولایەنە، کارتی مۆری دیجیتاڵ، خەڵاتی لەدایکبوونی خشتەکراو و کێشانی هاوسەنگ زیاد بکە هەر کاتێک بتەوێت.">Yes — all of them, fully configurable from the dashboard with no code. Add membership tiers, dual-sided referrals, digital stamp cards, scheduled birthday rewards, and weighted prize draws whenever you like.</p></div></div>
+      <div class="q"><button><span data-ar="هل تدعمون العربية والكردية (RTL)؟" data-ku="پشتگیری عەرەبی و کوردی (RTL) دەکەن؟">Do you support Arabic and Kurdish (RTL)?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="نعم. لوحة التحكم وتطبيق العميل ورسائل الـ API بثلاث لغات — الإنجليزية والعربية والكردية (سوراني) — مع تخطيط كامل من اليمين إلى اليسار." data-ku="بەڵێ. داشبۆرد، ئەپی کڕیار و پەیامەکانی API بە سێ زمانن — ئینگلیزی، عەرەبی و کوردی (سۆرانی) — لەگەڵ ڕووکاری تەواوی ڕاست بۆ چەپ.">Yes. The dashboard, customer app and API messages are trilingual — English, Arabic and Kurdish (Sorani) — with full right-to-left layout.</p></div></div>
+      <div class="q"><button><span data-ar="كيف أربطه بنقطة البيع أو تطبيقي؟" data-ku="چۆن بیبەستمەوە بە POS یان ئەپەکەم؟">How do I integrate it with my POS or app?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="أرسل الأحداث إلى واجهة واحدة. نوفّر حزمة تكامل، وويب هوك موقّعًا بـ HMAC لأحداث النتائج، وأدوات تهيئة وتعبئة رجعية لتبدأ سريعًا على بيانات طلباتك الحالية." data-ku="ڕووداوەکان بۆ یەک API بنێرە. کیتی تەواوکاری، ویبهووکی واژووکراو بە HMAC بۆ ڕووداوی ئەنجامەکان، و ئامرازی دەستپێک/پڕکردنەوەی پێشوو دابین دەکەین تا بە خێرایی لەسەر داتای داواکارییە ئێستاکانت کار بکەیت.">Send events to one generic API endpoint. We provide an integration kit, HMAC-signed webhooks for result events, and onboarding/backfill tools so you can go live against your existing order data quickly.</p></div></div>
+      <div class="q"><button><span data-ar="هل بياناتي معزولة وآمنة؟" data-ku="داتاکەم جیاکراوە و پارێزراوە؟">Is my data isolated and secure?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="كل سجلّ ينتمي إلى تطبيق ومعزول بنطاق صارم متعدد المستأجرين. الوصول قائم على الأدوار (من مُشاهد إلى مدير عام)، والمفاتيح والرموز مُجزّأة، ودفتر النقاط غير قابل للتعديل ويمنع التكرار." data-ku="هەر تۆمارێک سەر بە ئەپێکە و بە سکۆپێکی توندی فرە-بەکارهێنەر جیاکراوەتەوە. دەستگەیشتن لەسەر ڕۆڵە (لە بینەرەوە بۆ سوپەر-ئەدمین)، کلیل و تۆکنەکان هاش دەکرێن، و دەفتەری خاڵ ناگۆڕە و دووبارە نابێتەوە.">Every record belongs to an application and is isolated by a strict multi-tenant scope. Access is role-based (Viewer → SuperAdmin), API keys and tokens are hashed, and the points ledger is immutable and idempotent.</p></div></div>
+      <div class="q"><button><span data-ar="هل يمكنني استضافته ذاتيًا؟" data-ku="دەتوانم خۆم هۆستی بکەم؟">Can I self-host it?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="بالتأكيد. تُشحن المنصة كاملةً كحاويات Docker (قاعدة بيانات، API، معالج، لوحة تحكم) — شغّلها على خادمك أو استخدم استضافة سحابية مُدارة." data-ku="بە تەواوی. تەواوی پلاتفۆڕمەکە وەک کۆنتەینەری Docker دێت (داتابەیس، API، پرۆسێسەر، داشبۆرد) — لەسەر سێرڤەرەکەی خۆت بیخەرە کار یان هەوری بەڕێوەبراو بەکاربهێنە.">Absolutely. The whole platform ships as Docker containers (database, API, worker, dashboard) — run it on your own server or use a managed cloud deployment.</p></div></div>
     </div>
   </div>
 </section>
@@ -307,19 +309,19 @@
 <section id="contact">
   <div class="wrap">
     <div class="band">
-      <h2 style="margin-bottom:10px" data-ar="جاهز لإطلاق برنامج ولائك؟">Ready to launch your loyalty program?</h2>
-      <p class="sub center" style="margin-bottom:26px" data-ar="جهّزه في دقائق. ويحصل عملاؤك على بطاقة اليوم.">Set it up in minutes. Your customers get a card today.</p>
-      <a class="btn btn-primary btn-lg" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="افتح لوحة التحكم ←">Open the dashboard →</a>
+      <h2 style="margin-bottom:10px" data-ar="جاهز لإطلاق برنامج ولائك؟" data-ku="ئامادەیت پڕۆگرامی دڵسۆزیت دابمەزرێنیت؟">Ready to launch your loyalty program?</h2>
+      <p class="sub center" style="margin-bottom:26px" data-ar="جهّزه في دقائق. ويحصل عملاؤك على بطاقة اليوم." data-ku="لە چەند خولەکێکدا ڕێکی بخە. کڕیارەکانت ئەمڕۆ کارت وەردەگرن.">Set it up in minutes. Your customers get a card today.</p>
+      <a class="btn btn-primary btn-lg" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="افتح لوحة التحكم ←" data-ku="داشبۆرد بکەرەوە ←">Open the dashboard →</a>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap foot">
-    <div><span class="logo">💠 Walaa</span><div class="muted" style="margin-top:6px" data-ar="ولاء ومكافآت للأعمال الحديثة.">Loyalty &amp; rewards for modern businesses.</div></div>
+    <div><span class="logo">💠 Walaa</span><div class="muted" style="margin-top:6px" data-ar="ولاء ومكافآت للأعمال الحديثة." data-ku="دڵسۆزی و خەڵات بۆ بزنسە مۆدێرنەکان.">Loyalty &amp; rewards for modern businesses.</div></div>
     <div style="display:flex;gap:24px;flex-wrap:wrap">
-      <a href="#features" data-ar="المزايا">Features</a><a href="#pricing" data-ar="الأسعار">Pricing</a><a href="#faq" data-ar="الأسئلة الشائعة">FAQ</a>
-      <a href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="لوحة التحكم">Dashboard</a>
+      <a href="#features" data-ar="المزايا" data-ku="مزایاکان">Features</a><a href="#pricing" data-ar="الأسعار" data-ku="نرخەکان">Pricing</a><a href="#faq" data-ar="الأسئلة الشائعة" data-ku="پرسیارە باوەکان">FAQ</a>
+      <a href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="لوحة التحكم" data-ku="داشبۆرد">Dashboard</a>
     </div>
     <div class="muted">© <span id="yr"></span> Walaa · منصة الولاء</div>
   </div>
@@ -337,24 +339,43 @@
   });
   document.getElementById('yr').textContent=new Date().getFullYear();
 
-  // --- bilingual EN ⇄ AR with RTL ---
+  // --- trilingual EN → AR → KU with RTL ---
+  const NEXT={en:'ar',ar:'ku',ku:'en'};
+  const LABEL={en:'English',ar:'العربية',ku:'کوردی'}; // name of a language (button shows the NEXT one)
+  const langBtn=document.getElementById('langBtn');
   function setLang(l){
-    const ar=l==='ar';
+    const rtl=(l==='ar'||l==='ku');
     document.documentElement.lang=l;
-    document.documentElement.dir=ar?'rtl':'ltr';
+    document.documentElement.dir=rtl?'rtl':'ltr';
     document.querySelectorAll('[data-ar]').forEach(el=>{
       if(el.dataset.en===undefined) el.dataset.en=el.textContent;
-      el.textContent=ar?el.dataset.ar:el.dataset.en;
+      el.textContent = l==='en' ? el.dataset.en : (el.dataset[l] || el.dataset.ar || el.dataset.en);
     });
     document.querySelectorAll('[data-ar-html]').forEach(el=>{
       if(el.dataset.enHtml===undefined) el.dataset.enHtml=el.innerHTML;
-      el.innerHTML=ar?el.dataset.arHtml:el.dataset.enHtml;
+      el.innerHTML = l==='en' ? el.dataset.enHtml : (l==='ku' ? (el.dataset.kuHtml||el.dataset.arHtml) : el.dataset.arHtml);
     });
-    document.getElementById('langBtn').textContent=ar?'English':'العربية';
+    langBtn.textContent=LABEL[NEXT[l]];
     try{localStorage.setItem('walaa.lang',l)}catch(e){}
   }
-  document.getElementById('langBtn').onclick=()=>setLang(document.documentElement.dir==='rtl'?'en':'ar');
-  try{ if(localStorage.getItem('walaa.lang')==='ar') setLang('ar'); }catch(e){}
+  langBtn.onclick=()=>setLang(NEXT[document.documentElement.lang]||'ar');
+  try{ const sv=localStorage.getItem('walaa.lang'); if(sv&&sv!=='en') setLang(sv); }catch(e){}
+
+  // --- decorative fake QR on the loyalty card ---
+  (function(){
+    const q=document.querySelector('.qr'); if(!q) return;
+    const N=13;
+    const finder=(r,c)=>{ for(const [br,bc] of [[0,0],[0,N-3],[N-3,0]]){
+      if(r>=br&&r<br+3&&c>=bc&&c<bc+3){ return !(r-br===1&&c-bc===1); } } return null; };
+    let seed=20260101;
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+      const cell=document.createElement('i');
+      let on=finder(r,c);
+      if(on===null){ seed=(seed*1103515245+12345)&0x7fffffff; on=((seed>>16)%100)<46; }
+      if(!on) cell.className='off';
+      q.appendChild(cell);
+    }
+  })();
 </script>
 </body>
 </html>

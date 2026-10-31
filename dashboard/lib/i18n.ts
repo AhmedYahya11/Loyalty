@@ -11,7 +11,7 @@ export const nextLang: Record<Lang, Lang> = { en: "ar", ar: "ku", ku: "en" };
 type Dict = Record<string, { en: string; ar: string; ku?: string }>;
 
 export const t: Dict = {
-  appTitle: { en: "Loyalty Platform", ar: "منصة الولاء", ku: "پلاتفۆڕمی دڵسۆزی" },
+  appTitle: { en: "KĪNŪTU", ar: "كينوتو", ku: "کینووتو" },
   connect: { en: "Connect", ar: "اتصال", ku: "پەیوەستبوون" },
   apiBase: { en: "API base URL", ar: "رابط الواجهة البرمجية", ku: "بنەڕەتی ناونیشانی API" },
   apiKey: { en: "API key", ar: "مفتاح الواجهة", ku: "کلیلی API" },

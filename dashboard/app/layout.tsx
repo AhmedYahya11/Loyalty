@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Loyalty Platform · منصة الولاء",
-  description: "Multi-tenant loyalty & rewards platform",
+  title: "KĪNŪTU · كينوتو",
+  description: "KĪNŪTU — multi-tenant loyalty & rewards platform",
 };
 
 // Runs before React hydrates: set <html> lang/dir from the saved language so there is no

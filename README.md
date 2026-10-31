@@ -1,4 +1,4 @@
-# Loyalty & Rewards Platform · منصة الولاء والمكافآت
+# KĪNŪTU · كينوتو — Loyalty & Rewards Platform · منصة الولاء والمكافآت
 
 A multi-tenant, event-driven loyalty platform with an immutable double-entry points ledger.
 Built to be **dynamic for any customer**; first integration target: **Hareer**.

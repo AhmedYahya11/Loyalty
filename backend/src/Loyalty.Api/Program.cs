@@ -105,7 +105,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapOpenApi();
-app.MapScalarApiReference(o => o.WithTitle("Loyalty Platform API — منصة الولاء"));
+app.MapScalarApiReference(o => o.WithTitle("KĪNŪTU API — كينوتو"));
 
 app.UseCors(); // must precede the auth middleware so preflight (OPTIONS) is answered without a key
 app.UseMiddleware<ErrorHandlingMiddleware>();

@@ -23,6 +23,7 @@ public sealed record SetBirthDateRequest(DateOnly? BirthDate);
 public sealed record IssueTokenRequest(int? TtlDays);
 public sealed record LoginRequest(string Username, string Password);
 public sealed record SetRoleRequest(string Role);
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public sealed record RedeemRequest(Guid RewardId);
 public sealed record ConfirmByCodeRequest(string CouponCode);
 
@@ -63,6 +64,15 @@ public static class Endpoints
             me.IsEstablished
                 ? Results.Ok(new { username = me.Username, role = me.Role.ToString(), applicationId = me.ApplicationId, canManageUsers = me.CanManageUsers })
                 : Results.Json(new { code = "invalid_credential", message = "Not logged in as an admin." }, statusCode: 401));
+        v1.MapPost("/admin/change-password", async (ChangePasswordRequest req, HttpContext ctx, Loyalty.Core.BuildingBlocks.AdminContext me, Loyalty.Core.Modules.Identity.Application.AdminIdentityService svc, CancellationToken ct) =>
+        {
+            if (!me.IsEstablished) return Results.Json(new { code = "invalid_credential", message = "Log in as an admin." }, statusCode: 401);
+            var h = ctx.Request.Headers.Authorization.ToString();
+            var current = h.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? h["Bearer ".Length..].Trim() : h;
+            return await svc.ChangePasswordAsync(me.UserId, req.CurrentPassword, req.NewPassword, current, ct)
+                ? Results.NoContent()
+                : Results.Json(new { code = "invalid_credential", message = "Current password is incorrect." }, statusCode: 400);
+        });
         v1.MapPost("/admin/logout", async (HttpContext ctx, Loyalty.Core.Modules.Identity.Application.AdminIdentityService svc, CancellationToken ct) =>
         {
             var h = ctx.Request.Headers.Authorization.ToString();

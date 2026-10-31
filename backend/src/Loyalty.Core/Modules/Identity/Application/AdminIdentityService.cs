@@ -45,6 +45,29 @@ public sealed class AdminIdentityService(LoyaltyDbContext db, IClock clock)
         return user is null ? null : new ResolvedAdmin(user.Id, user.Username, user.ApplicationId, user.Role);
     }
 
+    /// <summary>
+    /// Self-service password change (P17): verify the current password, set the new one, and revoke
+    /// all of the user's other sessions (keeping the one making the request). Returns false when the
+    /// current password is wrong.
+    /// </summary>
+    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, string? keepRawToken, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
+            throw new LoyaltyException(LoyaltyError.ValidationFailed("new password must be at least 8 characters."));
+        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive, ct);
+        if (user is null || !PasswordHasher.Verify(currentPassword ?? "", user.PasswordHash)) return false;
+
+        var now = clock.UtcNow;
+        user.SetPassword(PasswordHasher.Hash(newPassword), now);
+
+        var keepHash = string.IsNullOrWhiteSpace(keepRawToken) ? null : Hash(keepRawToken);
+        var sessions = await db.AdminSessions.Where(s => s.AdminUserId == userId && s.RevokedAt == null).ToListAsync(ct);
+        foreach (var s in sessions.Where(s => s.TokenHash != keepHash)) s.Revoke(now);
+
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
     public async Task RevokeAsync(string rawToken, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(rawToken)) return;

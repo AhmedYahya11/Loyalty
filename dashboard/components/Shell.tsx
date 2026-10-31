@@ -56,9 +56,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
         )}
         <div style={{ flex: 1 }} />
         {getAdminUser() && (
-          <div className="muted" style={{ fontSize: 12, padding: "6px 12px" }}>
+          <Link href="/account" className={`navlink ${path === "/account" ? "active" : ""}`} style={{ fontSize: 12 }}>
             👤 {getAdminUser()} · <span className="badge">{getAdminRole()}</span>
-          </div>
+          </Link>
         )}
         <Link href="/card" className="navlink" style={{ marginBottom: 8 }}>💳 {tr("myCard", lang)}</Link>
         <div className="row" style={{ gap: 8, margin: 0 }}>

@@ -53,7 +53,7 @@ cd backend && dotnet run --project src/Loyalty.Api     # + cd dashboard && npm r
 ## Test
 
 ```bash
-cd backend && dotnet test          # 81 tests: 24 unit + 57 Testcontainers end-to-end
+cd backend && dotnet test          # 83 tests: 24 unit + 59 Testcontainers end-to-end
 ```
 
 The E2E tests boot the real API + Wolverine + PostgreSQL (Testcontainers, no mocks). Per-feature suites
@@ -153,5 +153,5 @@ product expansion (loyalty features; messaging hub out of scope): **Tiers ✅**,
 Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, **Customer-facing
 app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**, **Refund reversal +
 reporting ✅**, **Raffles + custom actions ✅**, **GrantReward effect ✅**, **Admin identity + RBAC
-(login, SuperAdmin, roles) + Customers tab ✅**. **82 tests green** — incl. a whole-system **full-journey
+(login, SuperAdmin, roles) + Customers tab ✅**. **83 tests green** — incl. a whole-system **full-journey
 E2E**, a **security suite**, and an **admin-identity/RBAC suite**.

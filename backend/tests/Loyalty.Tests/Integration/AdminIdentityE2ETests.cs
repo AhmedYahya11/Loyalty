@@ -63,4 +63,26 @@ public class AdminIdentityE2ETests(ApiFixture fx)
         // a member token (mt_) must NOT authenticate the admin surface
         (await Raw(HttpMethod.Get, "/api/v1/admin/me", "mt_not_an_admin")).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
+
+    [Fact]
+    public async Task Self_service_password_change()
+    {
+        var token = (await fx.Post("/api/v1/admin/login", new { username = "superadmin", password = "ChangeMe!123" })).GetProperty("token").GetString()!;
+        var name = "pw-" + Guid.NewGuid().ToString("N")[..8];
+        await fx.Post("/api/v1/admin/users", new { username = name, password = "oldpass123", role = "Manager" }, Bearer(token));
+
+        var userToken = (await fx.Post("/api/v1/admin/login", new { username = name, password = "oldpass123" })).GetProperty("token").GetString()!;
+
+        // wrong current password → 400
+        (await Raw(HttpMethod.Post, "/api/v1/admin/change-password", userToken, new { currentPassword = "nope", newPassword = "brandnew123" }))
+            .StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        // correct current password → 204
+        (await Raw(HttpMethod.Post, "/api/v1/admin/change-password", userToken, new { currentPassword = "oldpass123", newPassword = "brandnew123" }))
+            .StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        // old password no longer works; the new one does
+        (await Raw(HttpMethod.Post, "/api/v1/admin/login", body: new { username = name, password = "oldpass123" })).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (await Raw(HttpMethod.Post, "/api/v1/admin/login", body: new { username = name, password = "brandnew123" })).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
 }

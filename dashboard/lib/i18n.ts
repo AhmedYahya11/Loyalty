@@ -212,6 +212,13 @@ export const t: Dict = {
   myRole: { en: "Your role", ar: "دورك", ku: "ڕۆڵەکەت" },
   search: { en: "Search", ar: "بحث", ku: "گەڕان" },
   joined: { en: "Joined", ar: "انضمّ", ku: "بەشداربوو" },
+  account: { en: "Account", ar: "الحساب", ku: "هەژمار" },
+  changePassword: { en: "Change password", ar: "تغيير كلمة المرور", ku: "گۆڕینی وشەی تێپەڕ" },
+  currentPassword: { en: "Current password", ar: "كلمة المرور الحالية", ku: "وشەی تێپەڕی ئێستا" },
+  newPassword: { en: "New password", ar: "كلمة المرور الجديدة", ku: "وشەی تێپەڕی نوێ" },
+  confirmPassword: { en: "Confirm new password", ar: "تأكيد كلمة المرور", ku: "دووبارەکردنەوەی وشەی تێپەڕ" },
+  passwordChanged: { en: "Password changed ✓", ar: "تم تغيير كلمة المرور ✓", ku: "وشەی تێپەڕ گۆڕدرا ✓" },
+  passwordMismatch: { en: "Passwords do not match.", ar: "كلمتا المرور غير متطابقتين.", ku: "وشەکانی تێپەڕ وەک یەک نین." },
 };
 
 export function tr(key: string, lang: Lang): string {

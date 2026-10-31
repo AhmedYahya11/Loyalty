@@ -50,14 +50,16 @@ cd backend && dotnet run --project src/Loyalty.Api
 ## Test
 
 ```bash
-cd backend && dotnet test          # 72 tests: 24 unit + 48 Testcontainers end-to-end
+cd backend && dotnet test          # 81 tests: 24 unit + 57 Testcontainers end-to-end
 ```
 
 The E2E tests boot the real API + Wolverine + PostgreSQL (Testcontainers, no mocks). Per-feature suites
 cover each module (earn/ledger, CVM, campaigns, tiers, rewards, gamification, engagement, customer app,
 RFM + language, expiry + stamp conditions, refund reversal + reporting, raffles, grant-reward, ops,
-concurrency), and **`FullJourneyE2ETests`** runs the whole platform in one realistic tenant lifecycle as
-an integration release gate.
+concurrency); **`FullJourneyE2ETests`** runs the whole platform in one realistic tenant lifecycle; and
+**`SecurityE2ETests`** exercises the security controls — API-key + member-token auth, tenant isolation
+(scope filter + `X-Application-Id` subtree check), bootstrap protection, replay/idempotency, body-size +
+rate limits, and secret non-exposure.
 
 ## Quick API tour (Phase 1)
 

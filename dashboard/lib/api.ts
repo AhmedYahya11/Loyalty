@@ -1,5 +1,5 @@
 // Thin Loyalty API client — injects X-Api-Key + Accept-Language. عميل الواجهة البرمجية.
-import { getApiBase, getApiKey, getLang } from "./session";
+import { getApiBase, getApiKey, getAdminToken, getLang } from "./session";
 
 async function request<T>(method: string, path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<T> {
   const headers: Record<string, string> = {
@@ -7,8 +7,11 @@ async function request<T>(method: string, path: string, body?: unknown, extraHea
     "Accept-Language": getLang(),
     ...extraHeaders,
   };
+  // an admin session (username/password login) takes precedence; API key is the legacy fallback
+  const adminToken = getAdminToken();
   const key = getApiKey();
-  if (key) headers["X-Api-Key"] = key;
+  if (adminToken) headers["Authorization"] = `Bearer ${adminToken}`;
+  else if (key) headers["X-Api-Key"] = key;
 
   const res = await fetch(`${getApiBase()}${path}`, {
     method,

@@ -52,6 +52,40 @@ public sealed class MemberService(
         return new MemberView(m.Id, m.ApplicationId, m.ExternalCustomerId, m.DefaultWalletId, m.Status.ToString(), ToView(w), m.ReferralCode, m.BirthDate);
     }
 
+    /// <summary>Browsable customer list (P17): members + tier/points/lifecycle/balance, optional search.</summary>
+    public async Task<IReadOnlyList<object>> ListAsync(string? search, int limit, CancellationToken ct)
+    {
+        var q = db.Members.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(m => m.ExternalCustomerId.Contains(s));
+        }
+        var members = await q.OrderByDescending(m => m.CreatedAt).Take(Math.Clamp(limit, 1, 500)).ToListAsync(ct);
+        if (members.Count == 0) return [];
+
+        var ids = members.Select(m => m.Id).ToList();
+        var walletIds = members.Select(m => m.DefaultWalletId).ToList();
+        var profiles = await db.ValueProfiles.Where(p => ids.Contains(p.MemberId)).ToDictionaryAsync(p => p.MemberId, ct);
+        var wallets = await db.Wallets.Where(w => walletIds.Contains(w.Id)).ToDictionaryAsync(w => w.Id, ct);
+        var tierIds = profiles.Values.Where(p => p.CurrentTierId != null).Select(p => p.CurrentTierId!.Value).Distinct().ToList();
+        var tiers = await db.Tiers.Where(t => tierIds.Contains(t.Id)).ToDictionaryAsync(t => t.Id, t => t.Name, ct);
+
+        return members.Select(m =>
+        {
+            profiles.TryGetValue(m.Id, out var p);
+            wallets.TryGetValue(m.DefaultWalletId, out var w);
+            string? tier = p?.CurrentTierId is { } tid && tiers.TryGetValue(tid, out var tn) ? tn : null;
+            return (object)new
+            {
+                memberId = m.Id, externalCustomerId = m.ExternalCustomerId, status = m.Status.ToString(),
+                lifecycle = p?.LifecycleStage.ToString(), tier, persona = p?.RfmPersona,
+                pointsEarned = p?.PointsEarned ?? 0, netSpend = p?.NetSpendAmount ?? 0,
+                activeBalance = w?.ActiveBalance ?? 0, createdAt = m.CreatedAt,
+            };
+        }).ToList();
+    }
+
     public async Task<MemberView?> GetByExternalIdAsync(string externalCustomerId, CancellationToken ct)
     {
         var m = await db.Members.FirstOrDefaultAsync(x => x.ExternalCustomerId == externalCustomerId, ct);

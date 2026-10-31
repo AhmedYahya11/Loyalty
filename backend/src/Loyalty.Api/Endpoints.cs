@@ -21,6 +21,8 @@ public sealed record CreateAccountRequest(string AccountName, DateTimeOffset? Ex
 public sealed record CreateMemberRequest(string ExternalCustomerId, DateOnly? BirthDate);
 public sealed record SetBirthDateRequest(DateOnly? BirthDate);
 public sealed record IssueTokenRequest(int? TtlDays);
+public sealed record LoginRequest(string Username, string Password);
+public sealed record SetRoleRequest(string Role);
 public sealed record RedeemRequest(Guid RewardId);
 public sealed record ConfirmByCodeRequest(string CouponCode);
 
@@ -32,7 +34,7 @@ public static class Endpoints
 
         // ---------- bootstrap (one-time, guarded by X-Bootstrap-Token) ----------
         v1.MapPost("/bootstrap", async (BootstrapRequest req, HttpContext ctx, IConfiguration cfg,
-            ApplicationService apps, AccountService accounts, CancellationToken ct) =>
+            ApplicationService apps, AccountService accounts, Loyalty.Core.Modules.Identity.Application.AdminIdentityService identity, CancellationToken ct) =>
         {
             var token = cfg["Bootstrap:Token"];
             if (string.IsNullOrEmpty(token) || ctx.Request.Headers["X-Bootstrap-Token"].ToString() != token)
@@ -40,6 +42,10 @@ public static class Endpoints
 
             var (root, created) = await apps.BootstrapRootAsync(req.Name, req.NameAr, ct);
             AccountWithKey? key = created ? await accounts.CreateAsync(root.Id, "root-admin", null, ct) : null;
+            // seed the first SuperAdmin against the root (no-op if any admin user already exists)
+            var suUser = Environment.GetEnvironmentVariable("SUPERADMIN_USERNAME") ?? "superadmin";
+            var suPass = Environment.GetEnvironmentVariable("SUPERADMIN_PASSWORD") ?? "ChangeMe!123";
+            await identity.EnsureSuperAdminAsync(root.Id, suUser, suPass, ct);
             return Results.Json(new { application = root, created, rootAccount = key }, statusCode: created ? 201 : 200);
         });
 
@@ -47,6 +53,44 @@ public static class Endpoints
         // current authenticated application (resolved from the API key) — used by the dashboard
         v1.MapGet("/me", (Loyalty.Core.BuildingBlocks.ApplicationContext scope) =>
             Results.Ok(new { applicationId = scope.ApplicationId }));
+
+        // ---------- dashboard identity + RBAC (P17) ----------
+        v1.MapPost("/admin/login", async (LoginRequest req, Loyalty.Core.Modules.Identity.Application.AdminIdentityService svc, CancellationToken ct) =>
+            await svc.LoginAsync(req.Username, req.Password, ct) is { } r
+                ? Results.Ok(new { token = r.Token, expiresAt = r.ExpiresAt, username = r.Username, role = r.Role, applicationId = r.ApplicationId })
+                : Results.Json(new { code = "invalid_credential", message = "Invalid username or password." }, statusCode: 401));
+        v1.MapGet("/admin/me", (Loyalty.Core.BuildingBlocks.AdminContext me) =>
+            me.IsEstablished
+                ? Results.Ok(new { username = me.Username, role = me.Role.ToString(), applicationId = me.ApplicationId, canManageUsers = me.CanManageUsers })
+                : Results.Json(new { code = "invalid_credential", message = "Not logged in as an admin." }, statusCode: 401));
+        v1.MapPost("/admin/logout", async (HttpContext ctx, Loyalty.Core.Modules.Identity.Application.AdminIdentityService svc, CancellationToken ct) =>
+        {
+            var h = ctx.Request.Headers.Authorization.ToString();
+            await svc.RevokeAsync(h.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? h["Bearer ".Length..].Trim() : h, ct);
+            return Results.NoContent();
+        });
+        v1.MapGet("/admin/roles", (Loyalty.Core.BuildingBlocks.AdminContext me) =>
+            me.IsEstablished ? Results.Ok(new[]
+            {
+                new { role = "Viewer", description = "Read-only access to all data." },
+                new { role = "Manager", description = "Manage loyalty config (campaigns, rewards, tiers, …)." },
+                new { role = "Admin", description = "Everything in the tenant, including managing users." },
+                new { role = "SuperAdmin", description = "Full access across all tenants, including admins." },
+            }) : Results.Json(new { code = "invalid_credential", message = "Not logged in." }, statusCode: 401));
+        v1.MapGet("/admin/users", async (Loyalty.Core.BuildingBlocks.AdminContext me, Loyalty.Core.Modules.Identity.Application.AdminIdentityService svc, CancellationToken ct) =>
+            me.CanManageUsers ? Results.Ok(await svc.ListUsersAsync(me, ct)) : Results.Json(new { code = "forbidden", message = "Admins only." }, statusCode: 403));
+        v1.MapPost("/admin/users", async (Loyalty.Core.Modules.Identity.Application.CreateAdminUserInput req, Loyalty.Core.BuildingBlocks.AdminContext me, Loyalty.Core.Modules.Identity.Application.AdminIdentityService svc, CancellationToken ct) =>
+            me.CanManageUsers ? Results.Json(await svc.CreateUserAsync(me, req, ct), statusCode: 201) : Results.Json(new { code = "forbidden", message = "Admins only." }, statusCode: 403));
+        v1.MapPut("/admin/users/{id:guid}/role", async (Guid id, SetRoleRequest req, Loyalty.Core.BuildingBlocks.AdminContext me, Loyalty.Core.Modules.Identity.Application.AdminIdentityService svc, CancellationToken ct) =>
+            !me.CanManageUsers ? Results.Json(new { code = "forbidden", message = "Admins only." }, statusCode: 403)
+                : await svc.SetRoleAsync(me, id, req.Role, ct) is { } v ? Results.Ok(v) : Results.NotFound());
+        v1.MapPost("/admin/users/{id:guid}/deactivate", async (Guid id, Loyalty.Core.BuildingBlocks.AdminContext me, Loyalty.Core.Modules.Identity.Application.AdminIdentityService svc, CancellationToken ct) =>
+            !me.CanManageUsers ? Results.Json(new { code = "forbidden", message = "Admins only." }, statusCode: 403)
+                : await svc.DeactivateAsync(me, id, ct) ? Results.NoContent() : Results.NotFound());
+
+        // ---------- customers (browsable member list) ----------
+        v1.MapGet("/customers", async (string? search, int? limit, MemberService svc, CancellationToken ct) =>
+            Results.Ok(new { items = await svc.ListAsync(search, limit ?? 100, ct) }));
 
         var apps = v1.MapGroup("/applications");
         apps.MapPost("", async (CreateApplicationRequest req, ApplicationService svc, CancellationToken ct) =>

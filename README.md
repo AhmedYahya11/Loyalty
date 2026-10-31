@@ -152,6 +152,6 @@ The core platform (P1–P6) is complete and generic/multi-tenant. P7–P16 are a
 product expansion (loyalty features; messaging hub out of scope): **Tiers ✅**, **Rewards &
 Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, **Customer-facing
 app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**, **Refund reversal +
-reporting ✅**, **Raffles + custom actions ✅**, **GrantReward effect ✅**. **72 tests green** — incl. a
-whole-system **full-journey E2E** (`FullJourneyE2ETests`) that configures every module, runs a realistic
-multi-member lifecycle, and asserts the integrated state + that all 12 major result events fire.
+reporting ✅**, **Raffles + custom actions ✅**, **GrantReward effect ✅**, **Admin identity + RBAC
+(login, SuperAdmin, roles) + Customers tab ✅**. **82 tests green** — incl. a whole-system **full-journey
+E2E**, a **security suite**, and an **admin-identity/RBAC suite**.

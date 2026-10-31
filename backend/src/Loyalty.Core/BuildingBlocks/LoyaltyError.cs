@@ -28,6 +28,8 @@ public sealed record LoyaltyError(int StatusCode, string Code, string MessageEn,
         "The account, application, or an ancestor is inactive.", "الحساب أو التطبيق أو أحد التطبيقات الأصل غير مُفعّل.");
     public static LoyaltyError ApplicationOutsideSubtree() => new(403, "application_outside_subtree",
         "The target application is not visible to this credential.", "التطبيق المستهدف غير مرئي لهذا الاعتماد.");
+    public static LoyaltyError Forbidden(string messageEn, string? messageAr = null) =>
+        new(403, "forbidden", messageEn, messageAr ?? "ليس لديك صلاحية لهذا الإجراء.");
 
     // Validation
     public static LoyaltyError ValidationFailed(string messageEn, string? messageAr = null) =>

@@ -28,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<ApplicationContext>();
         services.AddScoped<IApplicationContext>(sp => sp.GetRequiredService<ApplicationContext>());
         services.AddScoped<CustomerContext>();
+        services.AddScoped<AdminContext>();
+        services.AddScoped<Modules.Identity.Application.AdminIdentityService>();
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<EventRegistry>();

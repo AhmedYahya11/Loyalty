@@ -34,6 +34,9 @@ services:
       Bootstrap__Token: ${BOOTSTRAP_TOKEN:-dev-bootstrap-token-change-me}
       Cors__Origins: ${CORS_ORIGINS:-http://localhost:3000}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      # first-run dashboard SuperAdmin (seeded once against the root application)
+      SUPERADMIN_USERNAME: ${SUPERADMIN_USERNAME:-superadmin}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-ChangeMe!123}
     ports:
       - "8080:8080"
     depends_on:

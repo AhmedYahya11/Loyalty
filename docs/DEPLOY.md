@@ -18,6 +18,9 @@ docker compose ps            # all "running"/"healthy"
 ```
 
 - **Dashboard** → http://localhost:3000  · **API** → http://localhost:8080 (Scalar at `/scalar`)
+- **Log in** at the dashboard with the seeded **SuperAdmin** (`SUPERADMIN_USERNAME` / `SUPERADMIN_PASSWORD`
+  from `.env`; defaults `superadmin` / `ChangeMe!123`). Create more users + assign roles under
+  **Roles & users**. Change the SuperAdmin password after first login.
 - First boot with an empty database: bootstrap the root tenant once:
   ```bash
   curl -X POST http://localhost:8080/api/v1/bootstrap \

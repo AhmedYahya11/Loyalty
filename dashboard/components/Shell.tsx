@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useLang } from "@/app/providers";
 import { tr, langName, nextLang } from "@/lib/i18n";
+import { isConnected, getAdminUser, getAdminRole, canManageUsers, clearAdminSession } from "@/lib/session";
 
 const links = [
-  { href: "/", key: "connect" },
   { href: "/overview", key: "overview" },
+  { href: "/customers", key: "customers" },
   { href: "/rfm", key: "rfm" },
   { href: "/reports", key: "reports" },
   { href: "/applications", key: "applications" },
@@ -26,6 +28,19 @@ const links = [
 export function Shell({ children }: { children: React.ReactNode }) {
   const { lang, setLang } = useLang();
   const path = usePathname();
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+  useEffect(() => { setReady(true); }, []);
+
+  // the login page renders full-screen, without the dashboard chrome
+  const isLogin = path === "/";
+  useEffect(() => { if (ready && !isLogin && !isConnected()) router.replace("/"); }, [ready, isLogin, router]);
+
+  if (isLogin) return <>{children}</>;
+  if (!ready) return null;
+
+  const manage = canManageUsers();
+  const logout = () => { clearAdminSession(); router.push("/"); };
 
   return (
     <div className="shell">
@@ -36,11 +51,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
             {tr(l.key, lang)}
           </Link>
         ))}
+        {manage && (
+          <Link href="/roles" className={`navlink ${path === "/roles" ? "active" : ""}`}>🔐 {tr("roles", lang)}</Link>
+        )}
         <div style={{ flex: 1 }} />
+        {getAdminUser() && (
+          <div className="muted" style={{ fontSize: 12, padding: "6px 12px" }}>
+            👤 {getAdminUser()} · <span className="badge">{getAdminRole()}</span>
+          </div>
+        )}
         <Link href="/card" className="navlink" style={{ marginBottom: 8 }}>💳 {tr("myCard", lang)}</Link>
-        <button className="lang-toggle" onClick={() => setLang(nextLang[lang])}>
-          🌐 {langName[nextLang[lang]]}
-        </button>
+        <div className="row" style={{ gap: 8, margin: 0 }}>
+          <button className="lang-toggle" onClick={() => setLang(nextLang[lang])}>🌐 {langName[nextLang[lang]]}</button>
+          {getAdminUser() && <button className="lang-toggle" onClick={logout}>{tr("logout", lang)}</button>}
+        </div>
       </nav>
       <main className="main">{children}</main>
     </div>

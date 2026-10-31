@@ -14,17 +14,26 @@ namespace Loyalty.Api.Auth;
 public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
 {
     private static readonly string[] AnonymousPrefixes =
-        ["/openapi", "/scalar", "/health", "/api/v1/bootstrap", "/"];
+        ["/openapi", "/scalar", "/health", "/api/v1/bootstrap", "/api/v1/admin/login", "/"];
 
     public async Task InvokeAsync(HttpContext ctx)
     {
         var path = ctx.Request.Path.Value ?? "/";
         if (IsAnonymous(path)) { await next(ctx); return; }
 
-        // customer-facing app: authenticate a member access token (Bearer) and scope to that member
-        if (path.StartsWith("/api/v1/customer", StringComparison.OrdinalIgnoreCase))
+        // customer-facing app: authenticate a member access token (Bearer) and scope to that member.
+        // Trailing slash is required so the admin "/api/v1/customers" list is NOT caught here.
+        if (path.StartsWith("/api/v1/customer/", StringComparison.OrdinalIgnoreCase))
         {
             await InvokeCustomerAsync(ctx);
+            return;
+        }
+
+        // dashboard operator: an admin-session Bearer token (as_…) authenticates + applies RBAC
+        var authHeader = ctx.Request.Headers.Authorization.ToString();
+        if (authHeader.Contains("as_", StringComparison.Ordinal))
+        {
+            await InvokeAdminAsync(ctx, authHeader);
             return;
         }
 
@@ -94,6 +103,37 @@ public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
 
         using (Serilog.Context.LogContext.PushProperty("ApplicationId", resolved.ApplicationId))
         using (Serilog.Context.LogContext.PushProperty("MemberId", resolved.MemberId))
+        {
+            await next(ctx);
+        }
+    }
+
+    /// <summary>Authenticate a dashboard admin session (Bearer as_…), establish scope + role, apply RBAC (P17).</summary>
+    private async Task InvokeAdminAsync(HttpContext ctx, string authHeader)
+    {
+        var sp = ctx.RequestServices;
+        var identity = sp.GetRequiredService<Loyalty.Core.Modules.Identity.Application.AdminIdentityService>();
+        var resolver = sp.GetRequiredService<ApplicationScopeResolver>();
+        var scope = sp.GetRequiredService<ApplicationContext>();
+        var admin = sp.GetRequiredService<AdminContext>();
+
+        var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? authHeader["Bearer ".Length..].Trim() : authHeader.Trim();
+        var resolved = await identity.ResolveAsync(token, ctx.RequestAborted);
+        if (resolved is null) { await Write(ctx, LoyaltyError.InvalidCredential()); return; }
+        if (!await resolver.IsActiveChainAsync(resolved.ApplicationId, ctx.RequestAborted))
+        { await Write(ctx, LoyaltyError.CredentialDisabled()); return; }
+
+        // Viewers are read-only: block any mutating request (login/logout are handled elsewhere)
+        if (resolved.Role == Loyalty.Core.Modules.Identity.Domain.AdminRole.Viewer
+            && !HttpMethods.IsGet(ctx.Request.Method) && !HttpMethods.IsHead(ctx.Request.Method) && !HttpMethods.IsOptions(ctx.Request.Method))
+        { await Write(ctx, LoyaltyError.Forbidden("Your role is read-only.")); return; }
+
+        var visible = await resolver.ResolveVisibleAsync(resolved.ApplicationId, ctx.RequestAborted);
+        scope.Establish(resolved.ApplicationId, Guid.Empty, $"admin:{resolved.Username}", visible);
+        admin.Establish(resolved.UserId, resolved.Username, resolved.ApplicationId, resolved.Role);
+
+        using (Serilog.Context.LogContext.PushProperty("ApplicationId", resolved.ApplicationId))
+        using (Serilog.Context.LogContext.PushProperty("AdminUser", resolved.Username))
         {
             await next(ctx);
         }

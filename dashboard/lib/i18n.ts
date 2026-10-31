@@ -198,6 +198,20 @@ export const t: Dict = {
   drawn: { en: "Drawn", ar: "تم السحب", ku: "ڕاکێشرا" },
   youWon: { en: "You won! 🎉", ar: "لقد فزت! 🎉", ku: "براوە بوویت! 🎉" },
   grantReward: { en: "Grant reward (optional)", ar: "منح مكافأة (اختياري)", ku: "بەخشینی خەڵات (ئارەزوومەندانە)" },
+  signIn: { en: "Sign in", ar: "تسجيل الدخول", ku: "چوونەژوورەوە" },
+  username: { en: "Username", ar: "اسم المستخدم", ku: "ناوی بەکارهێنەر" },
+  password: { en: "Password", ar: "كلمة المرور", ku: "وشەی تێپەڕ" },
+  advancedConnect: { en: "Advanced: API key / bootstrap", ar: "متقدم: مفتاح الواجهة / التهيئة", ku: "پێشکەوتوو: کلیلی API / دەستپێک" },
+  logout: { en: "Log out", ar: "تسجيل الخروج", ku: "چوونەدەرەوە" },
+  customers: { en: "Customers", ar: "العملاء", ku: "کڕیاران" },
+  roles: { en: "Roles & users", ar: "الأدوار والمستخدمون", ku: "ڕۆڵ و بەکارهێنەران" },
+  role: { en: "Role", ar: "الدور", ku: "ڕۆڵ" },
+  users: { en: "Users", ar: "المستخدمون", ku: "بەکارهێنەران" },
+  createUser: { en: "Create user", ar: "إنشاء مستخدم", ku: "دروستکردنی بەکارهێنەر" },
+  deactivate: { en: "Deactivate", ar: "تعطيل", ku: "ناچالاککردن" },
+  myRole: { en: "Your role", ar: "دورك", ku: "ڕۆڵەکەت" },
+  search: { en: "Search", ar: "بحث", ku: "گەڕان" },
+  joined: { en: "Joined", ar: "انضمّ", ku: "بەشداربوو" },
 };
 
 export function tr(key: string, lang: Lang): string {

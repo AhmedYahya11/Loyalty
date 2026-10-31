@@ -6,6 +6,7 @@ using Loyalty.Api;
 using Loyalty.Api.Auth;
 using Loyalty.Core;
 using Loyalty.Core.Persistence;
+using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -91,6 +92,16 @@ using (var scope = app.Services.CreateScope())
     // ensure Wolverine's durable message-store tables exist
     var store = scope.ServiceProvider.GetService<Wolverine.Persistence.Durability.IMessageStore>();
     if (store is not null) await store.Admin.MigrateAsync();
+
+    // seed the first SuperAdmin against the root application (P17) — no-op if any admin user exists
+    var rootApp = await db.Applications.Where(a => a.ParentId == null).OrderBy(a => a.CreatedAt).FirstOrDefaultAsync();
+    if (rootApp is not null)
+    {
+        var identity = scope.ServiceProvider.GetRequiredService<Loyalty.Core.Modules.Identity.Application.AdminIdentityService>();
+        var suUser = Environment.GetEnvironmentVariable("SUPERADMIN_USERNAME") ?? "superadmin";
+        var suPass = Environment.GetEnvironmentVariable("SUPERADMIN_PASSWORD") ?? "ChangeMe!123";
+        await identity.EnsureSuperAdminAsync(rootApp.Id, suUser, suPass, CancellationToken.None);
+    }
 }
 
 app.MapOpenApi();

@@ -38,6 +38,8 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<ApplicationLoyaltySettings> LoyaltySettings => Set<ApplicationLoyaltySettings>();
     public DbSet<Member> Members => Set<Member>();
     public DbSet<MemberToken> MemberTokens => Set<MemberToken>();
+    public DbSet<Modules.Identity.Domain.AdminUser> AdminUsers => Set<Modules.Identity.Domain.AdminUser>();
+    public DbSet<Modules.Identity.Domain.AdminSession> AdminSessions => Set<Modules.Identity.Domain.AdminSession>();
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<PointsLedgerAccount> LedgerAccounts => Set<PointsLedgerAccount>();
     public DbSet<PointsLedgerTransaction> LedgerTransactions => Set<PointsLedgerTransaction>();
@@ -466,6 +468,26 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.StampCardId }).IsUnique();
             ApplyScope(e);
+        });
+
+        // ---------------- identity (dashboard admin users/sessions) — NOT application-scoped ----------------
+        b.Entity<Modules.Identity.Domain.AdminUser>(e =>
+        {
+            e.ToTable("admin_users", "identity");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Username).HasMaxLength(100).IsRequired();
+            e.Property(x => x.PasswordHash).HasMaxLength(256).IsRequired();
+            e.Property(x => x.Role).HasConversion<string>().HasMaxLength(16);
+            e.HasIndex(x => x.Username).IsUnique();
+            e.HasIndex(x => x.ApplicationId);
+        });
+        b.Entity<Modules.Identity.Domain.AdminSession>(e =>
+        {
+            e.ToTable("admin_sessions", "identity");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.TokenHash).HasMaxLength(128).IsRequired();
+            e.HasIndex(x => x.TokenHash).IsUnique();
+            e.HasIndex(x => x.AdminUserId);
         });
 
         // ---------------- raffles (prize draws) ----------------

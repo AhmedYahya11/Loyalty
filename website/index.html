@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -27,13 +27,14 @@
   .muted{color:var(--muted)}
   .grad{background:linear-gradient(120deg,#8ab0ff,#c4b5fd 40%,#86efac);-webkit-background-clip:text;background-clip:text;color:transparent}
   .eyebrow{text-transform:uppercase;letter-spacing:2px;font-size:12px;font-weight:700;color:var(--accent)}
+  html[dir=rtl] .eyebrow{letter-spacing:0}
   section{padding:88px 0}
   h1,h2,h3{line-height:1.15;letter-spacing:-.02em}
+  html[dir=rtl] h1,html[dir=rtl] h2,html[dir=rtl] h3{letter-spacing:0}
   h2{font-size:clamp(28px,4vw,42px);margin-bottom:14px}
   .sub{font-size:18px;color:var(--muted);max-width:620px}
   .center{text-align:center;margin:0 auto}
 
-  /* nav */
   header{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
     background:rgba(11,16,32,.72);border-bottom:1px solid transparent;transition:border .2s,background .2s}
   header.scrolled{border-bottom:1px solid var(--border)}
@@ -43,9 +44,10 @@
   .navlinks a{color:var(--muted);font-size:15px;font-weight:500}
   .navlinks a:hover{color:var(--text)}
   .nav-cta{display:flex;gap:10px;align-items:center}
+  .lang{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:999px;
+    padding:9px 14px;font-size:14px;font-weight:600;cursor:pointer}
   .menu-btn{display:none;background:none;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 10px;font-size:18px;cursor:pointer}
 
-  /* hero */
   .hero{position:relative;overflow:hidden;padding:72px 0 64px}
   .hero::before{content:"";position:absolute;inset:0;background:
     radial-gradient(60% 50% at 75% 0%,rgba(139,92,246,.25),transparent 70%),
@@ -55,77 +57,65 @@
   .hero .sub{font-size:20px;max-width:560px}
   .hero-ctas{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
   .hero-note{margin-top:16px;font-size:13px;color:var(--muted)}
-  .rtl{direction:rtl;font-size:15px}
+  .tagline{margin-top:10px;font-weight:700}
 
-  /* phone / card mock */
   .mock{position:relative;display:flex;justify-content:center}
   .loyalty-card{width:320px;border-radius:22px;padding:24px;color:#fff;
     background:linear-gradient(135deg,#5b8cff 0%,#8b5cf6 55%,#22c55e 150%);
     box-shadow:0 30px 60px rgba(0,0,0,.45);transform:rotate(-4deg)}
+  html[dir=rtl] .loyalty-card{transform:rotate(4deg)}
   .loyalty-card .row{display:flex;justify-content:space-between;align-items:center}
   .loyalty-card .pts{font-size:46px;font-weight:800;line-height:1;margin:6px 0 2px}
   .pill{background:rgba(255,255,255,.22);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600}
   .qr{background:#fff;border-radius:12px;padding:10px;width:92px;height:92px;display:grid;
     grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:3px;margin-top:18px}
-  .qr i{background:#0b1020;border-radius:2px}
   .floaty{position:absolute;background:var(--panel);border:1px solid var(--border);border-radius:14px;
     padding:12px 14px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);display:flex;gap:8px;align-items:center}
-  .floaty.a{top:4%;left:-6%}
-  .floaty.b{bottom:2%;right:-4%}
+  .floaty.a{top:4%;left:-6%}.floaty.b{bottom:2%;right:-4%}
   .floaty .dot{width:8px;height:8px;border-radius:50%;background:var(--accent2)}
 
-  /* stats */
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;border:1px solid var(--border);
     border-radius:var(--radius);padding:28px;background:linear-gradient(180deg,var(--panel),var(--bg2))}
-  .stat h3{font-size:34px;font-weight:800}.stat p{color:var(--muted);font-size:14px}
-  .stat .grad{font-size:34px;font-weight:800}
+  .stat .grad{font-size:34px;font-weight:800}.stat p{color:var(--muted);font-size:14px}
 
-  /* features */
   .grid{display:grid;gap:18px}
   .cols-3{grid-template-columns:repeat(3,1fr)}
-  .cols-4{grid-template-columns:repeat(4,1fr)}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:transform .15s,border .15s}
   .card:hover{transform:translateY(-3px);border-color:#38436e}
   .card .ic{font-size:26px;display:inline-grid;place-items:center;width:48px;height:48px;border-radius:12px;
     background:var(--panel2);margin-bottom:14px}
-  .card h3{font-size:18px;margin-bottom:6px}
-  .card p{color:var(--muted);font-size:14.5px}
+  .card h3{font-size:18px;margin-bottom:6px}.card p{color:var(--muted);font-size:14.5px}
 
-  /* industries */
   .chips{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:28px}
   .chip{background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:12px 20px;font-weight:600;font-size:15px}
 
-  /* steps */
   .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:40px}
-  .step{position:relative;padding-top:8px}
   .step .n{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--purple));
     display:grid;place-items:center;font-weight:800;margin-bottom:14px}
   .step h3{font-size:19px;margin-bottom:6px}.step p{color:var(--muted);font-size:15px}
 
-  /* pricing */
   .prices{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:40px;align-items:start}
   .price{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:28px;position:relative}
   .price.pop{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 20px 50px rgba(91,140,255,.18)}
   .price .tag{position:absolute;top:-12px;right:20px;background:linear-gradient(135deg,var(--accent),var(--purple));
     padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700}
+  html[dir=rtl] .price .tag{right:auto;left:20px}
   .price h3{font-size:20px}.price .amt{font-size:38px;font-weight:800;margin:8px 0}
   .price .amt span{font-size:15px;color:var(--muted);font-weight:500}
   .price ul{list-style:none;margin:18px 0 22px}
   .price li{padding:7px 0;color:var(--muted);font-size:14.5px;display:flex;gap:9px}
   .price li::before{content:"✓";color:var(--accent2);font-weight:800}
 
-  /* faq */
   .faq{max-width:780px;margin:36px auto 0}
   .q{border:1px solid var(--border);border-radius:14px;margin-bottom:12px;background:var(--panel);overflow:hidden}
-  .q button{width:100%;text-align:left;background:none;border:none;color:var(--text);padding:18px 22px;
+  .q button{width:100%;text-align:start;background:none;border:none;color:var(--text);padding:18px 22px;
     font-size:16.5px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;gap:16px;align-items:center}
   .q .ans{max-height:0;overflow:hidden;transition:max-height .28s ease;color:var(--muted);padding:0 22px}
   .q .ans p{padding-bottom:18px;font-size:15px}
-  .q.open .ans{max-height:260px}
+  .q.open .ans{max-height:300px}
   .q .chev{transition:transform .25s;color:var(--accent)}
   .q.open .chev{transform:rotate(45deg)}
 
-  /* cta band */
   .band{background:linear-gradient(135deg,rgba(91,140,255,.16),rgba(139,92,246,.16));
     border:1px solid var(--border);border-radius:24px;padding:56px;text-align:center}
 
@@ -134,14 +124,14 @@
   .foot a{color:var(--muted)}.foot a:hover{color:var(--text)}
 
   @media(max-width:860px){
-    .hero-grid,.cols-3,.cols-4,.steps,.prices,.stats{grid-template-columns:1fr}
-    .cols-4,.cols-3{grid-template-columns:1fr 1fr}
+    .hero-grid,.cols-3,.steps,.prices,.stats{grid-template-columns:1fr}
+    .cols-3{grid-template-columns:1fr 1fr}
     .mock{margin-top:30px}.navlinks{display:none}.menu-btn{display:block}
     .navlinks.show{display:flex;position:absolute;top:66px;left:0;right:0;flex-direction:column;
       background:var(--bg2);border-bottom:1px solid var(--border);padding:18px 20px;gap:16px}
     section{padding:64px 0}
   }
-  @media(max-width:560px){.cols-4,.cols-3,.stats{grid-template-columns:1fr}}
+  @media(max-width:560px){.cols-3,.stats{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -151,15 +141,16 @@
     <nav>
       <a class="logo" href="#top">💠 Walaa</a>
       <div class="navlinks" id="nav">
-        <a href="#features">Features</a>
-        <a href="#industries">Who it's for</a>
-        <a href="#how">How it works</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#faq">FAQ</a>
+        <a href="#features" data-ar="المزايا">Features</a>
+        <a href="#industries" data-ar="لمن">Who it's for</a>
+        <a href="#how" data-ar="كيف يعمل">How it works</a>
+        <a href="#pricing" data-ar="الأسعار">Pricing</a>
+        <a href="#faq" data-ar="الأسئلة الشائعة">FAQ</a>
       </div>
       <div class="nav-cta">
-        <a class="btn btn-ghost" href="http://localhost:3000" target="_blank" rel="noreferrer">Log in</a>
-        <a class="btn btn-primary" href="#pricing">Get started</a>
+        <button class="lang" id="langBtn" aria-label="Language">العربية</button>
+        <a class="btn btn-ghost" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="تسجيل الدخول">Log in</a>
+        <a class="btn btn-primary" href="#pricing" data-ar="ابدأ الآن">Get started</a>
         <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
       </div>
     </nav>
@@ -170,27 +161,27 @@
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">Loyalty &amp; Rewards Platform</span>
-      <h1>Turn one-time buyers into <span class="grad">lifelong regulars</span>.</h1>
-      <p class="sub">Walaa is the complete loyalty engine for modern businesses — points, tiers, rewards,
+      <span class="eyebrow" data-ar="منصة الولاء والمكافآت">Loyalty &amp; Rewards Platform</span>
+      <h1 data-ar-html="حوّل المشتري لمرة واحدة إلى <span class='grad'>عميل دائم</span>.">Turn one-time buyers into <span class="grad">lifelong regulars</span>.</h1>
+      <p class="sub" data-ar="والاء هو محرك الولاء المتكامل للأعمال الحديثة — نقاط، ومستويات، ومكافآت، وتحفيز، وإحالات، وبطاقات أختام، وسحوبات جوائز. مبني على الـ API، متعدد المستأجرين، وثنائي اللغة.">Walaa is the complete loyalty engine for modern businesses — points, tiers, rewards,
         gamification, referrals, stamp cards and prize draws. API-first, multi-tenant, and bilingual.</p>
       <div class="hero-ctas">
-        <a class="btn btn-primary btn-lg" href="#pricing">Start free</a>
-        <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
+        <a class="btn btn-primary btn-lg" href="#pricing" data-ar="ابدأ مجانًا">Start free</a>
+        <a class="btn btn-ghost btn-lg" href="#how" data-ar="شاهد كيف يعمل">See how it works</a>
       </div>
-      <p class="hero-note">No cards. No clutter. A digital loyalty wallet your customers actually use.</p>
-      <p class="rtl grad" style="margin-top:10px;font-weight:700">حوّل زبائنك إلى عملاء دائمين · بەکڕیارە دڵسۆزەکان</p>
+      <p class="hero-note" data-ar="بلا بطاقات ولا تعقيد. محفظة ولاء رقمية يستخدمها عملاؤك فعلًا.">No cards. No clutter. A digital loyalty wallet your customers actually use.</p>
+      <p class="tagline grad rtl" dir="rtl" data-ar="حوّل زبائنك إلى عملاء دائمين · بەکڕیارە دڵسۆزەکان">Turn shoppers into regulars · بەکڕیارە دڵسۆزەکان</p>
     </div>
     <div class="mock">
-      <div class="floaty a"><span class="dot"></span> +50 points earned</div>
+      <div class="floaty a"><span class="dot"></span> <span data-ar="+50 نقطة مكتسبة">+50 points earned</span></div>
       <div class="loyalty-card">
-        <div class="row"><span style="opacity:.9">Walaa Card</span><span class="pill">⭐ Gold ×1.5</span></div>
-        <div style="opacity:.85;font-size:13px;margin-top:14px">Available points</div>
+        <div class="row"><span style="opacity:.9" data-ar="بطاقة ولاء">Walaa Card</span><span class="pill" data-ar="⭐ ذهبي ×1.5">⭐ Gold ×1.5</span></div>
+        <div style="opacity:.85;font-size:13px;margin-top:14px" data-ar="النقاط المتاحة">Available points</div>
         <div class="pts">6,154</div>
-        <div style="opacity:.85;font-size:13px">🔥 12-day streak · 🏅 4 badges</div>
+        <div style="opacity:.85;font-size:13px" data-ar="🔥 سلسلة 12 يومًا · 🏅 4 أوسمة">🔥 12-day streak · 🏅 4 badges</div>
         <div class="qr" aria-hidden="true"></div>
       </div>
-      <div class="floaty b">🎁 Free coffee unlocked</div>
+      <div class="floaty b" data-ar="🎁 قهوة مجانية">🎁 Free coffee unlocked</div>
     </div>
   </div>
 </section>
@@ -198,10 +189,10 @@
 <section style="padding-top:0">
   <div class="wrap">
     <div class="stats">
-      <div class="stat"><h3 class="grad">×3</h3><p>higher repeat-purchase rate with tiers + rewards</p></div>
-      <div class="stat"><h3 class="grad">1 API</h3><p>send any event, we handle the loyalty logic</p></div>
-      <div class="stat"><h3 class="grad">3</h3><p>languages out of the box — EN · AR · KU (RTL)</p></div>
-      <div class="stat"><h3 class="grad">∞</h3><p>brands &amp; branches on one multi-tenant platform</p></div>
+      <div class="stat"><span class="grad">×3</span><p data-ar="معدل شراء متكرر أعلى مع المستويات والمكافآت">higher repeat-purchase rate with tiers + rewards</p></div>
+      <div class="stat"><span class="grad">API</span><p data-ar="واجهة واحدة — أرسل أي حدث ونتولّى منطق الولاء">1 API — send any event, we handle the loyalty logic</p></div>
+      <div class="stat"><span class="grad">3</span><p data-ar="لغات جاهزة — الإنجليزية والعربية والكردية (RTL)">languages out of the box — EN · AR · KU (RTL)</p></div>
+      <div class="stat"><span class="grad">∞</span><p data-ar="علامات تجارية وفروع على منصة واحدة متعددة المستأجرين">brands &amp; branches on one multi-tenant platform</p></div>
     </div>
   </div>
 </section>
@@ -209,39 +200,39 @@
 <section id="features">
   <div class="wrap">
     <div class="center" style="max-width:640px">
-      <span class="eyebrow">Everything you need</span>
-      <h2>One platform for the whole loyalty loop</h2>
-      <p class="sub center">Earn → engage → reward → retain. Configure every program yourself — no code per campaign.</p>
+      <span class="eyebrow" data-ar="كل ما تحتاجه">Everything you need</span>
+      <h2 data-ar="منصة واحدة لدورة الولاء كاملة">One platform for the whole loyalty loop</h2>
+      <p class="sub center" data-ar="اكسب ← تفاعل ← كافئ ← احتفظ. اضبط كل برنامج بنفسك — دون برمجة لكل حملة.">Earn → engage → reward → retain. Configure every program yourself — no code per campaign.</p>
     </div>
     <div class="grid cols-3" style="margin-top:44px">
-      <div class="card"><span class="ic">💰</span><h3>Points &amp; wallet</h3><p>An immutable double-entry points ledger with active, pending and reserved balances — accurate to the last point.</p></div>
-      <div class="card"><span class="ic">⭐</span><h3>Tiers</h3><p>Bronze→Platinum tiers that auto-progress on spend, points or visits and multiply how fast members earn.</p></div>
-      <div class="card"><span class="ic">🎁</span><h3>Rewards &amp; QR coupons</h3><p>A reward catalog customers redeem for points — reserve → confirm at the counter with a QR coupon.</p></div>
-      <div class="card"><span class="ic">🏅</span><h3>Gamification</h3><p>Achievements, daily streaks, time-boxed challenges and leaderboards that keep customers coming back.</p></div>
-      <div class="card"><span class="ic">👥</span><h3>Referrals</h3><p>Every member gets a shareable code/QR; both sides are rewarded automatically when a referral completes.</p></div>
-      <div class="card"><span class="ic">🎟️</span><h3>Digital stamp cards</h3><p>"Buy 10, get 1 free" punch cards — conditioned by service/category, award &amp; reset when full.</p></div>
-      <div class="card"><span class="ic">🎲</span><h3>Prize draws</h3><p>Purchases, bookings or app-shares earn weighted entries; pick a fair, weighted-random winner.</p></div>
-      <div class="card"><span class="ic">🎂</span><h3>Birthday &amp; campaigns</h3><p>Scheduled birthday rewards and a full campaign engine with conditions, stacking, limits and budgets.</p></div>
-      <div class="card"><span class="ic">🧭</span><h3>RFM personas</h3><p>Automatic Recency/Frequency/Monetary scoring sorts members into Champions, At-Risk, Lost and more.</p></div>
-      <div class="card"><span class="ic">📱</span><h3>Customer app</h3><p>A mobile loyalty card: balance, tier, badges, coupons and history — opened from a secure link.</p></div>
-      <div class="card"><span class="ic">🌍</span><h3>Bilingual &amp; RTL</h3><p>English, Arabic and Kurdish (Sorani) across the dashboard, customer app and API messages.</p></div>
-      <div class="card"><span class="ic">🔌</span><h3>API &amp; webhooks</h3><p>One generic events API, HMAC-signed webhooks, and an integration kit to plug into any POS or app.</p></div>
+      <div class="card"><span class="ic">💰</span><h3 data-ar="النقاط والمحفظة">Points &amp; wallet</h3><p data-ar="دفتر نقاط مزدوج القيد غير قابل للتعديل مع أرصدة فعّالة ومعلّقة ومحجوزة — دقيق حتى آخر نقطة.">An immutable double-entry points ledger with active, pending and reserved balances — accurate to the last point.</p></div>
+      <div class="card"><span class="ic">⭐</span><h3 data-ar="المستويات">Tiers</h3><p data-ar="مستويات من البرونزي إلى البلاتيني تتدرّج تلقائيًا حسب الإنفاق أو النقاط أو الزيارات وتضاعف سرعة الكسب.">Bronze→Platinum tiers that auto-progress on spend, points or visits and multiply how fast members earn.</p></div>
+      <div class="card"><span class="ic">🎁</span><h3 data-ar="المكافآت وقسائم QR">Rewards &amp; QR coupons</h3><p data-ar="كتالوج مكافآت يستبدله العملاء بالنقاط — حجز ثم تأكيد عند الكاشير برمز QR.">A reward catalog customers redeem for points — reserve → confirm at the counter with a QR coupon.</p></div>
+      <div class="card"><span class="ic">🏅</span><h3 data-ar="التحفيز والألعاب">Gamification</h3><p data-ar="إنجازات وأوسمة، وسلاسل يومية، وتحديات زمنية، ولوحات متصدرين تُعيد العملاء دائمًا.">Achievements, daily streaks, time-boxed challenges and leaderboards that keep customers coming back.</p></div>
+      <div class="card"><span class="ic">👥</span><h3 data-ar="الإحالات">Referrals</h3><p data-ar="لكل عضو رمز/‏QR قابل للمشاركة؛ ويُكافأ الطرفان تلقائيًا عند اكتمال الإحالة.">Every member gets a shareable code/QR; both sides are rewarded automatically when a referral completes.</p></div>
+      <div class="card"><span class="ic">🎟️</span><h3 data-ar="بطاقات الأختام الرقمية">Digital stamp cards</h3><p data-ar="«اشترِ 10 واحصل على 1 مجانًا» — مشروطة بالخدمة/الفئة، تُكافئ وتُعاد عند الاكتمال.">"Buy 10, get 1 free" punch cards — conditioned by service/category, award &amp; reset when full.</p></div>
+      <div class="card"><span class="ic">🎲</span><h3 data-ar="سحوبات الجوائز">Prize draws</h3><p data-ar="المشتريات أو الحجوزات أو مشاركة التطبيق تمنح تذاكر مرجّحة؛ واختيار فائز عشوائي عادل مرجّح.">Purchases, bookings or app-shares earn weighted entries; pick a fair, weighted-random winner.</p></div>
+      <div class="card"><span class="ic">🎂</span><h3 data-ar="أعياد الميلاد والحملات">Birthday &amp; campaigns</h3><p data-ar="مكافآت عيد ميلاد مجدولة ومحرك حملات كامل بشروط وتراكم وحدود وميزانيات.">Scheduled birthday rewards and a full campaign engine with conditions, stacking, limits and budgets.</p></div>
+      <div class="card"><span class="ic">🧭</span><h3 data-ar="شخصيات RFM">RFM personas</h3><p data-ar="تقييم تلقائي للحداثة والتكرار والقيمة يصنّف الأعضاء إلى أبطال ومعرّضين للخطر ومفقودين وغيرها.">Automatic Recency/Frequency/Monetary scoring sorts members into Champions, At-Risk, Lost and more.</p></div>
+      <div class="card"><span class="ic">📱</span><h3 data-ar="تطبيق العميل">Customer app</h3><p data-ar="بطاقة ولاء على الجوال: الرصيد والمستوى والأوسمة والقسائم والسجل — تُفتح برابط آمن.">A mobile loyalty card: balance, tier, badges, coupons and history — opened from a secure link.</p></div>
+      <div class="card"><span class="ic">🌍</span><h3 data-ar="ثنائي اللغة وRTL">Bilingual &amp; RTL</h3><p data-ar="الإنجليزية والعربية والكردية (سوراني) في لوحة التحكم وتطبيق العميل ورسائل الـ API.">English, Arabic and Kurdish (Sorani) across the dashboard, customer app and API messages.</p></div>
+      <div class="card"><span class="ic">🔌</span><h3 data-ar="الـ API وويب هوك">API &amp; webhooks</h3><p data-ar="واجهة أحداث واحدة، وويب هوك موقّع بـ HMAC، وحزمة تكامل لربطها بأي نقطة بيع أو تطبيق.">One generic events API, HMAC-signed webhooks, and an integration kit to plug into any POS or app.</p></div>
     </div>
   </div>
 </section>
 
 <section id="industries" style="background:var(--bg2)">
   <div class="wrap center" style="max-width:720px">
-    <span class="eyebrow">Built for</span>
-    <h2>Loyalty that fits your business</h2>
-    <p class="sub center">From a single salon to a multi-brand marketplace — the same engine adapts to you.</p>
+    <span class="eyebrow" data-ar="مصمم لأجل">Built for</span>
+    <h2 data-ar="ولاء يناسب عملك">Loyalty that fits your business</h2>
+    <p class="sub center" data-ar="من صالون واحد إلى سوق متعدد العلامات — المحرّك نفسه يتكيّف معك.">From a single salon to a multi-brand marketplace — the same engine adapts to you.</p>
     <div class="chips">
-      <span class="chip">☕ Cafés &amp; restaurants</span>
-      <span class="chip">💇 Salons &amp; beauty</span>
-      <span class="chip">🛍️ Retail</span>
-      <span class="chip">🛒 E-commerce</span>
-      <span class="chip">🏢 Multi-brand groups</span>
-      <span class="chip">💊 Pharmacies</span>
+      <span class="chip" data-ar="☕ المقاهي والمطاعم">☕ Cafés &amp; restaurants</span>
+      <span class="chip" data-ar="💇 الصالونات والتجميل">💇 Salons &amp; beauty</span>
+      <span class="chip" data-ar="🛍️ التجزئة">🛍️ Retail</span>
+      <span class="chip" data-ar="🛒 التجارة الإلكترونية">🛒 E-commerce</span>
+      <span class="chip" data-ar="🏢 المجموعات متعددة العلامات">🏢 Multi-brand groups</span>
+      <span class="chip" data-ar="💊 الصيدليات">💊 Pharmacies</span>
     </div>
   </div>
 </section>
@@ -249,13 +240,13 @@
 <section id="how">
   <div class="wrap">
     <div class="center" style="max-width:640px">
-      <span class="eyebrow">How it works</span>
-      <h2>Live in three steps</h2>
+      <span class="eyebrow" data-ar="كيف يعمل">How it works</span>
+      <h2 data-ar="جاهز في ثلاث خطوات">Live in three steps</h2>
     </div>
     <div class="steps">
-      <div class="step"><div class="n">1</div><h3>Send your events</h3><p>Point your POS, app or store at one API — purchases, visits, sign-ups, logins, shares. We do the rest.</p></div>
-      <div class="step"><div class="n">2</div><h3>Configure your programs</h3><p>Set points rules, tiers, rewards, campaigns, stamp cards and draws from the dashboard — all dynamic.</p></div>
-      <div class="step"><div class="n">3</div><h3>Engage &amp; grow</h3><p>Customers earn, redeem and climb tiers via their digital card; you watch it all in reports &amp; RFM.</p></div>
+      <div class="step"><div class="n">1</div><h3 data-ar="أرسل أحداثك">Send your events</h3><p data-ar="وجّه نقطة البيع أو التطبيق أو المتجر إلى واجهة واحدة — مشتريات، زيارات، تسجيلات، مشاركات. ونتكفّل بالباقي.">Point your POS, app or store at one API — purchases, visits, sign-ups, logins, shares. We do the rest.</p></div>
+      <div class="step"><div class="n">2</div><h3 data-ar="اضبط برامجك">Configure your programs</h3><p data-ar="حدّد قواعد النقاط والمستويات والمكافآت والحملات وبطاقات الأختام والسحوبات من لوحة التحكم — كلها ديناميكية.">Set points rules, tiers, rewards, campaigns, stamp cards and draws from the dashboard — all dynamic.</p></div>
+      <div class="step"><div class="n">3</div><h3 data-ar="تفاعل وانمُ">Engage &amp; grow</h3><p data-ar="يكسب العملاء ويستبدلون ويرتقون في المستويات عبر بطاقتهم الرقمية؛ وتتابع كل ذلك في التقارير وتحليل RFM.">Customers earn, redeem and climb tiers via their digital card; you watch it all in reports &amp; RFM.</p></div>
     </div>
   </div>
 </section>
@@ -263,32 +254,32 @@
 <section id="pricing" style="background:var(--bg2)">
   <div class="wrap">
     <div class="center" style="max-width:640px">
-      <span class="eyebrow">Pricing</span>
-      <h2>Simple plans that scale</h2>
-      <p class="sub center">Start free, grow as you do, or self-host the whole platform.</p>
+      <span class="eyebrow" data-ar="الأسعار">Pricing</span>
+      <h2 data-ar="خطط بسيطة تنمو معك">Simple plans that scale</h2>
+      <p class="sub center" data-ar="ابدأ مجانًا، وانمُ معنا، أو استضِف المنصة بالكامل بنفسك.">Start free, grow as you do, or self-host the whole platform.</p>
     </div>
     <div class="prices">
       <div class="price">
-        <h3>Starter</h3>
-        <div class="amt">Free</div>
-        <p class="muted">For a single store getting started.</p>
-        <ul><li>Points, tiers &amp; rewards</li><li>Digital customer card</li><li>1 brand · up to 1,000 members</li><li>Community support</li></ul>
-        <a class="btn btn-ghost" style="width:100%;justify-content:center" href="http://localhost:3000" target="_blank" rel="noreferrer">Get started</a>
+        <h3 data-ar="المبتدئ">Starter</h3>
+        <div class="amt" data-ar="مجانًا">Free</div>
+        <p class="muted" data-ar="لمتجر واحد يبدأ الآن.">For a single store getting started.</p>
+        <ul><li data-ar="نقاط ومستويات ومكافآت">Points, tiers &amp; rewards</li><li data-ar="بطاقة عميل رقمية">Digital customer card</li><li data-ar="علامة واحدة · حتى 1,000 عضو">1 brand · up to 1,000 members</li><li data-ar="دعم المجتمع">Community support</li></ul>
+        <a class="btn btn-ghost" style="width:100%;justify-content:center" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="ابدأ الآن">Get started</a>
       </div>
       <div class="price pop">
-        <span class="tag">Most popular</span>
-        <h3>Growth</h3>
-        <div class="amt">$49<span>/mo</span></div>
-        <p class="muted">For growing businesses that want it all.</p>
-        <ul><li>Everything in Starter</li><li>Gamification, referrals, stamp cards &amp; draws</li><li>Campaigns, RFM &amp; reports</li><li>Webhooks &amp; API · unlimited members</li></ul>
-        <a class="btn btn-primary" style="width:100%;justify-content:center" href="http://localhost:3000" target="_blank" rel="noreferrer">Start free trial</a>
+        <span class="tag" data-ar="الأكثر شيوعًا">Most popular</span>
+        <h3 data-ar="النمو">Growth</h3>
+        <div class="amt" data-ar-html="$49<span>/شهر</span>">$49<span>/mo</span></div>
+        <p class="muted" data-ar="للأعمال المتنامية التي تريد كل شيء.">For growing businesses that want it all.</p>
+        <ul><li data-ar="كل ما في المبتدئ">Everything in Starter</li><li data-ar="تحفيز وإحالات وبطاقات أختام وسحوبات">Gamification, referrals, stamp cards &amp; draws</li><li data-ar="حملات وتحليل RFM وتقارير">Campaigns, RFM &amp; reports</li><li data-ar="ويب هوك وAPI · أعضاء بلا حدود">Webhooks &amp; API · unlimited members</li></ul>
+        <a class="btn btn-primary" style="width:100%;justify-content:center" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="ابدأ التجربة المجانية">Start free trial</a>
       </div>
       <div class="price">
-        <h3>Enterprise</h3>
-        <div class="amt">Custom</div>
-        <p class="muted">Multi-brand groups &amp; self-hosting.</p>
-        <ul><li>Multi-tenant hierarchy &amp; RBAC</li><li>Self-host (Docker) or managed cloud</li><li>SLA, SSO &amp; custom integrations</li><li>Dedicated support</li></ul>
-        <a class="btn btn-ghost" style="width:100%;justify-content:center" href="#contact">Contact sales</a>
+        <h3 data-ar="المؤسسات">Enterprise</h3>
+        <div class="amt" data-ar="حسب الطلب">Custom</div>
+        <p class="muted" data-ar="للمجموعات متعددة العلامات والاستضافة الذاتية.">Multi-brand groups &amp; self-hosting.</p>
+        <ul><li data-ar="تسلسل متعدد المستأجرين وصلاحيات RBAC">Multi-tenant hierarchy &amp; RBAC</li><li data-ar="استضافة ذاتية (Docker) أو سحابة مُدارة">Self-host (Docker) or managed cloud</li><li data-ar="اتفاقية مستوى خدمة وSSO وتكاملات مخصّصة">SLA, SSO &amp; custom integrations</li><li data-ar="دعم مخصّص">Dedicated support</li></ul>
+        <a class="btn btn-ghost" style="width:100%;justify-content:center" href="#contact" data-ar="تواصل مع المبيعات">Contact sales</a>
       </div>
     </div>
   </div>
@@ -297,18 +288,18 @@
 <section id="faq">
   <div class="wrap">
     <div class="center" style="max-width:640px">
-      <span class="eyebrow">FAQ</span>
-      <h2>Questions, answered</h2>
+      <span class="eyebrow" data-ar="الأسئلة الشائعة">FAQ</span>
+      <h2 data-ar="أسئلة وإجاباتها">Questions, answered</h2>
     </div>
     <div class="faq" id="faqList">
-      <div class="q"><button>What is Walaa?<span class="chev">＋</span></button><div class="ans"><p>Walaa is a complete, multi-tenant loyalty &amp; rewards platform. You send it customer events (purchases, visits, sign-ups…) through one API and it runs the points ledger, tiers, rewards, gamification, referrals, stamp cards, prize draws and analytics — with an admin dashboard and a customer-facing app.</p></div></div>
-      <div class="q"><button>What kinds of businesses is it for?<span class="chev">＋</span></button><div class="ans"><p>Cafés and restaurants, salons &amp; beauty centers, retail, e-commerce, pharmacies, and multi-brand groups. The same engine scales from a single branch to a whole marketplace of brands on one platform.</p></div></div>
-      <div class="q"><button>How do customers earn and redeem?<span class="chev">＋</span></button><div class="ans"><p>They earn points automatically on qualifying events and climb tiers that boost their earn rate. They redeem from a reward catalog for a QR coupon that staff confirm at the counter — all visible in their digital loyalty card.</p></div></div>
-      <div class="q"><button>Can I run tiers, referrals, stamp cards and prize draws?<span class="chev">＋</span></button><div class="ans"><p>Yes — all of them, fully configurable from the dashboard with no code. Add membership tiers, dual-sided referrals, digital stamp cards, scheduled birthday rewards, and weighted prize draws whenever you like.</p></div></div>
-      <div class="q"><button>Do you support Arabic and Kurdish (RTL)?<span class="chev">＋</span></button><div class="ans"><p>Yes. The dashboard, customer app and API messages are trilingual — English, Arabic and Kurdish (Sorani) — with full right-to-left layout.</p></div></div>
-      <div class="q"><button>How do I integrate it with my POS or app?<span class="chev">＋</span></button><div class="ans"><p>Send events to one generic API endpoint. We provide an integration kit, HMAC-signed webhooks for result events, and onboarding/backfill tools so you can go live against your existing order data quickly.</p></div></div>
-      <div class="q"><button>Is my data isolated and secure?<span class="chev">＋</span></button><div class="ans"><p>Every record belongs to an application and is isolated by a strict multi-tenant scope. Access is role-based (Viewer → SuperAdmin), API keys and tokens are hashed, and the points ledger is immutable and idempotent.</p></div></div>
-      <div class="q"><button>Can I self-host it?<span class="chev">＋</span></button><div class="ans"><p>Absolutely. The whole platform ships as Docker containers (database, API, worker, dashboard) — run it on your own server or use a managed cloud deployment.</p></div></div>
+      <div class="q"><button><span data-ar="ما هو والاء؟">What is Walaa?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="والاء منصة ولاء ومكافآت كاملة ومتعددة المستأجرين. ترسل إليها أحداث العملاء (مشتريات، زيارات، تسجيلات…) عبر واجهة واحدة فتدير دفتر النقاط والمستويات والمكافآت والتحفيز والإحالات وبطاقات الأختام وسحوبات الجوائز والتحليلات — مع لوحة تحكم وتطبيق للعميل.">Walaa is a complete, multi-tenant loyalty &amp; rewards platform. You send it customer events (purchases, visits, sign-ups…) through one API and it runs the points ledger, tiers, rewards, gamification, referrals, stamp cards, prize draws and analytics — with an admin dashboard and a customer-facing app.</p></div></div>
+      <div class="q"><button><span data-ar="لأي أنواع الأعمال هو؟">What kinds of businesses is it for?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="المقاهي والمطاعم، والصالونات ومراكز التجميل، والتجزئة، والتجارة الإلكترونية، والصيدليات، والمجموعات متعددة العلامات. المحرّك نفسه يتوسّع من فرع واحد إلى سوق كامل من العلامات على منصة واحدة.">Cafés and restaurants, salons &amp; beauty centers, retail, e-commerce, pharmacies, and multi-brand groups. The same engine scales from a single branch to a whole marketplace of brands on one platform.</p></div></div>
+      <div class="q"><button><span data-ar="كيف يكسب العملاء ويستبدلون؟">How do customers earn and redeem?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="يكسبون النقاط تلقائيًا عند الأحداث المؤهّلة ويرتقون في المستويات التي ترفع سرعة كسبهم. ويستبدلون من كتالوج المكافآت للحصول على قسيمة QR يؤكّدها الموظف عند الكاشير — وكل ذلك ظاهر في بطاقة الولاء الرقمية.">They earn points automatically on qualifying events and climb tiers that boost their earn rate. They redeem from a reward catalog for a QR coupon that staff confirm at the counter — all visible in their digital loyalty card.</p></div></div>
+      <div class="q"><button><span data-ar="هل يمكنني تشغيل المستويات والإحالات وبطاقات الأختام وسحوبات الجوائز؟">Can I run tiers, referrals, stamp cards and prize draws?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="نعم — كلها، قابلة للضبط بالكامل من لوحة التحكم دون برمجة. أضف مستويات عضوية، وإحالات ثنائية الطرف، وبطاقات أختام رقمية، ومكافآت عيد ميلاد مجدولة، وسحوبات مرجّحة متى شئت.">Yes — all of them, fully configurable from the dashboard with no code. Add membership tiers, dual-sided referrals, digital stamp cards, scheduled birthday rewards, and weighted prize draws whenever you like.</p></div></div>
+      <div class="q"><button><span data-ar="هل تدعمون العربية والكردية (RTL)؟">Do you support Arabic and Kurdish (RTL)?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="نعم. لوحة التحكم وتطبيق العميل ورسائل الـ API بثلاث لغات — الإنجليزية والعربية والكردية (سوراني) — مع تخطيط كامل من اليمين إلى اليسار.">Yes. The dashboard, customer app and API messages are trilingual — English, Arabic and Kurdish (Sorani) — with full right-to-left layout.</p></div></div>
+      <div class="q"><button><span data-ar="كيف أربطه بنقطة البيع أو تطبيقي؟">How do I integrate it with my POS or app?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="أرسل الأحداث إلى واجهة واحدة. نوفّر حزمة تكامل، وويب هوك موقّعًا بـ HMAC لأحداث النتائج، وأدوات تهيئة وتعبئة رجعية لتبدأ سريعًا على بيانات طلباتك الحالية.">Send events to one generic API endpoint. We provide an integration kit, HMAC-signed webhooks for result events, and onboarding/backfill tools so you can go live against your existing order data quickly.</p></div></div>
+      <div class="q"><button><span data-ar="هل بياناتي معزولة وآمنة؟">Is my data isolated and secure?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="كل سجلّ ينتمي إلى تطبيق ومعزول بنطاق صارم متعدد المستأجرين. الوصول قائم على الأدوار (من مُشاهد إلى مدير عام)، والمفاتيح والرموز مُجزّأة، ودفتر النقاط غير قابل للتعديل ويمنع التكرار.">Every record belongs to an application and is isolated by a strict multi-tenant scope. Access is role-based (Viewer → SuperAdmin), API keys and tokens are hashed, and the points ledger is immutable and idempotent.</p></div></div>
+      <div class="q"><button><span data-ar="هل يمكنني استضافته ذاتيًا؟">Can I self-host it?</span><span class="chev">＋</span></button><div class="ans"><p data-ar="بالتأكيد. تُشحن المنصة كاملةً كحاويات Docker (قاعدة بيانات، API، معالج، لوحة تحكم) — شغّلها على خادمك أو استخدم استضافة سحابية مُدارة.">Absolutely. The whole platform ships as Docker containers (database, API, worker, dashboard) — run it on your own server or use a managed cloud deployment.</p></div></div>
     </div>
   </div>
 </section>
@@ -316,38 +307,54 @@
 <section id="contact">
   <div class="wrap">
     <div class="band">
-      <h2 style="margin-bottom:10px">Ready to launch your loyalty program?</h2>
-      <p class="sub center" style="margin-bottom:26px">Set it up in minutes. Your customers get a card today.</p>
-      <a class="btn btn-primary btn-lg" href="http://localhost:3000" target="_blank" rel="noreferrer">Open the dashboard →</a>
+      <h2 style="margin-bottom:10px" data-ar="جاهز لإطلاق برنامج ولائك؟">Ready to launch your loyalty program?</h2>
+      <p class="sub center" style="margin-bottom:26px" data-ar="جهّزه في دقائق. ويحصل عملاؤك على بطاقة اليوم.">Set it up in minutes. Your customers get a card today.</p>
+      <a class="btn btn-primary btn-lg" href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="افتح لوحة التحكم ←">Open the dashboard →</a>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap foot">
-    <div><span class="logo">💠 Walaa</span><div class="muted" style="margin-top:6px">Loyalty &amp; rewards for modern businesses.</div></div>
+    <div><span class="logo">💠 Walaa</span><div class="muted" style="margin-top:6px" data-ar="ولاء ومكافآت للأعمال الحديثة.">Loyalty &amp; rewards for modern businesses.</div></div>
     <div style="display:flex;gap:24px;flex-wrap:wrap">
-      <a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
-      <a href="http://localhost:3000" target="_blank" rel="noreferrer">Dashboard</a>
+      <a href="#features" data-ar="المزايا">Features</a><a href="#pricing" data-ar="الأسعار">Pricing</a><a href="#faq" data-ar="الأسئلة الشائعة">FAQ</a>
+      <a href="http://localhost:3000" target="_blank" rel="noreferrer" data-ar="لوحة التحكم">Dashboard</a>
     </div>
     <div class="muted">© <span id="yr"></span> Walaa · منصة الولاء</div>
   </div>
 </footer>
 
 <script>
-  // nav border on scroll
   const hdr=document.getElementById('hdr');
   addEventListener('scroll',()=>hdr.classList.toggle('scrolled',scrollY>8));
-  // mobile menu
   document.getElementById('menuBtn').onclick=()=>document.getElementById('nav').classList.toggle('show');
   document.querySelectorAll('#nav a').forEach(a=>a.onclick=()=>document.getElementById('nav').classList.remove('show'));
-  // FAQ accordion (one open at a time)
   document.querySelectorAll('#faqList .q button').forEach(b=>b.onclick=()=>{
     const q=b.parentElement, was=q.classList.contains('open');
     document.querySelectorAll('#faqList .q').forEach(x=>x.classList.remove('open'));
     if(!was) q.classList.add('open');
   });
   document.getElementById('yr').textContent=new Date().getFullYear();
+
+  // --- bilingual EN ⇄ AR with RTL ---
+  function setLang(l){
+    const ar=l==='ar';
+    document.documentElement.lang=l;
+    document.documentElement.dir=ar?'rtl':'ltr';
+    document.querySelectorAll('[data-ar]').forEach(el=>{
+      if(el.dataset.en===undefined) el.dataset.en=el.textContent;
+      el.textContent=ar?el.dataset.ar:el.dataset.en;
+    });
+    document.querySelectorAll('[data-ar-html]').forEach(el=>{
+      if(el.dataset.enHtml===undefined) el.dataset.enHtml=el.innerHTML;
+      el.innerHTML=ar?el.dataset.arHtml:el.dataset.enHtml;
+    });
+    document.getElementById('langBtn').textContent=ar?'English':'العربية';
+    try{localStorage.setItem('walaa.lang',l)}catch(e){}
+  }
+  document.getElementById('langBtn').onclick=()=>setLang(document.documentElement.dir==='rtl'?'en':'ar');
+  try{ if(localStorage.getItem('walaa.lang')==='ar') setLang('ar'); }catch(e){}
 </script>
 </body>
 </html>

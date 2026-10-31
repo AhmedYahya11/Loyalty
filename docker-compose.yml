@@ -1,21 +1,28 @@
-# Loyalty Platform — local stack. `docker compose up --build`
-# منصة الولاء — بيئة التشغيل المحلية
+# Loyalty Platform — full stack (Postgres + API + worker + dashboard).
+# منصة الولاء — الحزمة الكاملة
+#
+#   cp .env.example .env   # then edit secrets
+#   docker compose up --build -d
+#
+# API → http://localhost:8080 (Scalar at /scalar) · Dashboard → http://localhost:3000
+# Config is env-driven (see .env / .env.example); values below are local-dev defaults.
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: loyalty
-      POSTGRES_USER: loyalty
-      POSTGRES_PASSWORD: loyalty
+      POSTGRES_DB: ${POSTGRES_DB:-loyalty}
+      POSTGRES_USER: ${POSTGRES_USER:-loyalty}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-loyalty}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U loyalty"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-loyalty}"]
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   api:
     build:
@@ -23,28 +30,46 @@ services:
       args:
         PROJECT: Loyalty.Api
     environment:
-      LOYALTY_DB: "Host=postgres;Port=5432;Database=loyalty;Username=loyalty;Password=loyalty"
-      Bootstrap__Token: "dev-bootstrap-token-change-me"
-      ASPNETCORE_ENVIRONMENT: "Development"
+      LOYALTY_DB: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-loyalty};Username=${POSTGRES_USER:-loyalty};Password=${POSTGRES_PASSWORD:-loyalty}"
+      Bootstrap__Token: ${BOOTSTRAP_TOKEN:-dev-bootstrap-token-change-me}
+      Cors__Origins: ${CORS_ORIGINS:-http://localhost:3000}
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
 
   # Dedicated processor: a cross-process competing consumer on the durable PostgreSQL queue.
-  # Start the API first (it runs EF migrations). Enable with: docker compose --profile worker up.
+  # Starts after the API (which runs EF migrations at startup).
   worker:
     build:
       context: ./backend
       args:
         PROJECT: Loyalty.Worker
     environment:
-      LOYALTY_DB: "Host=postgres;Port=5432;Database=loyalty;Username=loyalty;Password=loyalty"
+      LOYALTY_DB: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-loyalty};Username=${POSTGRES_USER:-loyalty};Password=${POSTGRES_PASSWORD:-loyalty}"
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
     depends_on:
       postgres:
         condition: service_healthy
-    profiles: ["worker"]
+      api:
+        condition: service_started
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+      args:
+        # NEXT_PUBLIC_* are baked into the client bundle at build time.
+        NEXT_PUBLIC_LOYALTY_API_BASE: ${DASHBOARD_API_BASE:-http://localhost:8080}
+        NEXT_PUBLIC_LOYALTY_API_KEY: ${DASHBOARD_API_KEY:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
   pgdata:

@@ -33,18 +33,21 @@ Modules: `Applications · Accounts · Settings · Members · Wallets(ledger) · 
 
 ## Run it
 
-```bash
-# 1. whole stack (Postgres + API)
-docker compose up --build        # API on http://localhost:8080  (Scalar UI at /scalar)
+The full stack is four containers — **Postgres + API + worker + dashboard**:
 
-# 2. end-to-end Hareer demo (bootstraps + emits a purchase, prints the wallet)
-node integration/hareer/mock-emitter.mjs
+```bash
+cp .env.example .env              # set secrets (DB password, bootstrap token, CORS, dashboard base)
+docker compose up --build -d      # Dashboard → http://localhost:3000 · API → http://localhost:8080 (/scalar)
+docker compose ps                 # all running/healthy
 ```
+
+On an empty DB, bootstrap the root tenant once (see **[docs/DEPLOY.md](docs/DEPLOY.md)** for the full
+runbook — config, backup/restore, scaling, and public/TLS hardening).
 
 Local dev without Docker (needs .NET 10 + a local Postgres):
 
 ```bash
-cd backend && dotnet run --project src/Loyalty.Api
+cd backend && dotnet run --project src/Loyalty.Api     # + cd dashboard && npm run dev
 ```
 
 ## Test

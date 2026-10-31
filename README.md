@@ -50,12 +50,14 @@ cd backend && dotnet run --project src/Loyalty.Api
 ## Test
 
 ```bash
-cd backend && dotnet test          # 8 unit + 1 Testcontainers end-to-end release gate
+cd backend && dotnet test          # 72 tests: 24 unit + 48 Testcontainers end-to-end
 ```
 
-The end-to-end test boots the real API + Wolverine + PostgreSQL (Testcontainers, no mocks) and
-proves: bootstrap → settings → member → active campaign → purchase event → **points in the wallet**,
-plus HTTP idempotency.
+The E2E tests boot the real API + Wolverine + PostgreSQL (Testcontainers, no mocks). Per-feature suites
+cover each module (earn/ledger, CVM, campaigns, tiers, rewards, gamification, engagement, customer app,
+RFM + language, expiry + stamp conditions, refund reversal + reporting, raffles, grant-reward, ops,
+concurrency), and **`FullJourneyE2ETests`** runs the whole platform in one realistic tenant lifecycle as
+an integration release gate.
 
 ## Quick API tour (Phase 1)
 
@@ -145,4 +147,6 @@ The core platform (P1–P6) is complete and generic/multi-tenant. P7–P16 are a
 product expansion (loyalty features; messaging hub out of scope): **Tiers ✅**, **Rewards &
 Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, **Customer-facing
 app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**, **Refund reversal +
-reporting ✅**, **Raffles + custom actions ✅**, **GrantReward effect ✅**. **71 tests green.**
+reporting ✅**, **Raffles + custom actions ✅**, **GrantReward effect ✅**. **72 tests green** — incl. a
+whole-system **full-journey E2E** (`FullJourneyE2ETests`) that configures every module, runs a realistic
+multi-member lifecycle, and asserts the integrated state + that all 12 major result events fire.

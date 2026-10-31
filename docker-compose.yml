@@ -61,6 +61,15 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # public marketing website (static) — served by nginx, no build step
+  website:
+    image: nginx:alpine
+    volumes:
+      - ./website:/usr/share/nginx/html:ro
+    ports:
+      - "8088:80"
+    restart: unless-stopped
+
   dashboard:
     build:
       context: ./dashboard

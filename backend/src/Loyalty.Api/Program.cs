@@ -27,11 +27,20 @@ builder.Services.AddLoyaltyCore(conn);
 builder.Host.UseWolverine(o => LoyaltyWolverine.Configure(o, conn));
 builder.Services.AddResourceSetupOnStartup();
 
+// JSON shape for minimal-API results (health checks etc.)
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
     o.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
     o.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
+
+// MVC controllers (grouped by resource) — mirror the same JSON shape as above.
+builder.Services.AddControllers().AddJsonOptions(o =>
+{
+    o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
 builder.Services.AddOpenApi();
@@ -112,9 +121,9 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseMiddleware<ApiKeyAuthMiddleware>();
 app.UseRateLimiter();
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));         // liveness
+app.MapGet("/health", () => Results.Ok(new { status = "ok" })).WithTags("Health");   // liveness
 app.MapHealthChecks("/health/ready");                                    // readiness (Postgres)
-app.MapLoyaltyEndpoints();
+app.MapControllers();
 
 app.Run();
 

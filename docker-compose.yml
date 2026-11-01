@@ -24,6 +24,23 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # Message broker for the event pipeline (Wolverine RabbitMQ transport).
+  # Management UI → http://localhost:15672 (guest/guest).
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   api:
     build:
       context: ./backend
@@ -31,6 +48,9 @@ services:
         PROJECT: Loyalty.Api
     environment:
       LOYALTY_DB: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-loyalty};Username=${POSTGRES_USER:-loyalty};Password=${POSTGRES_PASSWORD:-loyalty}"
+      # event transport: rabbitmq (set LOYALTY_BROKER=postgres to use the in-DB queue instead)
+      LOYALTY_BROKER: ${LOYALTY_BROKER:-rabbitmq}
+      RABBITMQ_URL: "amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672"
       Bootstrap__Token: ${BOOTSTRAP_TOKEN:-dev-bootstrap-token-change-me}
       Cors__Origins: ${CORS_ORIGINS:-http://localhost:3000}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
@@ -42,9 +62,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
 
-  # Dedicated processor: a cross-process competing consumer on the durable PostgreSQL queue.
+  # Dedicated processor: a cross-process competing consumer on the event queue (RabbitMQ).
   # Starts after the API (which runs EF migrations at startup).
   worker:
     build:
@@ -53,9 +75,13 @@ services:
         PROJECT: Loyalty.Worker
     environment:
       LOYALTY_DB: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-loyalty};Username=${POSTGRES_USER:-loyalty};Password=${POSTGRES_PASSWORD:-loyalty}"
+      LOYALTY_BROKER: ${LOYALTY_BROKER:-rabbitmq}
+      RABBITMQ_URL: "amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672"
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       api:
         condition: service_started

@@ -15,18 +15,22 @@ namespace Loyalty.Core.Modules.Members.Application;
 /// (ApplicationId, ExternalCustomerId) index. Does NOT call SaveChanges — the caller owns the
 /// transaction.
 /// </summary>
-public sealed class MemberProvisioningService(LoyaltyDbContext db, LedgerService ledger, IClock clock)
+public sealed class MemberProvisioningService(
+    IRepository<Loyalty.Core.Modules.Members.Domain.Member> membersRepo,
+    IRepository<Loyalty.Core.Modules.Wallets.Domain.Wallet> walletsRepo,
+    IRepository<Loyalty.Core.Modules.Cvm.Domain.MemberValueProfile> valueProfilesRepo,
+    LedgerService ledger, IClock clock)
 {
     public async Task<(Member Member, Wallet Wallet)> EnsureAsync(
         Guid applicationId, string externalCustomerId, string pointsUnitCode, string baseCurrency, CancellationToken ct,
         DateOnly? birthDate = null)
     {
         externalCustomerId = externalCustomerId.Trim();
-        var existing = await db.Members
+        var existing = await membersRepo.Query()
             .FirstOrDefaultAsync(m => m.ApplicationId == applicationId && m.ExternalCustomerId == externalCustomerId, ct);
         if (existing is not null)
         {
-            var w = await db.Wallets.FirstAsync(x => x.Id == existing.DefaultWalletId, ct);
+            var w = await walletsRepo.Query().FirstAsync(x => x.Id == existing.DefaultWalletId, ct);
             if (birthDate is not null && existing.BirthDate is null) existing.SetBirthDate(birthDate, clock.UtcNow);
             return (existing, w);
         }
@@ -40,9 +44,9 @@ public sealed class MemberProvisioningService(LoyaltyDbContext db, LedgerService
             referralCode: GenerateReferralCode(memberId), birthDate: birthDate);
         var profile = MemberValueProfile.Create(applicationId, memberId, baseCurrency, now);
 
-        db.Wallets.Add(wallet);
-        db.Members.Add(member);
-        db.ValueProfiles.Add(profile);
+        walletsRepo.Add(wallet);
+        membersRepo.Add(member);
+        valueProfilesRepo.Add(profile);
         ledger.CreateMemberAccounts(applicationId, walletId, pointsUnitCode);
         await ledger.EnsureClearingAccountsAsync(applicationId, pointsUnitCode, ct);
 

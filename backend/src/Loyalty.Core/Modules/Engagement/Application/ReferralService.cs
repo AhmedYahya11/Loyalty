@@ -21,28 +21,35 @@ public sealed record ReferralResult(long RefereeBonus, long ReferrerBonus, bool 
 /// referral program, and records a <see cref="Referral"/> row (UNIQUE by referralId) so redelivery
 /// never double-rewards. Operates on tracked entities in the worker's transaction; does not commit.
 /// </summary>
-public sealed class ReferralService(LoyaltyDbContext db, LedgerService ledger)
+public sealed class ReferralService(
+    IRepository<Loyalty.Core.Modules.Engagement.Domain.EngagementSettings> engagementSettingsRepo,
+    IRepository<Loyalty.Core.Modules.Engagement.Domain.Referral> referralsRepo,
+    IRepository<Loyalty.Core.Modules.Wallets.Domain.Wallet> walletsRepo,
+    IRepository<Loyalty.Core.Modules.Cvm.Domain.MemberValueProfile> valueProfilesRepo,
+    IRepository<Loyalty.Core.Modules.Members.Domain.Member> membersRepo,
+    IRepository<Loyalty.Core.Modules.Notifications.Domain.EventLogEntry> eventLogRepo,
+    LedgerService ledger)
 {
     public async Task<ReferralResult> EvaluateAsync(
         Wallet refereeWallet, Member refereeMember, MemberValueProfile refereeProfile, NormalizedEvent normalized,
         Guid sourceEventId, string sourceSystem, string sourceTransactionId, string businessEventKey, string correlationId,
         DateTimeOffset occurredAt, DateTimeOffset now, CancellationToken ct)
     {
-        var settings = await db.EngagementSettings.FirstOrDefaultAsync(s => s.ApplicationId == refereeMember.ApplicationId, ct);
+        var settings = await engagementSettingsRepo.Query().FirstOrDefaultAsync(s => s.ApplicationId == refereeMember.ApplicationId, ct);
         if (settings is null || !settings.ReferralEnabled) return new ReferralResult(0, 0, false);
 
         var referralKey = Fact(normalized, "attributes.referralId");
         if (string.IsNullOrWhiteSpace(referralKey)) return new ReferralResult(0, 0, false);
 
         // idempotency: a referral is rewarded at most once per application
-        if (await db.Referrals.AnyAsync(r => r.ApplicationId == refereeMember.ApplicationId && r.ReferralKey == referralKey, ct))
+        if (await referralsRepo.Query().AnyAsync(r => r.ApplicationId == refereeMember.ApplicationId && r.ReferralKey == referralKey, ct))
             return new ReferralResult(0, 0, false);
 
         var referrer = await ResolveReferrerAsync(refereeMember.ApplicationId, normalized, ct);
         if (referrer is null || referrer.Id == refereeMember.Id) return new ReferralResult(0, 0, false); // unknown / self-referral
 
-        var referrerWallet = await db.Wallets.FirstAsync(w => w.Id == referrer.DefaultWalletId, ct);
-        var referrerProfile = await db.ValueProfiles.FirstAsync(p => p.MemberId == referrer.Id, ct);
+        var referrerWallet = await walletsRepo.Query().FirstAsync(w => w.Id == referrer.DefaultWalletId, ct);
+        var referrerProfile = await valueProfilesRepo.Query().FirstAsync(p => p.MemberId == referrer.Id, ct);
 
         long refereeBonus = await AwardAsync(refereeWallet, refereeProfile, settings.RefereePoints, "referral-referee",
             sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId, occurredAt, ct);
@@ -51,7 +58,7 @@ public sealed class ReferralService(LoyaltyDbContext db, LedgerService ledger)
 
         referrerProfile.ApplyReferral(occurredAt); // the referrer gets the referral credit
 
-        db.Referrals.Add(new Referral(refereeMember.ApplicationId, referralKey!, referrer.Id, refereeMember.Id,
+        referralsRepo.Add(new Referral(refereeMember.ApplicationId, referralKey!, referrer.Id, refereeMember.Id,
             referrerBonus, refereeBonus, now));
 
         EmitEvent(refereeMember.ApplicationId, referrer.Id, new
@@ -68,12 +75,12 @@ public sealed class ReferralService(LoyaltyDbContext db, LedgerService ledger)
         var code = Fact(normalized, "attributes.referrerCode");
         if (!string.IsNullOrWhiteSpace(code))
         {
-            var byCode = await db.Members.FirstOrDefaultAsync(m => m.ApplicationId == applicationId && m.ReferralCode == code, ct);
+            var byCode = await membersRepo.Query().FirstOrDefaultAsync(m => m.ApplicationId == applicationId && m.ReferralCode == code, ct);
             if (byCode is not null) return byCode;
         }
         var ext = Fact(normalized, "attributes.referrerCustomerId");
         if (!string.IsNullOrWhiteSpace(ext))
-            return await db.Members.FirstOrDefaultAsync(m => m.ApplicationId == applicationId && m.ExternalCustomerId == ext, ct);
+            return await membersRepo.Query().FirstOrDefaultAsync(m => m.ApplicationId == applicationId && m.ExternalCustomerId == ext, ct);
         return null;
     }
 
@@ -92,6 +99,6 @@ public sealed class ReferralService(LoyaltyDbContext db, LedgerService ledger)
         n.Facts.TryGetValue(key, out var v) ? v?.ToString() : null;
 
     private void EmitEvent(Guid applicationId, Guid memberId, object payload, DateTimeOffset now) =>
-        db.EventLog.Add(EventLogEntry.Create(applicationId, ResultEventTypes.ReferralRewarded, memberId, null,
+        eventLogRepo.Add(EventLogEntry.Create(applicationId, ResultEventTypes.ReferralRewarded, memberId, null,
             JsonSerializer.Serialize(payload, JsonOptionsProvider.Default), now, now));
 }

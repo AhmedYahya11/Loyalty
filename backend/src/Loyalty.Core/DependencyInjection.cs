@@ -24,6 +24,11 @@ public static class DependencyInjection
         services.AddDbContextWithWolverineIntegration<LoyaltyDbContext>(o =>
             o.UseNpgsql(connectionString, npg => npg.MigrationsHistoryTable("__ef_migrations", "public")));
 
+        // data access: generic base repository per entity + a unit of work, all over the shared
+        // scoped DbContext (so they join the same transaction / Wolverine EF outbox).
+        services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
         // ambient application scope (same instance behind the interface)
         services.AddScoped<ApplicationContext>();
         services.AddScoped<IApplicationContext>(sp => sp.GetRequiredService<ApplicationContext>());

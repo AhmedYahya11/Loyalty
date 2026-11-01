@@ -14,29 +14,29 @@ namespace Loyalty.Core.Modules.Cvm.Application;
 /// that only inherit settings are covered when they receive events; a full inherited-sweep is
 /// a later enhancement (docs/DEVIATIONS.md).
 /// </summary>
-public sealed class LifecycleSweepService(LoyaltyDbContext db, ApplicationContext scope, CvmService cvm, IClock clock)
+public sealed class LifecycleSweepService(IRepository<Loyalty.Core.Modules.Cvm.Domain.ApplicationCvmSettings> cvmSettingsRepo, IRepository<Loyalty.Core.Modules.Cvm.Domain.MemberValueProfile> valueProfilesRepo, IUnitOfWork uow, ApplicationContext scope, CvmService cvm, IClock clock)
 {
     public async Task<int> RunAsync(CancellationToken ct)
     {
         scope.EnterSystemScope();
         try
         {
-            var appIds = await db.CvmSettings
+            var appIds = await cvmSettingsRepo.Query()
                 .Where(s => s.CvmStatus == Domain.CvmStatus.Active)
                 .Select(s => s.ApplicationId).ToListAsync(ct);
 
             var transitions = 0;
             foreach (var appId in appIds)
             {
-                var cvmSettings = await db.CvmSettings.FirstAsync(s => s.ApplicationId == appId, ct);
-                var profiles = await db.ValueProfiles.Where(p => p.ApplicationId == appId).ToListAsync(ct);
+                var cvmSettings = await cvmSettingsRepo.Query().FirstAsync(s => s.ApplicationId == appId, ct);
+                var profiles = await valueProfilesRepo.Query().Where(p => p.ApplicationId == appId).ToListAsync(ct);
                 var now = clock.UtcNow;
                 foreach (var p in profiles)
                 {
                     if (cvm.EvaluateLifecycle(p, cvmSettings, now)) transitions++;
                     await cvm.EvaluateSegmentsAsync(p, now, ct);
                 }
-                await db.SaveChangesAsync(ct);
+                await uow.SaveChangesAsync(ct);
             }
             return transitions;
         }

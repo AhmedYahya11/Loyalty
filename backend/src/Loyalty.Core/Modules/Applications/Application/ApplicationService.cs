@@ -13,7 +13,7 @@ public sealed record ApplicationView(Guid Id, string Name, string? NameAr, Guid?
 /// guards against cycles, self-parenting, invalid parents, and duplicate sibling names
 /// (MVP spec §4). Hierarchy writes run in system scope.
 /// </summary>
-public sealed class ApplicationService(LoyaltyDbContext db, ApplicationContext scope, IClock clock)
+public sealed class ApplicationService(IRepository<Loyalty.Core.Modules.Applications.Domain.Application> applicationsRepo, IRepository<Loyalty.Core.Modules.Applications.Domain.ApplicationClosure> applicationClosuresRepo, IUnitOfWork uow, ApplicationContext scope, IClock clock)
 {
     public async Task<ApplicationView> CreateAsync(string name, string? nameAr, Guid? parentId, CancellationToken ct)
     {
@@ -26,14 +26,14 @@ public sealed class ApplicationService(LoyaltyDbContext db, ApplicationContext s
 
             if (parentId is { } pid)
             {
-                var parent = await db.Applications.FirstOrDefaultAsync(a => a.Id == pid, ct)
+                var parent = await applicationsRepo.Query().FirstOrDefaultAsync(a => a.Id == pid, ct)
                     ?? throw new LoyaltyException(LoyaltyError.ValidationFailed("parent application does not exist."));
-                var dupe = await db.Applications.AnyAsync(a => a.ParentId == pid && a.Name == name, ct);
+                var dupe = await applicationsRepo.Query().AnyAsync(a => a.ParentId == pid && a.Name == name, ct);
                 if (dupe) throw new LoyaltyException(LoyaltyError.Conflict("duplicate_sibling_name", "A sibling with this name already exists."));
             }
             else
             {
-                var rootExists = await db.Applications.AnyAsync(a => a.ParentId == null, ct);
+                var rootExists = await applicationsRepo.Query().AnyAsync(a => a.ParentId == null, ct);
                 if (rootExists)
                     throw new LoyaltyException(LoyaltyError.ValidationFailed("a root application already exists; specify a parentId."));
             }
@@ -41,21 +41,21 @@ public sealed class ApplicationService(LoyaltyDbContext db, ApplicationContext s
             var now = clock.UtcNow;
             var id = Guid.NewGuid();
             var app = Domain.Application.Create(id, name, nameAr, parentId, now);
-            db.Applications.Add(app);
+            applicationsRepo.Add(app);
 
             // self-row at depth 0
-            db.ApplicationClosures.Add(new ApplicationClosure(id, id, 0));
+            applicationClosuresRepo.Add(new ApplicationClosure(id, id, 0));
             // inherit ancestor rows from the parent's closure, depth + 1
             if (parentId is { } p)
             {
-                var parentAncestors = await db.ApplicationClosures
+                var parentAncestors = await applicationClosuresRepo.Query()
                     .Where(c => c.DescendantApplicationId == p)
                     .ToListAsync(ct);
                 foreach (var a in parentAncestors)
-                    db.ApplicationClosures.Add(new ApplicationClosure(a.AncestorApplicationId, id, a.Depth + 1));
+                    applicationClosuresRepo.Add(new ApplicationClosure(a.AncestorApplicationId, id, a.Depth + 1));
             }
 
-            await db.SaveChangesAsync(ct);
+            await uow.SaveChangesAsync(ct);
             return new ApplicationView(app.Id, app.Name, app.NameAr, app.ParentId, app.IsActive);
         }
         finally { scope.LeaveSystemScope(); }
@@ -63,7 +63,7 @@ public sealed class ApplicationService(LoyaltyDbContext db, ApplicationContext s
 
     public async Task<ApplicationView?> GetAsync(Guid id, CancellationToken ct)
     {
-        var a = await db.Applications.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var a = await applicationsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         return a is null ? null : new ApplicationView(a.Id, a.Name, a.NameAr, a.ParentId, a.IsActive);
     }
 
@@ -71,7 +71,7 @@ public sealed class ApplicationService(LoyaltyDbContext db, ApplicationContext s
     {
         // visible applications = those in the authenticated subtree
         var visible = scope.VisibleApplicationIds.ToArray();
-        return await db.Applications
+        return await applicationsRepo.Query()
             .Where(a => visible.Contains(a.Id))
             .OrderBy(a => a.Name)
             .Select(a => new ApplicationView(a.Id, a.Name, a.NameAr, a.ParentId, a.IsActive))
@@ -83,10 +83,10 @@ public sealed class ApplicationService(LoyaltyDbContext db, ApplicationContext s
         scope.EnterSystemScope();
         try
         {
-            var a = await db.Applications.FirstOrDefaultAsync(x => x.Id == id, ct)
+            var a = await applicationsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct)
                 ?? throw new LoyaltyException(LoyaltyError.NotFound("Application"));
             a.SetActive(active, clock.UtcNow);
-            await db.SaveChangesAsync(ct);
+            await uow.SaveChangesAsync(ct);
         }
         finally { scope.LeaveSystemScope(); }
     }
@@ -97,7 +97,7 @@ public sealed class ApplicationService(LoyaltyDbContext db, ApplicationContext s
         scope.EnterSystemScope();
         try
         {
-            var existing = await db.Applications.FirstOrDefaultAsync(a => a.ParentId == null, ct);
+            var existing = await applicationsRepo.Query().FirstOrDefaultAsync(a => a.ParentId == null, ct);
             if (existing is not null)
                 return (new ApplicationView(existing.Id, existing.Name, existing.NameAr, existing.ParentId, existing.IsActive), false);
         }

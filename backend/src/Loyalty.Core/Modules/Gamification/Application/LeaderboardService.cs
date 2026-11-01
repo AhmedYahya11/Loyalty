@@ -1,3 +1,4 @@
+using Loyalty.Core.BuildingBlocks;
 using Loyalty.Core.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,13 +7,13 @@ namespace Loyalty.Core.Modules.Gamification.Application;
 public sealed record LeaderboardRow(int Rank, Guid MemberId, string ExternalCustomerId, decimal Value);
 
 /// <summary>Ranks members by a value-profile metric (application-subtree scoped).</summary>
-public sealed class LeaderboardService(LoyaltyDbContext db)
+public sealed class LeaderboardService(IRepository<Loyalty.Core.Modules.Cvm.Domain.MemberValueProfile> valueProfilesRepo, IRepository<Loyalty.Core.Modules.Members.Domain.Member> membersRepo)
 {
     public async Task<IReadOnlyList<LeaderboardRow>> TopAsync(string metric, int limit, CancellationToken ct)
     {
         limit = Math.Clamp(limit, 1, 100);
-        var q = from p in db.ValueProfiles
-                join m in db.Members on p.MemberId equals m.Id
+        var q = from p in valueProfilesRepo.Query()
+                join m in membersRepo.Query() on p.MemberId equals m.Id
                 select new { p, m };
 
         var ordered = (metric?.ToLowerInvariant()) switch

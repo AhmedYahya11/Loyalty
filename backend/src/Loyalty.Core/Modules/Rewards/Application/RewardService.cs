@@ -10,45 +10,45 @@ public sealed record UpdateRewardInput(string Name, string? NameAr, string? Desc
 public sealed record RewardView(Guid Id, string Name, string? NameAr, string? Description, long PointsCost, string RewardType, decimal? Value, int? Inventory, int? PerMemberLimit, bool IsActive);
 
 /// <summary>Manages the application-scoped reward catalog.</summary>
-public sealed class RewardService(LoyaltyDbContext db, ApplicationContext scope, IClock clock)
+public sealed class RewardService(IRepository<Loyalty.Core.Modules.Rewards.Domain.Reward> rewardsRepo, IUnitOfWork uow, ApplicationContext scope, IClock clock)
 {
     public async Task<RewardView> CreateAsync(CreateRewardInput input, CancellationToken ct)
     {
         var r = Reward.Create(scope.ApplicationId, input.Name, input.NameAr, input.Description, input.PointsCost,
             input.RewardType, input.Value, input.Inventory, input.PerMemberLimit, clock.UtcNow);
-        db.Rewards.Add(r);
-        await db.SaveChangesAsync(ct);
+        rewardsRepo.Add(r);
+        await uow.SaveChangesAsync(ct);
         return ToView(r);
     }
 
     public async Task<RewardView?> UpdateAsync(Guid id, UpdateRewardInput input, CancellationToken ct)
     {
-        var r = await db.Rewards.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var r = await rewardsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (r is null) return null;
         r.Update(input.Name, input.NameAr, input.Description, input.PointsCost, input.RewardType, input.Value, input.Inventory, input.PerMemberLimit, input.IsActive, clock.UtcNow);
-        await db.SaveChangesAsync(ct);
+        await uow.SaveChangesAsync(ct);
         return ToView(r);
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct)
     {
-        var r = await db.Rewards.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var r = await rewardsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (r is null) return false;
-        db.Rewards.Remove(r);
-        await db.SaveChangesAsync(ct);
+        rewardsRepo.Remove(r);
+        await uow.SaveChangesAsync(ct);
         return true;
     }
 
     public async Task<IReadOnlyList<RewardView>> ListAsync(bool activeOnly, CancellationToken ct)
     {
-        var q = db.Rewards.AsQueryable();
+        var q = rewardsRepo.Query().AsQueryable();
         if (activeOnly) q = q.Where(r => r.IsActive);
         return (await q.OrderBy(r => r.PointsCost).ToListAsync(ct)).Select(ToView).ToList();
     }
 
     public async Task<RewardView?> GetAsync(Guid id, CancellationToken ct)
     {
-        var r = await db.Rewards.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var r = await rewardsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         return r is null ? null : ToView(r);
     }
 

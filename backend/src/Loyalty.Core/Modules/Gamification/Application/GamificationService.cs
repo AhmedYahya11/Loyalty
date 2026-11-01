@@ -22,7 +22,7 @@ public sealed record GamificationResult(long Bonus, int Unlocked, int Challenges
     public bool Any => Bonus > 0 || Unlocked > 0 || ChallengesCompleted > 0;
 }
 
-public sealed class GamificationService(LoyaltyDbContext db, LedgerService ledger, IClock clock)
+public sealed class GamificationService(IRepository<Loyalty.Core.Modules.Gamification.Domain.Achievement> achievementsRepo, IRepository<Loyalty.Core.Modules.Gamification.Domain.MemberAchievement> memberAchievementsRepo, IRepository<Loyalty.Core.Modules.Gamification.Domain.Challenge> challengesRepo, IRepository<Loyalty.Core.Modules.Gamification.Domain.MemberChallengeProgress> challengeProgressRepo, IRepository<Loyalty.Core.Modules.Notifications.Domain.EventLogEntry> eventLogRepo, LedgerService ledger, IClock clock)
 {
     public async Task<GamificationResult> EvaluateAsync(
         Wallet wallet, Member member, MemberValueProfile profile, string eventType, decimal? amount,
@@ -36,14 +36,14 @@ public sealed class GamificationService(LoyaltyDbContext db, LedgerService ledge
             profile.LoginCount, profile.ReferralCount, profile.CurrentStreak);
 
         // --- achievements (one-time unlock) ---
-        var achievements = await db.Achievements.Where(a => a.ApplicationId == member.ApplicationId && a.IsActive).ToListAsync(ct);
+        var achievements = await achievementsRepo.Query().Where(a => a.ApplicationId == member.ApplicationId && a.IsActive).ToListAsync(ct);
         if (achievements.Count > 0)
         {
-            var unlockedIds = await db.MemberAchievements
+            var unlockedIds = await memberAchievementsRepo.Query()
                 .Where(ma => ma.MemberId == member.Id).Select(ma => ma.AchievementId).ToListAsync(ct);
             foreach (var a in achievements.Where(a => !unlockedIds.Contains(a.Id) && a.Unlocked(metrics)))
             {
-                db.MemberAchievements.Add(new MemberAchievement(member.ApplicationId, member.Id, a.Id, now));
+                memberAchievementsRepo.Add(new MemberAchievement(member.ApplicationId, member.Id, a.Id, now));
                 bonus += await AwardBonusAsync(wallet, profile, a.BonusPoints, $"achievement:{a.Id}",
                     sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId, occurredAt, now, ct);
                 unlocked++;
@@ -53,14 +53,14 @@ public sealed class GamificationService(LoyaltyDbContext db, LedgerService ledge
         }
 
         // --- challenges (windowed progress) ---
-        var challenges = await db.Challenges.Where(c => c.ApplicationId == member.ApplicationId && c.IsActive).ToListAsync(ct);
+        var challenges = await challengesRepo.Query().Where(c => c.ApplicationId == member.ApplicationId && c.IsActive).ToListAsync(ct);
         foreach (var c in challenges.Where(c => c.IsOpen(occurredAt)))
         {
             var contribution = c.Contribution(eventType, amount);
             if (contribution <= 0) continue;
 
-            var progress = await db.ChallengeProgress.FirstOrDefaultAsync(p => p.MemberId == member.Id && p.ChallengeId == c.Id, ct);
-            if (progress is null) { progress = new MemberChallengeProgress(member.ApplicationId, member.Id, c.Id, now); db.ChallengeProgress.Add(progress); }
+            var progress = await challengeProgressRepo.Query().FirstOrDefaultAsync(p => p.MemberId == member.Id && p.ChallengeId == c.Id, ct);
+            if (progress is null) { progress = new MemberChallengeProgress(member.ApplicationId, member.Id, c.Id, now); challengeProgressRepo.Add(progress); }
             if (progress.Completed) continue;
 
             progress.Add(contribution, now);
@@ -85,13 +85,13 @@ public sealed class GamificationService(LoyaltyDbContext db, LedgerService ledge
     /// </summary>
     public async Task<int> ReverseChallengesAsync(Member member, decimal? refundAmount, DateTimeOffset occurredAt, DateTimeOffset now, CancellationToken ct)
     {
-        var challenges = await db.Challenges.Where(c => c.ApplicationId == member.ApplicationId).ToListAsync(ct);
+        var challenges = await challengesRepo.Query().Where(c => c.ApplicationId == member.ApplicationId).ToListAsync(ct);
         var reversed = 0;
         foreach (var c in challenges)
         {
             var contribution = c.Contribution(Integration.Contracts.EventTypes.PurchaseCompleted, refundAmount);
             if (contribution <= 0) continue;
-            var progress = await db.ChallengeProgress.FirstOrDefaultAsync(p => p.MemberId == member.Id && p.ChallengeId == c.Id, ct);
+            var progress = await challengeProgressRepo.Query().FirstOrDefaultAsync(p => p.MemberId == member.Id && p.ChallengeId == c.Id, ct);
             if (progress is null || progress.Completed || progress.Progress <= 0) continue;
 
             progress.Subtract(contribution, now);
@@ -114,6 +114,6 @@ public sealed class GamificationService(LoyaltyDbContext db, LedgerService ledge
     }
 
     private void EmitEvent(Guid applicationId, string eventType, Guid memberId, object payload, DateTimeOffset now) =>
-        db.EventLog.Add(EventLogEntry.Create(applicationId, eventType, memberId, null,
+        eventLogRepo.Add(EventLogEntry.Create(applicationId, eventType, memberId, null,
             JsonSerializer.Serialize(payload, JsonOptionsProvider.Default), now, now));
 }

@@ -12,12 +12,15 @@ public sealed record WebhookWithSecret(Guid Id, string Url, string Secret, IRead
 public sealed record CreateWebhookInput(string Url, string? Secret, IReadOnlyList<string>? EventTypes);
 
 /// <summary>Reads the result-event log and manages webhook subscriptions (application-scoped).</summary>
-public sealed class NotificationService(LoyaltyDbContext db, ApplicationContext scope, IClock clock)
+public sealed class NotificationService(
+    IRepository<Loyalty.Core.Modules.Notifications.Domain.EventLogEntry> eventLogRepo,
+    IRepository<Loyalty.Core.Modules.Notifications.Domain.WebhookSubscription> webhookSubscriptionsRepo,
+    IUnitOfWork uow, ApplicationContext scope, IClock clock)
 {
     public async Task<IReadOnlyList<EventLogView>> ListEventsAsync(int limit, CancellationToken ct)
     {
         limit = Math.Clamp(limit, 1, 200);
-        var rows = await db.EventLog.OrderByDescending(e => e.CreatedAt).Take(limit).ToListAsync(ct);
+        var rows = await eventLogRepo.Query().OrderByDescending(e => e.CreatedAt).Take(limit).ToListAsync(ct);
         return rows.Select(e => new EventLogView(e.Id, e.EventType, e.MemberId, e.RequestId,
             JsonDocument.Parse(e.Payload).RootElement.Clone(), e.OccurredAt, e.DeliveredAt)).ToList();
     }
@@ -28,30 +31,30 @@ public sealed class NotificationService(LoyaltyDbContext db, ApplicationContext 
             throw new LoyaltyException(LoyaltyError.ValidationFailed("A valid absolute url is required."));
         var secret = string.IsNullOrWhiteSpace(input.Secret) ? WebhookSigner.NewSecret() : input.Secret!;
         var sub = WebhookSubscription.Create(scope.ApplicationId, input.Url, secret, input.EventTypes, clock.UtcNow);
-        db.WebhookSubscriptions.Add(sub);
-        await db.SaveChangesAsync(ct);
+        webhookSubscriptionsRepo.Add(sub);
+        await uow.SaveChangesAsync(ct);
         return new WebhookWithSecret(sub.Id, sub.Url, sub.Secret, sub.EventTypes, sub.IsActive);
     }
 
     public async Task<IReadOnlyList<WebhookView>> ListWebhooksAsync(CancellationToken ct) =>
-        await db.WebhookSubscriptions.OrderByDescending(w => w.CreatedAt)
+        await webhookSubscriptionsRepo.Query().OrderByDescending(w => w.CreatedAt)
             .Select(w => new WebhookView(w.Id, w.Url, w.EventTypes, w.IsActive, w.CreatedAt)).ToListAsync(ct);
 
     public async Task<bool> SetWebhookActiveAsync(Guid id, bool active, CancellationToken ct)
     {
-        var w = await db.WebhookSubscriptions.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var w = await webhookSubscriptionsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (w is null) return false;
         w.SetActive(active);
-        await db.SaveChangesAsync(ct);
+        await uow.SaveChangesAsync(ct);
         return true;
     }
 
     public async Task<bool> DeleteWebhookAsync(Guid id, CancellationToken ct)
     {
-        var w = await db.WebhookSubscriptions.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var w = await webhookSubscriptionsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (w is null) return false;
-        db.WebhookSubscriptions.Remove(w);
-        await db.SaveChangesAsync(ct);
+        webhookSubscriptionsRepo.Remove(w);
+        await uow.SaveChangesAsync(ct);
         return true;
     }
 }

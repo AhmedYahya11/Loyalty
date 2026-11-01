@@ -11,7 +11,10 @@ namespace Loyalty.Core.Modules.Notifications.Application;
 /// marking them delivered on success. Runs in system scope so it can sweep every application.
 /// A simple at-least-once delivery with bounded attempts (receivers must be idempotent).
 /// </summary>
-public sealed class WebhookDispatcher(LoyaltyDbContext db, ApplicationContext scope, IHttpClientFactory httpClientFactory, IClock clock)
+public sealed class WebhookDispatcher(
+    IRepository<Loyalty.Core.Modules.Notifications.Domain.EventLogEntry> eventLogRepo,
+    IRepository<Loyalty.Core.Modules.Notifications.Domain.WebhookSubscription> webhookSubscriptionsRepo,
+    IUnitOfWork uow, ApplicationContext scope, IHttpClientFactory httpClientFactory, IClock clock)
 {
     private const int MaxAttempts = 5;
     private const int BatchSize = 50;
@@ -21,14 +24,14 @@ public sealed class WebhookDispatcher(LoyaltyDbContext db, ApplicationContext sc
         scope.EnterSystemScope();
         try
         {
-            var pending = await db.EventLog
+            var pending = await eventLogRepo.Query()
                 .Where(e => e.DeliveredAt == null && e.DeliveryAttempts < MaxAttempts)
                 .OrderBy(e => e.CreatedAt).Take(BatchSize).ToListAsync(ct);
             if (pending.Count == 0) return 0;
 
             foreach (var entry in pending)
             {
-                var targets = await db.WebhookSubscriptions
+                var targets = await webhookSubscriptionsRepo.Query()
                     .Where(s => s.ApplicationId == entry.ApplicationId && s.IsActive).ToListAsync(ct);
                 targets = targets.Where(s => s.Accepts(entry.EventType)).ToList();
 
@@ -57,7 +60,7 @@ public sealed class WebhookDispatcher(LoyaltyDbContext db, ApplicationContext sc
                 else entry.MarkAttempted();
             }
 
-            await db.SaveChangesAsync(ct);
+            await uow.SaveChangesAsync(ct);
             return pending.Count;
         }
         finally { scope.LeaveSystemScope(); }

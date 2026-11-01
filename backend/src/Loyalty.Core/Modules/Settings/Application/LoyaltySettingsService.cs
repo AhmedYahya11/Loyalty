@@ -22,7 +22,7 @@ public sealed record EffectiveSettingsView(
 /// settings via the closure table — a narrow capability that does NOT grant general access
 /// to parent business data — so it runs in system scope.
 /// </summary>
-public sealed class LoyaltySettingsService(LoyaltyDbContext db, ApplicationContext scope, IClock clock)
+public sealed class LoyaltySettingsService(IRepository<Loyalty.Core.Modules.Applications.Domain.Application> applicationsRepo, IRepository<Loyalty.Core.Modules.Settings.Domain.ApplicationLoyaltySettings> loyaltySettingsRepo, IRepository<Loyalty.Core.Modules.Wallets.Domain.PointsLedgerTransaction> ledgerTransactionsRepo, IRepository<Loyalty.Core.Modules.Applications.Domain.ApplicationClosure> applicationClosuresRepo, IUnitOfWork uow, ApplicationContext scope, IClock clock)
 {
     public async Task<EffectiveSettingsView> PutAsync(Guid applicationId, PutLoyaltySettingsInput input, CancellationToken ct)
     {
@@ -33,30 +33,30 @@ public sealed class LoyaltySettingsService(LoyaltyDbContext db, ApplicationConte
             if (string.IsNullOrWhiteSpace(input.BaseCurrency)) throw new LoyaltyException(LoyaltyError.ValidationFailed("baseCurrency is required."));
             if (input.SpendAmountPerPoint <= 0) throw new LoyaltyException(LoyaltyError.ValidationFailed("spendAmountPerPoint must be greater than zero."));
 
-            var appExists = await db.Applications.AnyAsync(a => a.Id == applicationId, ct);
+            var appExists = await applicationsRepo.Query().AnyAsync(a => a.Id == applicationId, ct);
             if (!appExists) throw new LoyaltyException(LoyaltyError.NotFound("Application"));
 
             var unit = input.PointsUnitCode.Trim().ToUpperInvariant();
-            var existing = await db.LoyaltySettings.FirstOrDefaultAsync(s => s.ApplicationId == applicationId, ct);
+            var existing = await loyaltySettingsRepo.Query().FirstOrDefaultAsync(s => s.ApplicationId == applicationId, ct);
             if (existing is null)
             {
                 var created = ApplicationLoyaltySettings.Create(
                     applicationId, unit, input.BaseCurrency, input.SpendAmountPerPoint,
                     input.RoundingPolicy, input.LoyaltyStatus, input.LoyaltyStartsAtUtc, input.LoyaltyEndsAtUtc, clock.UtcNow, input.PointsExpiryDays ?? 0);
-                db.LoyaltySettings.Add(created);
+                loyaltySettingsRepo.Add(created);
             }
             else
             {
                 if (!string.Equals(existing.PointsUnitCode, unit, StringComparison.OrdinalIgnoreCase))
                 {
-                    var hasLedger = await db.LedgerTransactions.IgnoreQueryFilters().AnyAsync(t => t.ApplicationId == applicationId, ct);
+                    var hasLedger = await ledgerTransactionsRepo.Query().IgnoreQueryFilters().AnyAsync(t => t.ApplicationId == applicationId, ct);
                     if (hasLedger) throw new LoyaltyException(LoyaltyError.PointsUnitInUse());
                 }
                 existing.Replace(unit, input.BaseCurrency, input.SpendAmountPerPoint,
                     input.RoundingPolicy, input.LoyaltyStatus, input.LoyaltyStartsAtUtc, input.LoyaltyEndsAtUtc, clock.UtcNow, input.PointsExpiryDays ?? existing.PointsExpiryDays);
             }
 
-            await db.SaveChangesAsync(ct);
+            await uow.SaveChangesAsync(ct);
             return (await GetEffectiveAsync(applicationId, ct))!;
         }
         finally { scope.LeaveSystemScope(); }
@@ -67,10 +67,10 @@ public sealed class LoyaltySettingsService(LoyaltyDbContext db, ApplicationConte
         scope.EnterSystemScope();
         try
         {
-            var existing = await db.LoyaltySettings.FirstOrDefaultAsync(s => s.ApplicationId == applicationId, ct);
+            var existing = await loyaltySettingsRepo.Query().FirstOrDefaultAsync(s => s.ApplicationId == applicationId, ct);
             if (existing is null) return false;
-            db.LoyaltySettings.Remove(existing);
-            await db.SaveChangesAsync(ct);
+            loyaltySettingsRepo.Remove(existing);
+            await uow.SaveChangesAsync(ct);
             return true;
         }
         finally { scope.LeaveSystemScope(); }
@@ -98,8 +98,8 @@ public sealed class LoyaltySettingsService(LoyaltyDbContext db, ApplicationConte
         try
         {
             var chain = await (
-                from c in db.ApplicationClosures
-                join s in db.LoyaltySettings on c.AncestorApplicationId equals s.ApplicationId
+                from c in applicationClosuresRepo.Query()
+                join s in loyaltySettingsRepo.Query() on c.AncestorApplicationId equals s.ApplicationId
                 where c.DescendantApplicationId == applicationId
                 orderby c.Depth
                 select s).ToListAsync(ct);

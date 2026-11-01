@@ -15,21 +15,21 @@ public sealed record EffectiveCvmView(
 /// versioning (MVP spec §11.1). The resolver reads ancestor CVM config via the closure table
 /// only — it never grants access to ancestor profiles/memberships — so it runs in system scope.
 /// </summary>
-public sealed class CvmSettingsService(LoyaltyDbContext db, ApplicationContext scope, IClock clock)
+public sealed class CvmSettingsService(IRepository<Loyalty.Core.Modules.Applications.Domain.Application> applicationsRepo, IRepository<Loyalty.Core.Modules.Cvm.Domain.ApplicationCvmSettings> cvmSettingsRepo, IRepository<Loyalty.Core.Modules.Applications.Domain.ApplicationClosure> applicationClosuresRepo, IUnitOfWork uow, ApplicationContext scope, IClock clock)
 {
     public async Task<EffectiveCvmView> PutAsync(Guid applicationId, CvmFields fields, CancellationToken ct)
     {
         scope.EnterSystemScope();
         try
         {
-            if (!await db.Applications.AnyAsync(a => a.Id == applicationId, ct))
+            if (!await applicationsRepo.Query().AnyAsync(a => a.Id == applicationId, ct))
                 throw new LoyaltyException(LoyaltyError.NotFound("Application"));
 
-            var existing = await db.CvmSettings.FirstOrDefaultAsync(s => s.ApplicationId == applicationId, ct);
-            if (existing is null) db.CvmSettings.Add(ApplicationCvmSettings.Create(applicationId, fields, clock.UtcNow));
+            var existing = await cvmSettingsRepo.Query().FirstOrDefaultAsync(s => s.ApplicationId == applicationId, ct);
+            if (existing is null) cvmSettingsRepo.Add(ApplicationCvmSettings.Create(applicationId, fields, clock.UtcNow));
             else existing.Replace(fields, clock.UtcNow);
 
-            await db.SaveChangesAsync(ct);
+            await uow.SaveChangesAsync(ct);
             return (await GetEffectiveAsync(applicationId, ct))!;
         }
         finally { scope.LeaveSystemScope(); }
@@ -40,10 +40,10 @@ public sealed class CvmSettingsService(LoyaltyDbContext db, ApplicationContext s
         scope.EnterSystemScope();
         try
         {
-            var existing = await db.CvmSettings.FirstOrDefaultAsync(s => s.ApplicationId == applicationId, ct);
+            var existing = await cvmSettingsRepo.Query().FirstOrDefaultAsync(s => s.ApplicationId == applicationId, ct);
             if (existing is null) return false;
-            db.CvmSettings.Remove(existing);
-            await db.SaveChangesAsync(ct);
+            cvmSettingsRepo.Remove(existing);
+            await uow.SaveChangesAsync(ct);
             return true;
         }
         finally { scope.LeaveSystemScope(); }
@@ -66,8 +66,8 @@ public sealed class CvmSettingsService(LoyaltyDbContext db, ApplicationContext s
         try
         {
             return await (
-                from c in db.ApplicationClosures
-                join s in db.CvmSettings on c.AncestorApplicationId equals s.ApplicationId
+                from c in applicationClosuresRepo.Query()
+                join s in cvmSettingsRepo.Query() on c.AncestorApplicationId equals s.ApplicationId
                 where c.DescendantApplicationId == applicationId
                 orderby c.Depth
                 select s).FirstOrDefaultAsync(ct);

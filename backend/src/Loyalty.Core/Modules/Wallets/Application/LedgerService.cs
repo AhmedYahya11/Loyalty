@@ -10,7 +10,7 @@ namespace Loyalty.Core.Modules.Wallets.Application;
 /// projections, in the same transaction (MVP spec §13). It does NOT call SaveChanges — the
 /// caller (ingestion / worker handler) owns the atomic commit.
 /// </summary>
-public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
+public sealed class LedgerService(IRepository<Loyalty.Core.Modules.Wallets.Domain.PointsLedgerAccount> ledgerAccountsRepo, IRepository<Loyalty.Core.Modules.Wallets.Domain.PointsLedgerTransaction> ledgerTransactionsRepo, IClock clock)
 {
     /// <summary>Ensure the four application-local clearing accounts exist for a points unit.</summary>
     public async Task EnsureClearingAccountsAsync(Guid applicationId, string unit, CancellationToken ct)
@@ -20,7 +20,7 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
             LedgerAccountType.IssuanceClearing, LedgerAccountType.RedemptionClearing,
             LedgerAccountType.ExpirationClearing, LedgerAccountType.AdjustmentClearing,
         };
-        var existing = await db.LedgerAccounts
+        var existing = await ledgerAccountsRepo.Query()
             .Where(a => a.ApplicationId == applicationId && a.WalletId == null && a.PointsUnitCode == unit)
             .Select(a => a.AccountType)
             .ToListAsync(ct);
@@ -28,7 +28,7 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
         foreach (var type in types.Except(existing))
         {
             var code = PointsLedgerAccount.ClearingCode(type, unit);
-            db.LedgerAccounts.Add(PointsLedgerAccount.Clearing(Guid.NewGuid(), applicationId, type, code, unit, clock.UtcNow));
+            ledgerAccountsRepo.Add(PointsLedgerAccount.Clearing(Guid.NewGuid(), applicationId, type, code, unit, clock.UtcNow));
         }
     }
 
@@ -36,13 +36,13 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
     public void CreateMemberAccounts(Guid applicationId, Guid walletId, string unit)
     {
         foreach (var bucket in new[] { BalanceBucket.Active, BalanceBucket.Pending, BalanceBucket.Reserved })
-            db.LedgerAccounts.Add(PointsLedgerAccount.MemberBucket(Guid.NewGuid(), applicationId, walletId, bucket, unit, clock.UtcNow));
+            ledgerAccountsRepo.Add(PointsLedgerAccount.MemberBucket(Guid.NewGuid(), applicationId, walletId, bucket, unit, clock.UtcNow));
     }
 
     private async Task<Guid> ClearingAccountIdAsync(Guid applicationId, LedgerAccountType type, string unit, CancellationToken ct)
     {
         var code = PointsLedgerAccount.ClearingCode(type, unit);
-        return await db.LedgerAccounts
+        return await ledgerAccountsRepo.Query()
             .Where(a => a.ApplicationId == applicationId && a.AccountCode == code)
             .Select(a => a.Id)
             .FirstAsync(ct);
@@ -50,7 +50,7 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
 
     private async Task<Guid> MemberBucketAccountIdAsync(Guid applicationId, Guid walletId, BalanceBucket bucket, CancellationToken ct)
     {
-        return await db.LedgerAccounts
+        return await ledgerAccountsRepo.Query()
             .Where(a => a.ApplicationId == applicationId && a.WalletId == walletId && a.BalanceBucket == bucket)
             .Select(a => a.Id)
             .FirstAsync(ct);
@@ -81,7 +81,7 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
             sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
             campaignId, ruleId: null, effectId, reversalOf: null, occurredAt, clock.UtcNow, legs);
 
-        db.LedgerTransactions.Add(tx);
+        ledgerTransactionsRepo.Add(tx);
         wallet.ApplyDelta(active: points, pending: 0, reserved: 0);
         return tx;
     }
@@ -109,7 +109,7 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
             sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
             campaignId: null, ruleId: null, effectId, reversalOf: null, occurredAt, clock.UtcNow, legs);
 
-        db.LedgerTransactions.Add(tx);
+        ledgerTransactionsRepo.Add(tx);
         wallet.ApplyDelta(active: activeDelta, pending: 0, reserved: 0);
         return tx;
     }
@@ -141,7 +141,7 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
             Guid.NewGuid(), wallet.ApplicationId, wallet.Id, type, wallet.PointsUnitCode,
             sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
             campaignId: null, ruleId: null, effectId, reversalOf: null, occurredAt, clock.UtcNow, legs);
-        db.LedgerTransactions.Add(tx);
+        ledgerTransactionsRepo.Add(tx);
         wallet.ApplyDelta(active: activeDelta, pending: 0, reserved: reservedDelta);
         return tx;
     }
@@ -159,7 +159,7 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
             Guid.NewGuid(), wallet.ApplicationId, wallet.Id, TransactionType.Redeem, wallet.PointsUnitCode,
             sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
             campaignId: null, ruleId: null, effectId, reversalOf: null, occurredAt, clock.UtcNow, legs);
-        db.LedgerTransactions.Add(tx);
+        ledgerTransactionsRepo.Add(tx);
         wallet.ApplyDelta(active: 0, pending: 0, reserved: -points);
         return tx;
     }
@@ -177,7 +177,7 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
             Guid.NewGuid(), wallet.ApplicationId, wallet.Id, TransactionType.Expire, wallet.PointsUnitCode,
             sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
             campaignId: null, ruleId: null, effectId, reversalOf: null, occurredAt, clock.UtcNow, legs);
-        db.LedgerTransactions.Add(tx);
+        ledgerTransactionsRepo.Add(tx);
         wallet.ApplyDelta(active: -points, pending: 0, reserved: 0);
         return tx;
     }
@@ -201,7 +201,7 @@ public sealed class LedgerService(LoyaltyDbContext db, IClock clock)
             sourceEventId, sourceSystem, sourceTransactionId, businessEventKey, correlationId,
             campaignId: original.CampaignId, ruleId: null, effectId, reversalOf: original.Id, occurredAt, clock.UtcNow, legs);
 
-        db.LedgerTransactions.Add(tx);
+        ledgerTransactionsRepo.Add(tx);
         wallet.ApplyDelta(active: -amount, pending: 0, reserved: 0);
         return tx;
     }

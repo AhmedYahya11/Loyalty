@@ -15,14 +15,17 @@ public sealed record ResolvedMember(Guid ApplicationId, Guid MemberId);
 /// once. Issuance is tenant-admin scoped; resolution runs in the narrow system scope (the caller is
 /// not yet authenticated) and returns the owning application + member.
 /// </summary>
-public sealed class MemberTokenService(LoyaltyDbContext db, ApplicationContext scope, IClock clock)
+public sealed class MemberTokenService(
+    IRepository<Loyalty.Core.Modules.Members.Domain.Member> membersRepo,
+    IRepository<Loyalty.Core.Modules.Members.Domain.MemberToken> memberTokensRepo,
+    IUnitOfWork uow, ApplicationContext scope, IClock clock)
 {
     private const string Prefix = "mt_";
 
     /// <summary>Admin-scoped: mint a token for one of the tenant's members.</summary>
     public async Task<IssuedToken?> IssueAsync(Guid memberId, TimeSpan? ttl, CancellationToken ct)
     {
-        var member = await db.Members.FirstOrDefaultAsync(m => m.Id == memberId, ct);
+        var member = await membersRepo.Query().FirstOrDefaultAsync(m => m.Id == memberId, ct);
         if (member is null) return null;
 
         Span<byte> bytes = stackalloc byte[32];
@@ -31,8 +34,8 @@ public sealed class MemberTokenService(LoyaltyDbContext db, ApplicationContext s
         var now = clock.UtcNow;
         var expiresAt = ttl is { } t ? now.Add(t) : (DateTimeOffset?)null;
 
-        db.MemberTokens.Add(new MemberToken(member.ApplicationId, member.Id, Hash(raw), expiresAt, now));
-        await db.SaveChangesAsync(ct);
+        memberTokensRepo.Add(new MemberToken(member.ApplicationId, member.Id, Hash(raw), expiresAt, now));
+        await uow.SaveChangesAsync(ct);
         return new IssuedToken(raw, expiresAt);
     }
 
@@ -40,13 +43,13 @@ public sealed class MemberTokenService(LoyaltyDbContext db, ApplicationContext s
     /// Returns the number of tokens removed, or null if the member does not exist.</summary>
     public async Task<int?> RevokeAllAsync(Guid memberId, CancellationToken ct)
     {
-        var member = await db.Members.FirstOrDefaultAsync(m => m.Id == memberId, ct);
+        var member = await membersRepo.Query().FirstOrDefaultAsync(m => m.Id == memberId, ct);
         if (member is null) return null;
 
-        var tokens = await db.MemberTokens.Where(t => t.MemberId == memberId).ToListAsync(ct);
+        var tokens = await memberTokensRepo.Query().Where(t => t.MemberId == memberId).ToListAsync(ct);
         if (tokens.Count == 0) return 0;
-        db.MemberTokens.RemoveRange(tokens);
-        await db.SaveChangesAsync(ct);
+        memberTokensRepo.RemoveRange(tokens);
+        await uow.SaveChangesAsync(ct);
         return tokens.Count;
     }
 
@@ -58,7 +61,7 @@ public sealed class MemberTokenService(LoyaltyDbContext db, ApplicationContext s
         scope.EnterSystemScope();
         try
         {
-            var token = await db.MemberTokens.FirstOrDefaultAsync(t => t.TokenHash == hash, ct);
+            var token = await memberTokensRepo.Query().FirstOrDefaultAsync(t => t.TokenHash == hash, ct);
             if (token is null || !token.IsValid(clock.UtcNow)) return null;
             return new ResolvedMember(token.ApplicationId, token.MemberId);
         }

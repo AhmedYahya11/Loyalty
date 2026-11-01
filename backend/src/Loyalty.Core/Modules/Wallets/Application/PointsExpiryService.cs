@@ -15,7 +15,7 @@ namespace Loyalty.Core.Modules.Wallets.Application;
 /// expiry amount is capped by the current Active balance. Runs in system scope; idempotent — a
 /// re-run finds the just-posted Expire in "consumed" and computes zero.
 /// </summary>
-public sealed class PointsExpiryService(LoyaltyDbContext db, ApplicationContext scope, LedgerService ledger, IClock clock)
+public sealed class PointsExpiryService(IRepository<Loyalty.Core.Modules.Settings.Domain.ApplicationLoyaltySettings> loyaltySettingsRepo, IRepository<Loyalty.Core.Modules.Wallets.Domain.Wallet> walletsRepo, IRepository<Loyalty.Core.Modules.Wallets.Domain.PointsLedgerTransaction> ledgerTransactionsRepo, IRepository<Loyalty.Core.Modules.Cvm.Domain.MemberValueProfile> valueProfilesRepo, IRepository<Loyalty.Core.Modules.Notifications.Domain.EventLogEntry> eventLogRepo, IUnitOfWork uow, ApplicationContext scope, LedgerService ledger, IClock clock)
 {
     public Task<long> RunAsync(CancellationToken ct) => RunForAsync(clock.UtcNow, ct);
 
@@ -24,19 +24,19 @@ public sealed class PointsExpiryService(LoyaltyDbContext db, ApplicationContext 
         scope.EnterSystemScope();
         try
         {
-            var policies = await db.LoyaltySettings.Where(s => s.PointsExpiryDays > 0)
+            var policies = await loyaltySettingsRepo.Query().Where(s => s.PointsExpiryDays > 0)
                 .Select(s => new { s.ApplicationId, s.PointsExpiryDays }).ToListAsync(ct);
 
             long expiredTotal = 0;
             foreach (var p in policies)
             {
                 var cutoff = asOf.AddDays(-p.PointsExpiryDays);
-                var wallets = await db.Wallets.Where(w => w.ApplicationId == p.ApplicationId).ToListAsync(ct);
+                var wallets = await walletsRepo.Query().Where(w => w.ApplicationId == p.ApplicationId).ToListAsync(ct);
                 foreach (var wallet in wallets)
                 {
                     if (wallet.ActiveBalance <= 0) continue;
 
-                    var txns = await db.LedgerTransactions.Where(t => t.WalletId == wallet.Id).ToListAsync(ct);
+                    var txns = await ledgerTransactionsRepo.Query().Where(t => t.WalletId == wallet.Id).ToListAsync(ct);
                     var oldEarned = txns.Where(t => t.TransactionType == TransactionType.Earn && t.OccurredAt <= cutoff).Sum(t => t.TotalCredit);
                     if (oldEarned <= 0) continue;
 
@@ -56,13 +56,13 @@ public sealed class PointsExpiryService(LoyaltyDbContext db, ApplicationContext 
                     await ledger.PostExpireAsync(wallet, expire, sourceEventId, "system",
                         $"expiry-{cutoff.UtcDateTime:yyyyMMdd}", $"expiry|{wallet.Id}|{cutoff.UtcDateTime:yyyyMMdd}", "expiry", effectId, now, ct);
 
-                    var profile = await db.ValueProfiles.FirstOrDefaultAsync(vp => vp.MemberId == wallet.MemberId, ct);
+                    var profile = await valueProfilesRepo.Query().FirstOrDefaultAsync(vp => vp.MemberId == wallet.MemberId, ct);
                     profile?.AddPointsExpired(expire);
-                    db.EventLog.Add(EventLogEntry.Create(p.ApplicationId, ResultEventTypes.PointsExpired, wallet.MemberId, null,
+                    eventLogRepo.Add(EventLogEntry.Create(p.ApplicationId, ResultEventTypes.PointsExpired, wallet.MemberId, null,
                         JsonSerializer.Serialize(new { memberId = wallet.MemberId, expiredPoints = expire, pointsUnitCode = wallet.PointsUnitCode }, JsonOptionsProvider.Default), now, now));
                     expiredTotal += expire;
                 }
-                await db.SaveChangesAsync(ct);
+                await uow.SaveChangesAsync(ct);
             }
             return expiredTotal;
         }

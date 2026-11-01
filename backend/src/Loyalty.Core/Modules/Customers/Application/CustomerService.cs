@@ -14,7 +14,11 @@ namespace Loyalty.Core.Modules.Customers.Application;
 /// member's application scope established by the token auth branch.
 /// </summary>
 public sealed class CustomerService(
-    LoyaltyDbContext db, CustomerContext customer, MemberService members,
+    IRepository<Loyalty.Core.Modules.Rewards.Domain.Redemption> redemptionsRepo,
+    IRepository<Loyalty.Core.Modules.Engagement.Domain.Referral> referralsRepo,
+    IRepository<Loyalty.Core.Modules.Raffles.Domain.Raffle> rafflesRepo,
+    IRepository<Loyalty.Core.Modules.Raffles.Domain.RaffleEntry> raffleEntriesRepo,
+    CustomerContext customer, MemberService members,
     RewardService rewards, RedemptionService redemptions, StampCardService stampCards)
 {
     private Guid Me => customer.MemberId;
@@ -45,25 +49,25 @@ public sealed class CustomerService(
     /// <summary>Cancel one of the member's own reserved redemptions (ownership enforced).</summary>
     public async Task<RedemptionView?> CancelAsync(Guid redemptionId, CancellationToken ct)
     {
-        var owns = await db.Redemptions.AnyAsync(r => r.Id == redemptionId && r.MemberId == Me, ct);
+        var owns = await redemptionsRepo.Query().AnyAsync(r => r.Id == redemptionId && r.MemberId == Me, ct);
         if (!owns) return null;
         return await redemptions.CancelAsync(redemptionId, ct);
     }
 
     public async Task<IReadOnlyList<object>> GetReferralsAsync(CancellationToken ct) =>
-        await db.Referrals.Where(r => r.ReferrerMemberId == Me).OrderByDescending(r => r.CreatedAt)
+        await referralsRepo.Query().Where(r => r.ReferrerMemberId == Me).OrderByDescending(r => r.CreatedAt)
             .Select(r => (object)new { r.ReferralKey, r.ReferrerPointsAwarded, r.CreatedAt }).ToListAsync(ct);
 
     /// <summary>The member's own entries in each open/drawn raffle (P15).</summary>
     public async Task<IReadOnlyList<object>> GetRafflesAsync(CancellationToken ct) =>
-        await (from r in db.Raffles
+        await (from r in rafflesRepo.Query()
                where r.Status != Modules.Raffles.Domain.RaffleStatus.Cancelled
                orderby r.CreatedAt descending
                select (object)new
                {
                    raffleId = r.Id, name = r.Name, nameAr = r.NameAr, prizePoints = r.PrizePoints,
                    prizeDescription = r.PrizeDescription, status = r.Status.ToString(), drawAtUtc = r.DrawAtUtc,
-                   myEntries = db.RaffleEntries.Where(e => e.RaffleId == r.Id && e.MemberId == Me).Sum(e => (int?)e.Count) ?? 0,
+                   myEntries = raffleEntriesRepo.Query().Where(e => e.RaffleId == r.Id && e.MemberId == Me).Sum(e => (int?)e.Count) ?? 0,
                    won = r.WinnerMemberId == Me,
                }).ToListAsync(ct);
 }

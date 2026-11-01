@@ -19,7 +19,8 @@ public sealed record SubmitResult(int StatusCode, object Body, string? Location 
 /// only after that commit; a duplicate returns the original request id, not a 409.
 /// </summary>
 public sealed class EventIngestionService(
-    LoyaltyDbContext db,
+    IRepository<Loyalty.Core.Modules.Integration.Domain.IdempotencyRecord> idempotencyRecordsRepo,
+    IRepository<Loyalty.Core.Modules.Integration.Domain.IngestionRequest> ingestionRequestsRepo,
     IApplicationContext scope,
     EventRegistry registry,
     LoyaltySettingsService settings,
@@ -47,7 +48,7 @@ public sealed class EventIngestionService(
 
         // 3. HTTP idempotency (§9.1)
         var payloadHash = HashUtil.Sha256Hex(rawPayloadJson);
-        var existingIdem = await db.IdempotencyRecords.FirstOrDefaultAsync(
+        var existingIdem = await idempotencyRecordsRepo.Query().FirstOrDefaultAsync(
             r => r.AccountId == scope.AccountId && r.OperationName == OperationName && r.IdempotencyKey == idempotencyKey, ct);
         if (existingIdem is not null)
         {
@@ -57,9 +58,9 @@ public sealed class EventIngestionService(
         }
 
         // 3b. source-event / business-event identity pre-check (§9.2, §9.3)
-        var priorByEvent = await db.IngestionRequests.FirstOrDefaultAsync(
+        var priorByEvent = await ingestionRequestsRepo.Query().FirstOrDefaultAsync(
             r => r.SourceSystem == scope.SourceSystem && r.EventId == envelope.EventId, ct)
-            ?? await db.IngestionRequests.FirstOrDefaultAsync(
+            ?? await ingestionRequestsRepo.Query().FirstOrDefaultAsync(
                 r => r.EventType == envelope.EventType && r.BusinessEventKey == normalized.BusinessEventKey, ct);
         if (priorByEvent is not null)
             return AcceptedResult(priorByEvent.Id, priorByEvent.Status, duplicate: true);
@@ -109,8 +110,8 @@ public sealed class EventIngestionService(
             Guid.NewGuid(), scope.ApplicationId, scope.AccountId, OperationName, idempotencyKey!,
             payloadHash, requestId, 202, responseBody, now, Retention);
 
-        db.IngestionRequests.Add(request);
-        db.IdempotencyRecords.Add(idem);
+        ingestionRequestsRepo.Add(request);
+        idempotencyRecordsRepo.Add(idem);
 
         await outbox.PublishAsync(new ProcessLoyaltyEvent(
             requestId, scope.ApplicationId, scope.AccountId, envelope.EventId, envelope.CorrelationId));
@@ -122,7 +123,7 @@ public sealed class EventIngestionService(
         catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
             // lost a race with an identical concurrent submission: return the committed original
-            var original = await db.IngestionRequests.AsNoTracking().FirstOrDefaultAsync(
+            var original = await ingestionRequestsRepo.Query().AsNoTracking().FirstOrDefaultAsync(
                 r => r.SourceSystem == scope.SourceSystem && r.EventId == envelope.EventId, ct);
             if (original is not null)
                 return AcceptedResult(original.Id, original.Status, duplicate: true);
@@ -136,7 +137,7 @@ public sealed class EventIngestionService(
     public async Task<IReadOnlyList<object>> ListRequestsAsync(string? status, int limit, CancellationToken ct)
     {
         limit = Math.Clamp(limit, 1, 200);
-        var q = db.IngestionRequests.AsNoTracking();
+        var q = ingestionRequestsRepo.Query().AsNoTracking();
         if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<RequestStatus>(status, true, out var parsed))
             q = q.Where(r => r.Status == parsed);
         return await q.OrderByDescending(r => r.CreatedAt).Take(limit)
@@ -150,7 +151,7 @@ public sealed class EventIngestionService(
     /// </summary>
     public async Task<object?> ReplayAsync(Guid requestId, CancellationToken ct)
     {
-        var r = await db.IngestionRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct);
+        var r = await ingestionRequestsRepo.Query().FirstOrDefaultAsync(x => x.Id == requestId, ct);
         if (r is null) return null;
         if (r.Status is RequestStatus.Completed or RequestStatus.Rejected)
             throw new LoyaltyException(LoyaltyError.Conflict("request_already_final", "Request has already reached a final business outcome."));
@@ -162,7 +163,7 @@ public sealed class EventIngestionService(
 
     public async Task<object?> GetRequestStatusAsync(Guid requestId, CancellationToken ct)
     {
-        var r = await db.IngestionRequests.AsNoTracking().FirstOrDefaultAsync(x => x.Id == requestId, ct);
+        var r = await ingestionRequestsRepo.Query().AsNoTracking().FirstOrDefaultAsync(x => x.Id == requestId, ct);
         if (r is null) return null;
         return new
         {
@@ -178,7 +179,7 @@ public sealed class EventIngestionService(
     }
 
     private async Task<RequestStatus> StatusOf(Guid requestId, CancellationToken ct) =>
-        await db.IngestionRequests.Where(r => r.Id == requestId).Select(r => r.Status).FirstOrDefaultAsync(ct);
+        await ingestionRequestsRepo.Query().Where(r => r.Id == requestId).Select(r => r.Status).FirstOrDefaultAsync(ct);
 
     private static object AcceptedPayload(Guid requestId, RequestStatus status, bool duplicate) => new
     {

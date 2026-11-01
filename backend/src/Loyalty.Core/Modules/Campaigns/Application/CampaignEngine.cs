@@ -10,7 +10,10 @@ namespace Loyalty.Core.Modules.Campaigns.Application;
 /// atomic global-budget reservation, and usage recording. Operates on tracked entities inside
 /// the handler's transaction; the caller commits.
 /// </summary>
-public sealed class CampaignEngine(LoyaltyDbContext db, IClock clock)
+public sealed class CampaignEngine(
+    IRepository<Loyalty.Core.Modules.Campaigns.Domain.CampaignUsage> campaignUsagesRepo,
+    IRepository<Loyalty.Core.Modules.Campaigns.Domain.Campaign> campaignsRepo,
+    IClock clock)
 {
     /// <summary>Drop campaigns whose member limit for the event's period is already reached.</summary>
     public async Task<List<Campaign>> FilterByMemberLimitsAsync(
@@ -23,7 +26,7 @@ public sealed class CampaignEngine(LoyaltyDbContext db, IClock clock)
             foreach (var limit in c.MemberLimits)
             {
                 var key = limit.PeriodKey(occurredAt);
-                var usage = await db.CampaignUsages.FirstOrDefaultAsync(
+                var usage = await campaignUsagesRepo.Query().FirstOrDefaultAsync(
                     u => u.CampaignId == c.Id && u.MemberId == memberId && u.PeriodKey == key, ct);
                 if (usage is not null && usage.ExecutionCount >= limit.MaximumExecutions) { ok = false; break; }
             }
@@ -39,7 +42,7 @@ public sealed class CampaignEngine(LoyaltyDbContext db, IClock clock)
     public async Task<bool> TryReserveBudgetAsync(Campaign campaign, long points, CancellationToken ct)
     {
         if (campaign.GlobalBudgetInitial is null || points <= 0) return true;
-        var affected = await db.Campaigns
+        var affected = await campaignsRepo.Query()
             .Where(c => c.Id == campaign.Id && c.GlobalBudgetRemaining >= points)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.GlobalBudgetRemaining, c => c.GlobalBudgetRemaining - points), ct);
         return affected == 1;
@@ -54,10 +57,10 @@ public sealed class CampaignEngine(LoyaltyDbContext db, IClock clock)
 
         foreach (var key in keys)
         {
-            var usage = await db.CampaignUsages.FirstOrDefaultAsync(
+            var usage = await campaignUsagesRepo.Query().FirstOrDefaultAsync(
                 u => u.CampaignId == campaign.Id && u.MemberId == memberId && u.PeriodKey == key, ct);
             if (usage is null)
-                db.CampaignUsages.Add(CampaignUsage.Start(campaign.ApplicationId, campaign.Id, memberId, key, issuedPoints, clock.UtcNow));
+                campaignUsagesRepo.Add(CampaignUsage.Start(campaign.ApplicationId, campaign.Id, memberId, key, issuedPoints, clock.UtcNow));
             else
                 usage.Record(issuedPoints, clock.UtcNow);
         }

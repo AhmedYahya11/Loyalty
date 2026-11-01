@@ -14,14 +14,14 @@ public sealed record RfmSummary(int Members, int Evaluated, double AvgRecency, d
 /// scope across all applications (background job / admin trigger) or for the current scope (summary).
 /// Mirrors the lifecycle sweep.
 /// </summary>
-public sealed class RfmService(LoyaltyDbContext db, ApplicationContext scope, IClock clock)
+public sealed class RfmService(IRepository<Loyalty.Core.Modules.Cvm.Domain.MemberValueProfile> valueProfilesRepo, IUnitOfWork uow, ApplicationContext scope, IClock clock)
 {
     public async Task<int> RunAsync(CancellationToken ct)
     {
         scope.EnterSystemScope();
         try
         {
-            var appIds = await db.ValueProfiles.Select(p => p.ApplicationId).Distinct().ToListAsync(ct);
+            var appIds = await valueProfilesRepo.Query().Select(p => p.ApplicationId).Distinct().ToListAsync(ct);
             var total = 0;
             foreach (var appId in appIds)
                 total += await ComputeAsync(appId, ct);
@@ -32,7 +32,7 @@ public sealed class RfmService(LoyaltyDbContext db, ApplicationContext scope, IC
 
     private async Task<int> ComputeAsync(Guid appId, CancellationToken ct)
     {
-        var profiles = await db.ValueProfiles.Where(p => p.ApplicationId == appId).ToListAsync(ct);
+        var profiles = await valueProfilesRepo.Query().Where(p => p.ApplicationId == appId).ToListAsync(ct);
         if (profiles.Count == 0) return 0;
         var now = clock.UtcNow;
 
@@ -55,14 +55,14 @@ public sealed class RfmService(LoyaltyDbContext db, ApplicationContext scope, IC
             var m = Rfm.Quintile((double)p.NetSpendAmount, monAsc);
             p.SetRfm(r, f, m, Rfm.Classify(r, f, m), now);
         }
-        await db.SaveChangesAsync(ct);
+        await uow.SaveChangesAsync(ct);
         return profiles.Count;
     }
 
     /// <summary>Persona distribution + average scores for the current (admin) application scope.</summary>
     public async Task<RfmSummary> SummaryAsync(CancellationToken ct)
     {
-        var profiles = await db.ValueProfiles.ToListAsync(ct);
+        var profiles = await valueProfilesRepo.Query().ToListAsync(ct);
         var evaluated = profiles.Where(p => p.RfmEvaluatedAt != null).ToList();
         var byPersona = evaluated
             .GroupBy(p => p.RfmPersona ?? "Lost")

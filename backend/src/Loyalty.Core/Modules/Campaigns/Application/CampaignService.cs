@@ -29,7 +29,13 @@ public sealed record CampaignView(
 public sealed record SimulateInput(string EventType, int EventVersion, string CustomerId, DateTimeOffset OccurredAt, JsonElement Attributes);
 
 public sealed class CampaignService(
-    LoyaltyDbContext db, ApplicationContext scope, IClock clock,
+    IRepository<Loyalty.Core.Modules.Rewards.Domain.Reward> rewardsRepo,
+    IRepository<Loyalty.Core.Modules.Campaigns.Domain.Campaign> campaignsRepo,
+    IRepository<Loyalty.Core.Modules.Cvm.Domain.SegmentDefinition> segmentsRepo,
+    IRepository<Loyalty.Core.Modules.Members.Domain.Member> membersRepo,
+    IRepository<Loyalty.Core.Modules.Cvm.Domain.MemberValueProfile> valueProfilesRepo,
+    IRepository<Loyalty.Core.Modules.Cvm.Domain.MemberSegmentMembership> segmentMembershipsRepo,
+    IUnitOfWork uow, ApplicationContext scope, IClock clock,
     EventRegistry registry, LoyaltySettingsService settings, RewardDecisionService decider)
 {
     public async Task<CampaignView> CreateAsync(CreateCampaignInput input, CancellationToken ct)
@@ -43,7 +49,7 @@ public sealed class CampaignService(
         foreach (var e in input.Effects.Where(e => e.Type == EffectType.GrantReward))
         {
             if (e.RewardId is null) throw new LoyaltyException(LoyaltyError.ValidationFailed("GrantReward effect requires a rewardId."));
-            if (!await db.Rewards.AnyAsync(r => r.Id == e.RewardId, ct)) throw new LoyaltyException(LoyaltyError.NotFound("Reward"));
+            if (!await rewardsRepo.Query().AnyAsync(r => r.Id == e.RewardId, ct)) throw new LoyaltyException(LoyaltyError.NotFound("Reward"));
         }
 
         var c = Campaign.Create(Guid.NewGuid(), scope.ApplicationId, input.Name, input.NameAr, input.TriggerEventType,
@@ -51,52 +57,52 @@ public sealed class CampaignService(
             input.Priority, input.StackingPolicy, input.Conditions, input.Effects,
             input.RequiredLifecycleStages, input.RequiredSegmentIds, input.ExcludedSegmentIds,
             input.MemberLimits, input.GlobalBudget, clock.UtcNow);
-        db.Campaigns.Add(c);
-        await db.SaveChangesAsync(ct);
+        campaignsRepo.Add(c);
+        await uow.SaveChangesAsync(ct);
         return ToView(c);
     }
 
     public async Task<CampaignView?> ValidateAsync(Guid id, CancellationToken ct)
     {
-        var c = await db.Campaigns.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var c = await campaignsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (c is null) return null;
 
         // targeting segments must exist and be active
         var referenced = c.RequiredSegmentIds.Concat(c.ExcludedSegmentIds).Distinct().ToList();
         if (referenced.Count > 0)
         {
-            var activeCount = await db.Segments.CountAsync(s => referenced.Contains(s.Id) && s.Status == Cvm.Domain.SegmentStatus.Active, ct);
+            var activeCount = await segmentsRepo.Query().CountAsync(s => referenced.Contains(s.Id) && s.Status == Cvm.Domain.SegmentStatus.Active, ct);
             if (activeCount != referenced.Count)
                 throw new LoyaltyException(LoyaltyError.Conflict("CVM_NOT_CONFIGURED", "A targeted segment is missing or not active."));
         }
 
         c.Validate(clock.UtcNow);
-        await db.SaveChangesAsync(ct);
+        await uow.SaveChangesAsync(ct);
         return ToView(c);
     }
 
     public async Task<CampaignView?> ActivateAsync(Guid id, CancellationToken ct)
     {
-        var c = await db.Campaigns.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var c = await campaignsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (c is null) return null;
         try { c.Activate(clock.UtcNow); }
         catch (InvalidOperationException ex) { throw new LoyaltyException(LoyaltyError.Conflict("campaign_not_validated", ex.Message)); }
-        await db.SaveChangesAsync(ct);
+        await uow.SaveChangesAsync(ct);
         return ToView(c);
     }
 
     public async Task<CampaignView?> PauseAsync(Guid id, CancellationToken ct)
     {
-        var c = await db.Campaigns.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var c = await campaignsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (c is null) return null;
         c.Pause(clock.UtcNow);
-        await db.SaveChangesAsync(ct);
+        await uow.SaveChangesAsync(ct);
         return ToView(c);
     }
 
     public async Task<object?> SimulateAsync(Guid id, SimulateInput input, CancellationToken ct)
     {
-        var c = await db.Campaigns.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var c = await campaignsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (c is null) return null;
 
         var effective = await settings.ResolveEffectiveAsync(scope.ApplicationId, ct)
@@ -107,14 +113,14 @@ public sealed class CampaignService(
         var normalized = registry.Normalize(envelope, scope.SourceSystem);
 
         // resolve the simulated member's lifecycle + active segments (default New if unknown)
-        var member = await db.Members.FirstOrDefaultAsync(m => m.ExternalCustomerId == input.CustomerId, ct);
+        var member = await membersRepo.Query().FirstOrDefaultAsync(m => m.ExternalCustomerId == input.CustomerId, ct);
         var lifecycle = "New";
         var activeSegments = new HashSet<Guid>();
         if (member is not null)
         {
-            var profile = await db.ValueProfiles.FirstOrDefaultAsync(p => p.MemberId == member.Id, ct);
+            var profile = await valueProfilesRepo.Query().FirstOrDefaultAsync(p => p.MemberId == member.Id, ct);
             if (profile is not null) lifecycle = profile.LifecycleStage.ToString();
-            activeSegments = (await db.SegmentMemberships.Where(m => m.MemberId == member.Id && m.IsActive)
+            activeSegments = (await segmentMembershipsRepo.Query().Where(m => m.MemberId == member.Id && m.IsActive)
                 .Select(m => m.SegmentId).ToListAsync(ct)).ToHashSet();
         }
 
@@ -134,12 +140,12 @@ public sealed class CampaignService(
 
     public async Task<CampaignView?> GetAsync(Guid id, CancellationToken ct)
     {
-        var c = await db.Campaigns.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var c = await campaignsRepo.Query().FirstOrDefaultAsync(x => x.Id == id, ct);
         return c is null ? null : ToView(c);
     }
 
     public async Task<IReadOnlyList<CampaignView>> ListAsync(CancellationToken ct) =>
-        (await db.Campaigns.OrderByDescending(c => c.Priority).ToListAsync(ct)).Select(ToView).ToList();
+        (await campaignsRepo.Query().OrderByDescending(c => c.Priority).ToListAsync(ct)).Select(ToView).ToList();
 
     private static CampaignView ToView(Campaign c) =>
         new(c.Id, c.ApplicationId, c.Name, c.NameAr, c.TriggerEventType, c.MinimumEventVersion, c.Priority,

@@ -12,7 +12,7 @@ namespace Loyalty.Core.Modules.Cvm.Application;
 /// rule-based segment memberships (MVP spec §11.2–§11.5). Pure state changes on tracked
 /// entities; the worker owns the atomic commit.
 /// </summary>
-public sealed class CvmService(LoyaltyDbContext db, ILoyaltyRuleEvaluator evaluator, IClock clock)
+public sealed class CvmService(IRepository<Loyalty.Core.Modules.Cvm.Domain.SegmentDefinition> segmentsRepo, IRepository<Loyalty.Core.Modules.Cvm.Domain.MemberSegmentMembership> segmentMembershipsRepo, IRepository<Loyalty.Core.Modules.Cvm.Domain.SegmentVersion> segmentVersionsRepo, ILoyaltyRuleEvaluator evaluator, IClock clock)
 {
     /// <summary>Project one typed event onto the profile using the event's OccurredAt.</summary>
     public void ApplyEvent(MemberValueProfile profile, string eventType, decimal? amount, DateTimeOffset occurredAt)
@@ -49,19 +49,19 @@ public sealed class CvmService(LoyaltyDbContext db, ILoyaltyRuleEvaluator evalua
     /// <summary>Enter/retain/exit segment memberships for a member based on its current profile.</summary>
     public async Task EvaluateSegmentsAsync(MemberValueProfile profile, DateTimeOffset evaluatedAt, CancellationToken ct)
     {
-        var segments = await db.Segments
+        var segments = await segmentsRepo.Query()
             .Where(s => s.ApplicationId == profile.ApplicationId && s.Status == SegmentStatus.Active)
             .ToListAsync(ct);
         if (segments.Count == 0) return;
 
         var facts = ProfileFacts.Of(profile);
-        var memberships = await db.SegmentMemberships
+        var memberships = await segmentMembershipsRepo.Query()
             .Where(m => m.ApplicationId == profile.ApplicationId && m.MemberId == profile.MemberId && m.IsActive)
             .ToListAsync(ct);
 
         foreach (var seg in segments)
         {
-            var version = await db.SegmentVersions
+            var version = await segmentVersionsRepo.Query()
                 .FirstOrDefaultAsync(v => v.SegmentId == seg.Id && v.Version == seg.CurrentVersion, ct);
             if (version is null) continue;
 
@@ -69,7 +69,7 @@ public sealed class CvmService(LoyaltyDbContext db, ILoyaltyRuleEvaluator evalua
             var active = memberships.FirstOrDefault(m => m.SegmentId == seg.Id);
 
             if (matches && active is null)
-                db.SegmentMemberships.Add(MemberSegmentMembership.Enter(
+                segmentMembershipsRepo.Add(MemberSegmentMembership.Enter(
                     profile.ApplicationId, profile.MemberId, seg.Id, version.Version, profile.Version, evaluatedAt));
             else if (matches)
                 active!.ReEvaluate(profile.Version, evaluatedAt);

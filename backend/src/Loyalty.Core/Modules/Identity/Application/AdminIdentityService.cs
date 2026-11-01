@@ -16,7 +16,10 @@ public sealed record CreateAdminUserInput(string Username, string Password, stri
 /// the auth middleware, and user administration. Identity tables are not application-scoped, so this
 /// works during anonymous login.
 /// </summary>
-public sealed class AdminIdentityService(LoyaltyDbContext db, IClock clock)
+public sealed class AdminIdentityService(
+    IRepository<Loyalty.Core.Modules.Identity.Domain.AdminUser> adminUsersRepo,
+    IRepository<Loyalty.Core.Modules.Identity.Domain.AdminSession> adminSessionsRepo,
+    IUnitOfWork uow, IClock clock)
 {
     private const string Prefix = "as_";
     private static readonly TimeSpan SessionTtl = TimeSpan.FromDays(7);
@@ -24,14 +27,14 @@ public sealed class AdminIdentityService(LoyaltyDbContext db, IClock clock)
     public async Task<LoginResult?> LoginAsync(string username, string password, CancellationToken ct)
     {
         username = (username ?? "").Trim().ToLowerInvariant();
-        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Username == username && u.IsActive, ct);
+        var user = await adminUsersRepo.Query().FirstOrDefaultAsync(u => u.Username == username && u.IsActive, ct);
         if (user is null || !PasswordHasher.Verify(password ?? "", user.PasswordHash)) return null;
 
         var raw = Prefix + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
         var now = clock.UtcNow;
         var expiresAt = now.Add(SessionTtl);
-        db.AdminSessions.Add(new AdminSession(user.Id, Hash(raw), expiresAt, now));
-        await db.SaveChangesAsync(ct);
+        adminSessionsRepo.Add(new AdminSession(user.Id, Hash(raw), expiresAt, now));
+        await uow.SaveChangesAsync(ct);
         return new LoginResult(raw, expiresAt, user.Username, user.Role.ToString(), user.ApplicationId);
     }
 
@@ -39,9 +42,9 @@ public sealed class AdminIdentityService(LoyaltyDbContext db, IClock clock)
     {
         if (string.IsNullOrWhiteSpace(rawToken) || !rawToken.StartsWith(Prefix, StringComparison.Ordinal)) return null;
         var hash = Hash(rawToken);
-        var session = await db.AdminSessions.FirstOrDefaultAsync(s => s.TokenHash == hash, ct);
+        var session = await adminSessionsRepo.Query().FirstOrDefaultAsync(s => s.TokenHash == hash, ct);
         if (session is null || !session.IsValid(clock.UtcNow)) return null;
-        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Id == session.AdminUserId && u.IsActive, ct);
+        var user = await adminUsersRepo.Query().FirstOrDefaultAsync(u => u.Id == session.AdminUserId && u.IsActive, ct);
         return user is null ? null : new ResolvedAdmin(user.Id, user.Username, user.ApplicationId, user.Role);
     }
 
@@ -54,17 +57,17 @@ public sealed class AdminIdentityService(LoyaltyDbContext db, IClock clock)
     {
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
             throw new LoyaltyException(LoyaltyError.ValidationFailed("new password must be at least 8 characters."));
-        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive, ct);
+        var user = await adminUsersRepo.Query().FirstOrDefaultAsync(u => u.Id == userId && u.IsActive, ct);
         if (user is null || !PasswordHasher.Verify(currentPassword ?? "", user.PasswordHash)) return false;
 
         var now = clock.UtcNow;
         user.SetPassword(PasswordHasher.Hash(newPassword), now);
 
         var keepHash = string.IsNullOrWhiteSpace(keepRawToken) ? null : Hash(keepRawToken);
-        var sessions = await db.AdminSessions.Where(s => s.AdminUserId == userId && s.RevokedAt == null).ToListAsync(ct);
+        var sessions = await adminSessionsRepo.Query().Where(s => s.AdminUserId == userId && s.RevokedAt == null).ToListAsync(ct);
         foreach (var s in sessions.Where(s => s.TokenHash != keepHash)) s.Revoke(now);
 
-        await db.SaveChangesAsync(ct);
+        await uow.SaveChangesAsync(ct);
         return true;
     }
 
@@ -72,8 +75,8 @@ public sealed class AdminIdentityService(LoyaltyDbContext db, IClock clock)
     {
         if (string.IsNullOrWhiteSpace(rawToken)) return;
         var hash = Hash(rawToken);
-        var session = await db.AdminSessions.FirstOrDefaultAsync(s => s.TokenHash == hash, ct);
-        if (session is not null) { session.Revoke(clock.UtcNow); await db.SaveChangesAsync(ct); }
+        var session = await adminSessionsRepo.Query().FirstOrDefaultAsync(s => s.TokenHash == hash, ct);
+        if (session is not null) { session.Revoke(clock.UtcNow); await uow.SaveChangesAsync(ct); }
     }
 
     /// <summary>Create a user. SuperAdmins may target any application + role; Admins create within
@@ -87,18 +90,18 @@ public sealed class AdminIdentityService(LoyaltyDbContext db, IClock clock)
 
         var appId = caller.IsSuperAdmin && i.ApplicationId is { } a ? a : caller.ApplicationId;
         var uname = i.Username.Trim().ToLowerInvariant();
-        if (await db.AdminUsers.AnyAsync(u => u.Username == uname, ct))
+        if (await adminUsersRepo.Query().AnyAsync(u => u.Username == uname, ct))
             throw new LoyaltyException(LoyaltyError.Conflict("username_taken", "That username is already taken."));
 
         var user = AdminUser.Create(appId, uname, PasswordHasher.Hash(i.Password), role, clock.UtcNow);
-        db.AdminUsers.Add(user);
-        await db.SaveChangesAsync(ct);
+        adminUsersRepo.Add(user);
+        await uow.SaveChangesAsync(ct);
         return ToView(user);
     }
 
     public async Task<IReadOnlyList<AdminUserView>> ListUsersAsync(AdminContext caller, CancellationToken ct)
     {
-        var q = db.AdminUsers.AsQueryable();
+        var q = adminUsersRepo.Query();
         if (!caller.IsSuperAdmin) q = q.Where(u => u.ApplicationId == caller.ApplicationId); // Admins see their tenant only
         return (await q.OrderBy(u => u.Username).ToListAsync(ct)).Select(ToView).ToList();
     }
@@ -107,29 +110,29 @@ public sealed class AdminIdentityService(LoyaltyDbContext db, IClock clock)
     {
         if (!Enum.TryParse<AdminRole>(role, true, out var r)) throw new LoyaltyException(LoyaltyError.ValidationFailed("unknown role."));
         if (r == AdminRole.SuperAdmin && !caller.IsSuperAdmin) throw new LoyaltyException(LoyaltyError.Conflict("forbidden_role", "Only a SuperAdmin can grant SuperAdmin."));
-        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Id == id, ct);
+        var user = await adminUsersRepo.Query().FirstOrDefaultAsync(u => u.Id == id, ct);
         if (user is null || (!caller.IsSuperAdmin && user.ApplicationId != caller.ApplicationId)) return null;
         user.SetRole(r, clock.UtcNow);
-        await db.SaveChangesAsync(ct);
+        await uow.SaveChangesAsync(ct);
         return ToView(user);
     }
 
     public async Task<bool> DeactivateAsync(AdminContext caller, Guid id, CancellationToken ct)
     {
-        var user = await db.AdminUsers.FirstOrDefaultAsync(u => u.Id == id, ct);
+        var user = await adminUsersRepo.Query().FirstOrDefaultAsync(u => u.Id == id, ct);
         if (user is null || (!caller.IsSuperAdmin && user.ApplicationId != caller.ApplicationId)) return false;
         if (user.Id == caller.UserId) throw new LoyaltyException(LoyaltyError.Conflict("self_deactivate", "You cannot deactivate your own account."));
         user.SetActive(false, clock.UtcNow);
-        await db.SaveChangesAsync(ct);
+        await uow.SaveChangesAsync(ct);
         return true;
     }
 
     /// <summary>Seed the first SuperAdmin for an application if no admin users exist at all (P17).</summary>
     public async Task EnsureSuperAdminAsync(Guid applicationId, string username, string password, CancellationToken ct)
     {
-        if (await db.AdminUsers.AnyAsync(ct)) return;
-        db.AdminUsers.Add(AdminUser.Create(applicationId, username, PasswordHasher.Hash(password), AdminRole.SuperAdmin, clock.UtcNow));
-        await db.SaveChangesAsync(ct);
+        if (await adminUsersRepo.Query().AnyAsync(ct)) return;
+        adminUsersRepo.Add(AdminUser.Create(applicationId, username, PasswordHasher.Hash(password), AdminRole.SuperAdmin, clock.UtcNow));
+        await uow.SaveChangesAsync(ct);
     }
 
     private static AdminUserView ToView(AdminUser u) => new(u.Id, u.ApplicationId, u.Username, u.Role.ToString(), u.IsActive, u.CreatedAt);

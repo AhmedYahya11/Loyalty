@@ -45,7 +45,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="shell">
       <nav className="sidebar">
-        <div className="brand">{tr("appTitle", lang)}</div>
+        <div className="brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/img/logo.jpg" alt="" className="brand-logo" />
+          {tr("appTitle", lang)}
+        </div>
         {links.map((l) => (
           <Link key={l.href} href={l.href} className={`navlink ${path === l.href ? "active" : ""}`}>
             {tr(l.key, lang)}

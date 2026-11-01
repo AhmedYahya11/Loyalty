@@ -117,6 +117,7 @@ export const t: Dict = {
   runBirthdaySweep: { en: "Run birthday sweep", ar: "تشغيل مكافآت الميلاد", ku: "جێبەجێکردنی خەڵاتی لەدایکبوون" },
   triggerEvent: { en: "Trigger event", ar: "حدث التفعيل", ku: "ڕووداوی پاڵنەر" },
   myCard: { en: "My card", ar: "بطاقتي", ku: "کارتەکەم" },
+  backToDashboard: { en: "Dashboard", ar: "لوحة التحكم", ku: "داشبۆرد" },
   myRewards: { en: "Rewards", ar: "المكافآت", ku: "خەڵاتەکان" },
   history: { en: "History", ar: "السجل", ku: "مێژوو" },
   availablePoints: { en: "Available points", ar: "النقاط المتاحة", ku: "خاڵە بەردەستەکان" },

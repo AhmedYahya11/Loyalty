@@ -18,5 +18,7 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+# standalone output does not include public/ — copy it so static assets (logo, textures) are served
+COPY --from=build /app/public ./public
 EXPOSE 3000
 CMD ["node", "server.js"]

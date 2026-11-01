@@ -356,6 +356,38 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.ToTable("reward_decisions", "campaigns");
                 });
 
+            modelBuilder.Entity("Loyalty.Core.Modules.Connectors.Domain.Connector", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Secret")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.ToTable("connectors", "connectors");
+                });
+
             modelBuilder.Entity("Loyalty.Core.Modules.Cvm.Domain.ApplicationCvmSettings", b =>
                 {
                     b.Property<Guid>("ApplicationId")

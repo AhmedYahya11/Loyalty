@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<AdminContext>();
         services.AddScoped<Modules.Identity.Application.AdminIdentityService>();
         services.AddScoped<Modules.Audit.Application.AuditService>();
+        services.AddScoped<Modules.Connectors.Application.ConnectorService>();
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<EventRegistry>();

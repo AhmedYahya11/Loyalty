@@ -14,7 +14,9 @@ namespace Loyalty.Api.Auth;
 public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
 {
     private static readonly string[] AnonymousPrefixes =
-        ["/openapi", "/scalar", "/health", "/api/v1/bootstrap", "/api/v1/admin/login", "/"];
+        ["/openapi", "/scalar", "/health", "/api/v1/bootstrap", "/api/v1/admin/login",
+         "/api/v1/connectors/shopify/", // inbound webhooks authenticate by HMAC, not API key
+         "/"];
 
     public async Task InvokeAsync(HttpContext ctx)
     {

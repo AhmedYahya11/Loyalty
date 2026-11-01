@@ -52,9 +52,17 @@ There's an in-dashboard notification feed and HMAC webhooks, but no actual email
 (e.g. "you earned points", birthday reward, OTP for the member app). Everything downstream of the
 webhook is the integrator's problem today. Pairs with A6 (consent gate).
 
-### B2. No native POS / e-commerce connectors — *High · L*
-Only the generic event API + one reference emitter (Hareer). A real multi-tenant rollout usually needs
-ready-made Shopify/POS plugins, not just a contract + CLI.
+### B2. No native POS / e-commerce connectors — 🟡 **Increment 1 done (Shopify)**
+Shipped an in-platform **Shopify inbound connector**: per-tenant `Connector` config with an HMAC secret;
+`POST /api/v1/connectors` (create, secret returned once) + `GET /api/v1/connectors`; and the webhook
+receiver `POST /api/v1/connectors/shopify/{id}/webhook` that **authenticates by HMAC** (per-tenant),
+**isolates the tenant** (connector id → application scope), is **idempotent** (Shopify delivery id →
+Idempotency-Key), **validates** the payload (422 on bad data, 401 on bad signature), and ingests through
+the normal pipeline so events are **logged + replayable** (`/requests`, `/requests/{id}/replay`). Maps
+`orders/paid → PurchaseCompleted` and `refunds/create → OrderRefunded` (refund customer resolved from the
+original order). Covered by `ShopifyConnectorE2ETests`.
+_Remaining:_ WooCommerce/Square connectors, more topics (customer create, order edits), a dashboard UI to
+manage connectors, and encrypt-at-rest for the stored secret.
 
 ### B3. No fraud / abuse detection on earning — ✅ **Done**
 ~~Rate limiting is per API key, not per member~~. Implemented a per-tenant, opt-in **per-member earn-rate

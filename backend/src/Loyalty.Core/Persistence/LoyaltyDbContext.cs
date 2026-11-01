@@ -43,6 +43,7 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     // ApplicationUser / roles are exposed via Identity's Users/Roles sets (UserManager/RoleManager)
     public DbSet<Modules.Identity.Domain.AdminSession> AdminSessions => Set<Modules.Identity.Domain.AdminSession>();
     public DbSet<Modules.Audit.Domain.AuditEntry> AuditEntries => Set<Modules.Audit.Domain.AuditEntry>();
+    public DbSet<Modules.Connectors.Domain.Connector> Connectors => Set<Modules.Connectors.Domain.Connector>();
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<PointsLedgerAccount> LedgerAccounts => Set<PointsLedgerAccount>();
     public DbSet<PointsLedgerTransaction> LedgerTransactions => Set<PointsLedgerTransaction>();
@@ -500,6 +501,17 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.Property(x => x.Path).HasMaxLength(256).IsRequired();
             e.Property(x => x.TargetId).HasMaxLength(64);
             e.HasIndex(x => new { x.ApplicationId, x.OccurredAt });
+            ApplyScope(e);
+        });
+
+        // ---------------- connectors (inbound e-commerce/POS webhooks, B2) — application-scoped ----------------
+        b.Entity<Modules.Connectors.Domain.Connector>(e =>
+        {
+            e.ToTable("connectors", "connectors");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Platform).HasConversion<string>().HasMaxLength(32);
+            e.Property(x => x.Secret).HasMaxLength(128).IsRequired();
+            e.HasIndex(x => x.ApplicationId);
             ApplyScope(e);
         });
 

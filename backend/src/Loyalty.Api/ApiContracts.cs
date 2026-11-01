@@ -15,6 +15,7 @@ public sealed record SetRoleRequest(string Role);
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public sealed record RedeemRequest(Guid RewardId);
 public sealed record ConfirmByCodeRequest(string CouponCode);
+public sealed record CreateConnectorRequest(string Platform, string? Secret);
 
 /// <summary>
 /// Shared base for the loyalty API controllers. Centralizes the small set of result shapes the

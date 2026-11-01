@@ -13,14 +13,16 @@ public sealed class AdminContext
     public string Username { get; private set; } = string.Empty;
     public Guid ApplicationId { get; private set; }
     public AdminRole Role { get; private set; }
+    public Guid SessionId { get; private set; } // JWT jti → AdminSession, for logout/revocation
     public bool IsEstablished { get; private set; }
 
-    public void Establish(Guid userId, string username, Guid applicationId, AdminRole role)
+    public void Establish(Guid userId, string username, Guid applicationId, AdminRole role, Guid sessionId = default)
     {
         UserId = userId;
         Username = username;
         ApplicationId = applicationId;
         Role = role;
+        SessionId = sessionId;
         IsEstablished = true;
     }
 

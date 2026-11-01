@@ -38,9 +38,11 @@ public sealed class AdminSession
 
     private AdminSession() { }
 
-    public AdminSession(Guid adminUserId, string tokenHash, DateTimeOffset expiresAt, DateTimeOffset now)
+    /// <summary>JWT session: the row Id is the token's jti. TokenHash mirrors the id (keeps the
+    /// existing unique index satisfied) — the JWT itself is validated by signature, not by lookup.</summary>
+    public AdminSession(Guid adminUserId, DateTimeOffset expiresAt, DateTimeOffset now)
     {
-        Id = Guid.NewGuid(); AdminUserId = adminUserId; TokenHash = tokenHash; ExpiresAt = expiresAt; CreatedAt = now;
+        Id = Guid.NewGuid(); AdminUserId = adminUserId; TokenHash = Id.ToString("N"); ExpiresAt = expiresAt; CreatedAt = now;
     }
 
     public bool IsValid(DateTimeOffset now) => RevokedAt is null && ExpiresAt > now;

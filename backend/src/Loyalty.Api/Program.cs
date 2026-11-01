@@ -5,7 +5,9 @@ using JasperFx.Resources;
 using Loyalty.Api;
 using Loyalty.Api.Auth;
 using Loyalty.Core;
+using Loyalty.Core.BuildingBlocks;
 using Loyalty.Core.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -42,6 +44,16 @@ builder.Services.AddControllers().AddJsonOptions(o =>
     o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
+
+// Identity-issued JWT bearer auth for the dashboard + policy-based authorization.
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(o =>
+    {
+        o.MapInboundClaims = false; // keep raw claim names (sub, name, role, app_id, jti)
+        o.TokenValidationParameters = JwtAuth.ValidationParameters();
+    });
+builder.Services.AddAuthorization(o =>
+    o.AddPolicy("ManageUsers", p => p.RequireRole("Admin", "SuperAdmin")));
 
 builder.Services.AddOpenApi();
 
@@ -118,7 +130,9 @@ app.MapScalarApiReference(o => o.WithTitle("KĪNŪTU API — كينوتو"));
 
 app.UseCors(); // must precede the auth middleware so preflight (OPTIONS) is answered without a key
 app.UseMiddleware<ErrorHandlingMiddleware>();
-app.UseMiddleware<ApiKeyAuthMiddleware>();
+app.UseAuthentication();                        // validate the Identity JWT (populates ctx.User)
+app.UseMiddleware<ApiKeyAuthMiddleware>();      // establish tenant/admin/customer scope
+app.UseAuthorization();                         // enforce [Authorize] / policies on controllers
 app.UseRateLimiter();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).WithTags("Health");   // liveness

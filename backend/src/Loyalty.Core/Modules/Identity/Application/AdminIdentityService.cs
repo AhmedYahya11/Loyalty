@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using Loyalty.Core.BuildingBlocks;
 using Loyalty.Core.Modules.Identity.Domain;
 using Microsoft.AspNetCore.Identity;
@@ -25,31 +24,41 @@ public sealed class AdminIdentityService(
     IUnitOfWork uow,
     IClock clock)
 {
-    private const string Prefix = "as_";
     private static readonly TimeSpan SessionTtl = TimeSpan.FromDays(7);
 
+    /// <summary>Verify credentials and issue a signed, Identity-issued JWT whose jti maps to a
+    /// revocable server-side session. Returns null on bad credentials.</summary>
     public async Task<LoginResult?> LoginAsync(string username, string password, CancellationToken ct)
     {
         var user = await users.FindByNameAsync((username ?? "").Trim());
         if (user is null || !user.IsActive || !await users.CheckPasswordAsync(user, password ?? "")) return null;
 
-        var raw = Prefix + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
         var now = clock.UtcNow;
         var expiresAt = now.Add(SessionTtl);
-        adminSessionsRepo.Add(new AdminSession(user.Id, Hash(raw), expiresAt, now));
+        var session = new AdminSession(user.Id, expiresAt, now);
+        adminSessionsRepo.Add(session);
         await uow.SaveChangesAsync(ct);
-        return new LoginResult(raw, expiresAt, user.UserName!, await RoleOf(user), user.ApplicationId);
+
+        var role = await RoleOf(user);
+        var jwt = JwtAuth.CreateToken(user.Id, user.UserName!, role, user.ApplicationId, session.Id, expiresAt);
+        return new LoginResult(jwt, expiresAt, user.UserName!, role, user.ApplicationId);
     }
 
-    public async Task<ResolvedAdmin?> ResolveAsync(string rawToken, CancellationToken ct)
+    /// <summary>Confirm the JWT's session (jti) is still active and its user enabled — the revocation
+    /// check layered on top of the stateless signature/expiry validation done by JwtBearer.</summary>
+    public async Task<bool> IsSessionActiveAsync(Guid sessionId, Guid userId, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(rawToken) || !rawToken.StartsWith(Prefix, StringComparison.Ordinal)) return null;
-        var hash = Hash(rawToken);
-        var session = await adminSessionsRepo.Query().FirstOrDefaultAsync(s => s.TokenHash == hash, ct);
-        if (session is null || !session.IsValid(clock.UtcNow)) return null;
-        var user = await users.FindByIdAsync(session.AdminUserId.ToString());
-        if (user is null || !user.IsActive) return null;
-        return new ResolvedAdmin(user.Id, user.UserName!, user.ApplicationId, ParseRole(await RoleOf(user)));
+        var session = await adminSessionsRepo.Query().FirstOrDefaultAsync(s => s.Id == sessionId, ct);
+        if (session is null || !session.IsValid(clock.UtcNow)) return false;
+        var user = await users.FindByIdAsync(userId.ToString());
+        return user is not null && user.IsActive;
+    }
+
+    /// <summary>Revoke a single session (logout).</summary>
+    public async Task RevokeSessionAsync(Guid sessionId, CancellationToken ct)
+    {
+        var session = await adminSessionsRepo.Query().FirstOrDefaultAsync(s => s.Id == sessionId, ct);
+        if (session is not null && session.RevokedAt is null) { session.Revoke(clock.UtcNow); await uow.SaveChangesAsync(ct); }
     }
 
     /// <summary>
@@ -57,7 +66,7 @@ public sealed class AdminIdentityService(
     /// all of the user's other sessions (keeping the one making the request). Returns false when the
     /// current password is wrong.
     /// </summary>
-    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, string? keepRawToken, CancellationToken ct)
+    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, Guid? keepSessionId, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
             throw new LoyaltyException(LoyaltyError.ValidationFailed("new password must be at least 8 characters."));
@@ -67,19 +76,10 @@ public sealed class AdminIdentityService(
         if (!result.Succeeded) return false;
 
         var now = clock.UtcNow;
-        var keepHash = string.IsNullOrWhiteSpace(keepRawToken) ? null : Hash(keepRawToken);
         var sessions = await adminSessionsRepo.Query().Where(s => s.AdminUserId == userId && s.RevokedAt == null).ToListAsync(ct);
-        foreach (var s in sessions.Where(s => s.TokenHash != keepHash)) s.Revoke(now);
+        foreach (var s in sessions.Where(s => s.Id != keepSessionId)) s.Revoke(now);
         await uow.SaveChangesAsync(ct);
         return true;
-    }
-
-    public async Task RevokeAsync(string rawToken, CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(rawToken)) return;
-        var hash = Hash(rawToken);
-        var session = await adminSessionsRepo.Query().FirstOrDefaultAsync(s => s.TokenHash == hash, ct);
-        if (session is not null) { session.Revoke(clock.UtcNow); await uow.SaveChangesAsync(ct); }
     }
 
     /// <summary>Create a user. SuperAdmins may target any application + role; Admins create within
@@ -158,7 +158,4 @@ public sealed class AdminIdentityService(
 
     private async Task<string> RoleOf(ApplicationUser user) =>
         (await users.GetRolesAsync(user)).FirstOrDefault() ?? AdminRole.Viewer.ToString();
-
-    private static AdminRole ParseRole(string role) => Enum.TryParse<AdminRole>(role, true, out var r) ? r : AdminRole.Viewer;
-    private static string Hash(string raw) => Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(raw)));
 }

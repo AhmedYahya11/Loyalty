@@ -1,5 +1,5 @@
 // Thin Loyalty API client — injects X-Api-Key + Accept-Language. عميل الواجهة البرمجية.
-import { getApiBase, getApiKey, getAdminToken, getLang } from "./session";
+import { getApiBase, getApiKey, getAdminToken, getLang, clearAdminSession } from "./session";
 
 async function request<T>(method: string, path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<T> {
   const headers: Record<string, string> = {
@@ -20,7 +20,15 @@ async function request<T>(method: string, path: string, body?: unknown, extraHea
   });
   const text = await res.text();
   const json = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new Error(json?.message ?? `${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    // a stale/expired admin session → clear it and bounce to the login page instead of
+    // surfacing a raw "invalid credential" error on every screen.
+    if (res.status === 401 && adminToken && typeof window !== "undefined") {
+      clearAdminSession();
+      if (window.location.pathname !== "/") window.location.href = "/";
+    }
+    throw new Error(json?.message ?? `${res.status} ${res.statusText}`);
+  }
   return json as T;
 }
 

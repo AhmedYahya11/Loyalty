@@ -29,11 +29,10 @@ public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
             return;
         }
 
-        // dashboard operator: an admin-session Bearer token (as_…) authenticates + applies RBAC
-        var authHeader = ctx.Request.Headers.Authorization.ToString();
-        if (authHeader.Contains("as_", StringComparison.Ordinal))
+        // dashboard operator: a validated Identity JWT (populated by UseAuthentication) authenticates + applies RBAC
+        if (ctx.User.Identity?.IsAuthenticated == true)
         {
-            await InvokeAdminAsync(ctx, authHeader);
+            await InvokeAdminAsync(ctx);
             return;
         }
 
@@ -108,8 +107,10 @@ public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
         }
     }
 
-    /// <summary>Authenticate a dashboard admin session (Bearer as_…), establish scope + role, apply RBAC (P17).</summary>
-    private async Task InvokeAdminAsync(HttpContext ctx, string authHeader)
+    /// <summary>Establish scope + role from a validated Identity JWT and apply RBAC (P17). Signature +
+    /// expiry were already checked by JwtBearer (UseAuthentication); here we add the revocation/active
+    /// check (jti → session) and the read-only guard, then set the ambient contexts.</summary>
+    private async Task InvokeAdminAsync(HttpContext ctx)
     {
         var sp = ctx.RequestServices;
         var identity = sp.GetRequiredService<Loyalty.Core.Modules.Identity.Application.AdminIdentityService>();
@@ -117,23 +118,32 @@ public sealed class ApiKeyAuthMiddleware(RequestDelegate next)
         var scope = sp.GetRequiredService<ApplicationContext>();
         var admin = sp.GetRequiredService<AdminContext>();
 
-        var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? authHeader["Bearer ".Length..].Trim() : authHeader.Trim();
-        var resolved = await identity.ResolveAsync(token, ctx.RequestAborted);
-        if (resolved is null) { await Write(ctx, LoyaltyError.InvalidCredential()); return; }
-        if (!await resolver.IsActiveChainAsync(resolved.ApplicationId, ctx.RequestAborted))
+        var u = ctx.User;
+        var username = u.FindFirst(JwtAuth.NameClaim)?.Value ?? u.Identity?.Name ?? "";
+        var role = Enum.TryParse<Loyalty.Core.Modules.Identity.Domain.AdminRole>(u.FindFirst(JwtAuth.RoleClaim)?.Value, true, out var r)
+            ? r : Loyalty.Core.Modules.Identity.Domain.AdminRole.Viewer;
+        if (!Guid.TryParse(u.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value, out var userId)
+            || !Guid.TryParse(u.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value, out var sessionId)
+            || !Guid.TryParse(u.FindFirst(JwtAuth.AppIdClaim)?.Value, out var appId))
+        { await Write(ctx, LoyaltyError.InvalidCredential()); return; }
+
+        // revocation + account-active check on top of the stateless signature validation
+        if (!await identity.IsSessionActiveAsync(sessionId, userId, ctx.RequestAborted))
+        { await Write(ctx, LoyaltyError.InvalidCredential()); return; }
+        if (!await resolver.IsActiveChainAsync(appId, ctx.RequestAborted))
         { await Write(ctx, LoyaltyError.CredentialDisabled()); return; }
 
-        // Viewers are read-only: block any mutating request (login/logout are handled elsewhere)
-        if (resolved.Role == Loyalty.Core.Modules.Identity.Domain.AdminRole.Viewer
+        // Viewers are read-only: block any mutating request
+        if (role == Loyalty.Core.Modules.Identity.Domain.AdminRole.Viewer
             && !HttpMethods.IsGet(ctx.Request.Method) && !HttpMethods.IsHead(ctx.Request.Method) && !HttpMethods.IsOptions(ctx.Request.Method))
         { await Write(ctx, LoyaltyError.Forbidden("Your role is read-only.")); return; }
 
-        var visible = await resolver.ResolveVisibleAsync(resolved.ApplicationId, ctx.RequestAborted);
-        scope.Establish(resolved.ApplicationId, Guid.Empty, $"admin:{resolved.Username}", visible);
-        admin.Establish(resolved.UserId, resolved.Username, resolved.ApplicationId, resolved.Role);
+        var visible = await resolver.ResolveVisibleAsync(appId, ctx.RequestAborted);
+        scope.Establish(appId, Guid.Empty, $"admin:{username}", visible);
+        admin.Establish(userId, username, appId, role, sessionId);
 
-        using (Serilog.Context.LogContext.PushProperty("ApplicationId", resolved.ApplicationId))
-        using (Serilog.Context.LogContext.PushProperty("AdminUser", resolved.Username))
+        using (Serilog.Context.LogContext.PushProperty("ApplicationId", appId))
+        using (Serilog.Context.LogContext.PushProperty("AdminUser", username))
         {
             await next(ctx);
         }

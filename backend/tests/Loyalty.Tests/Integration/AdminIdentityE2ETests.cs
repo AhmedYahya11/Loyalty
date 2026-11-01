@@ -33,7 +33,7 @@ public class AdminIdentityE2ETests(ApiFixture fx)
         // the seeded SuperAdmin logs in
         var login = await fx.Post("/api/v1/admin/login", new { username = "superadmin", password = "ChangeMe!123" });
         var token = login.GetProperty("token").GetString()!;
-        token.ShouldStartWith("as_");
+        token.Split('.').Length.ShouldBe(3); // an Identity-issued JWT (header.payload.signature)
         login.GetProperty("role").GetString().ShouldBe("SuperAdmin");
 
         // /admin/me reflects the session + management capability

@@ -15,6 +15,7 @@ type Profile = { lifecycleStage: string; tier?: Tier | null; currentStreak: numb
 type Badge = { achievementId: string; name: string; nameAr?: string };
 type Raffle = { raffleId: string; name: string; nameAr?: string; myEntries: number; status: string; won: boolean; prizeDescription?: string };
 type Me = { member: Member; profile: Profile };
+type Brand = { brandName: string; logoUrl?: string | null; primaryColor?: string | null; accentColor?: string | null };
 
 export default function CardHome() {
   const { lang } = useLang();
@@ -23,6 +24,7 @@ export default function CardHome() {
   const [me, setMe] = useState<Me | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [raffles, setRaffles] = useState<Raffle[]>([]);
+  const [brand, setBrand] = useState<Brand | null>(null);
   const [err, setErr] = useState("");
 
   const load = async () => {
@@ -30,6 +32,7 @@ export default function CardHome() {
       setMe(await capi.get<Me>("/api/v1/customer/me"));
       setBadges((await capi.get<{ items: Badge[] }>("/api/v1/customer/achievements")).items);
       try { setRaffles((await capi.get<{ items: Raffle[] }>("/api/v1/customer/raffles")).items.filter((r) => r.myEntries > 0 || r.won)); } catch { setRaffles([]); }
+      try { setBrand(await capi.get<Brand | null>("/api/v1/customer/branding")); } catch { setBrand(null); }
     }
     catch (e) { setErr((e as Error).message); }
   };
@@ -79,11 +82,22 @@ export default function CardHome() {
   const tierName = profile.tier ? (lang === "ar" && profile.tier.nameAr ? profile.tier.nameAr : profile.tier.name) : null;
   const cardCode = member.referralCode ?? member.externalCustomerId;
 
+  // per-tenant white-label overrides (B6): tint the card + show the brand's logo/name when configured
+  const cardStyle = brand?.primaryColor ? { background: `linear-gradient(152deg, ${brand.primaryColor} 0%, #10171e 100%)` } : undefined;
+  const ptsStyle = brand?.accentColor ? { color: brand.accentColor } : undefined;
+
   return (
     <>
-      <div className="loyalty-card">
+      {brand && (brand.logoUrl || brand.brandName) && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {brand.logoUrl && <img src={brand.logoUrl} alt="" style={{ height: 32, width: 32, borderRadius: 8, objectFit: "cover" }} />}
+          <strong style={{ fontSize: 17 }}>{brand.brandName}</strong>
+        </div>
+      )}
+      <div className="loyalty-card" style={cardStyle}>
         <div className="muted" style={{ color: "rgba(255,255,255,.85)" }}>{tr("availablePoints", lang)}</div>
-        <div className="pts">{member.wallet.activeBalance.toLocaleString()}</div>
+        <div className="pts" style={ptsStyle}>{member.wallet.activeBalance.toLocaleString()}</div>
         <div style={{ opacity: .9, fontSize: 13 }}>{member.wallet.pointsUnitCode}</div>
         <div className="row2">
           <div>

@@ -177,6 +177,37 @@ namespace Loyalty.Core.Persistence.Migrations
                     b.ToTable("entries", "audit");
                 });
 
+            modelBuilder.Entity("Loyalty.Core.Modules.Branding.Domain.ApplicationBranding", b =>
+                {
+                    b.Property<Guid>("ApplicationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccentColor")
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
+                    b.Property<string>("BrandName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("PrimaryColor")
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ApplicationId");
+
+                    b.ToTable("branding", "branding");
+                });
+
             modelBuilder.Entity("Loyalty.Core.Modules.Campaigns.Domain.Campaign", b =>
                 {
                     b.Property<Guid>("Id")

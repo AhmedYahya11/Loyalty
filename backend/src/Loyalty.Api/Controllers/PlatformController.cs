@@ -1,6 +1,7 @@
 using Loyalty.Core.BuildingBlocks;
 using Loyalty.Core.Modules.Accounts.Application;
 using Loyalty.Core.Modules.Applications.Application;
+using Loyalty.Core.Modules.Branding.Application;
 using Loyalty.Core.Modules.Cvm.Application;
 using Loyalty.Core.Modules.Cvm.Domain;
 using Loyalty.Core.Modules.Engagement.Application;
@@ -41,6 +42,7 @@ public sealed class ApplicationsController(
     LoyaltySettingsService loyalty,
     CvmSettingsService cvm,
     EngagementSettingsService engagement,
+    BrandingService branding,
     ApplicationContext scope) : LoyaltyControllerBase
 {
     // current authenticated application (resolved from the API key) — used by the dashboard
@@ -95,6 +97,15 @@ public sealed class ApplicationsController(
     [HttpGet("{appId:guid}/engagement-settings")]
     public async Task<IActionResult> GetEngagement(Guid appId, CancellationToken ct) =>
         Ok(await engagement.GetAsync(appId, ct));
+
+    // ----- white-label branding (B6) -----
+    [HttpPut("{appId:guid}/branding")]
+    public async Task<IActionResult> PutBranding(Guid appId, [FromBody] BrandingInput req, CancellationToken ct) =>
+        Ok(await branding.PutAsync(appId, req, ct));
+
+    [HttpGet("{appId:guid}/branding")]
+    public async Task<IActionResult> GetBranding(Guid appId, CancellationToken ct) =>
+        OkOrNotFound(await branding.GetAsync(appId, ct));
 }
 
 /// <summary>API-key accounts: creation (per application), key rotation, status, revocation.</summary>

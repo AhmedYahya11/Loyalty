@@ -84,9 +84,13 @@ request bodies). Readable at `GET /api/v1/admin/audit` under the `ManageUsers` p
 tenant-scoped). Auditing failures are swallowed + logged so they never break the operation. Covered by
 `AuditTrailE2ETests`.
 
-### B6. No per-tenant white-labeling — *Medium · M*
-The customer card app is trilingual/RTL but not tenant-brandable (logo/colors), which matters once it's
-truly "any customer". Needs branding fields on the tenant/settings + themed rendering in the card app.
+### B6. No per-tenant white-labeling — ✅ **Done**
+~~The customer card app is not tenant-brandable~~. Added per-tenant `ApplicationBranding` (name, logo
+URL, primary/accent colors; hex-validated): admin `PUT/GET /api/v1/applications/{id}/branding`, and
+customer `GET /api/v1/customer/branding` (member-token scoped, no cross-tenant leakage). The customer
+card app fetches it and applies the brand's logo/name + tints the card (primary) and points (accent).
+Covered by `BrandingE2ETests`. _Remaining:_ full theming across the whole customer shell + a dashboard
+settings form; ancestor inheritance of branding.
 
 ---
 

@@ -44,6 +44,7 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<Modules.Identity.Domain.AdminSession> AdminSessions => Set<Modules.Identity.Domain.AdminSession>();
     public DbSet<Modules.Audit.Domain.AuditEntry> AuditEntries => Set<Modules.Audit.Domain.AuditEntry>();
     public DbSet<Modules.Connectors.Domain.Connector> Connectors => Set<Modules.Connectors.Domain.Connector>();
+    public DbSet<Modules.Branding.Domain.ApplicationBranding> Branding => Set<Modules.Branding.Domain.ApplicationBranding>();
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<PointsLedgerAccount> LedgerAccounts => Set<PointsLedgerAccount>();
     public DbSet<PointsLedgerTransaction> LedgerTransactions => Set<PointsLedgerTransaction>();
@@ -512,6 +513,18 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.Property(x => x.Platform).HasConversion<string>().HasMaxLength(32);
             e.Property(x => x.Secret).HasMaxLength(128).IsRequired();
             e.HasIndex(x => x.ApplicationId);
+            ApplyScope(e);
+        });
+
+        // ---------------- white-label branding (B6) — application-scoped, one row per tenant ----------------
+        b.Entity<Modules.Branding.Domain.ApplicationBranding>(e =>
+        {
+            e.ToTable("branding", "branding");
+            e.HasKey(x => x.ApplicationId);
+            e.Property(x => x.BrandName).HasMaxLength(120).IsRequired();
+            e.Property(x => x.LogoUrl).HasMaxLength(512);
+            e.Property(x => x.PrimaryColor).HasMaxLength(9);
+            e.Property(x => x.AccentColor).HasMaxLength(9);
             ApplyScope(e);
         });
 

@@ -1,3 +1,4 @@
+using Loyalty.Core.Modules.Branding.Application;
 using Loyalty.Core.Modules.Customers.Application;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,8 +7,12 @@ namespace Loyalty.Api.Controllers;
 /// <summary>Customer-facing app (P11): member-token auth, scoped to the caller's own data only.</summary>
 [Tags("Customer app")]
 [Route("api/v1/customer")]
-public sealed class CustomerAppController(CustomerService svc) : LoyaltyControllerBase
+public sealed class CustomerAppController(CustomerService svc, BrandingService branding) : LoyaltyControllerBase
 {
+    /// <summary>White-label branding for this member's tenant (B6); 200 with null when unset.</summary>
+    [HttpGet("branding")]
+    public async Task<IActionResult> Branding(CancellationToken ct) => Ok(await branding.GetForCurrentAsync(ct));
+
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
     {

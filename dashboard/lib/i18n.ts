@@ -157,6 +157,7 @@ export const t: Dict = {
   pointsRedeemed: { en: "Points redeemed", ar: "النقاط المستبدلة", ku: "خاڵە گۆڕدراوەکان" },
   pending: { en: "Pending", ar: "معلّق", ku: "چاوەڕوان" },
   customerAppLink: { en: "Customer app link", ar: "رابط تطبيق العميل", ku: "لینکی ئاپی کڕیار" },
+  previewCard: { en: "Preview card", ar: "معاينة البطاقة", ku: "پیشاندانی کارت" },
   shareCustomerLink: { en: "Share this link / QR with the customer", ar: "شارك هذا الرابط / رمز QR مع العميل", ku: "ئەم لینک / QR لەگەڵ کڕیاردا هاوبەش بکە" },
   noActiveRewards: { en: "No active rewards. Create one on the Rewards page.", ar: "لا توجد مكافآت فعّالة. أنشئ واحدة من صفحة المكافآت.", ku: "هیچ خەڵاتی چالاک نییە. لە پەڕەی خەڵاتەکان یەکێک دروست بکە." },
   type: { en: "Type", ar: "النوع", ku: "جۆر" },

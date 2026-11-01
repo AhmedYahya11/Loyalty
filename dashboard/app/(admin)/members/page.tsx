@@ -69,6 +69,18 @@ export default function MembersPage() {
       setCustLink(`${location.origin}/card?token=${r.token}`);
     } catch (e) { setErr((e as Error).message); }
   };
+  const previewCard = async () => {
+    if (!member) return;
+    setErr("");
+    // open the tab synchronously (before the await) so it isn't blocked as a popup
+    const w = window.open("", "_blank");
+    try {
+      const r = await api.post<{ token: string }>(`/api/v1/members/${member.memberId}/access-token`, {});
+      const url = `${location.origin}/card?token=${r.token}`;
+      setCustLink(url);
+      if (w) w.location.href = url; else window.open(url, "_blank");
+    } catch (e) { if (w) w.close(); setErr((e as Error).message); }
+  };
   const act = async (id: string, action: "confirm" | "cancel") => {
     if (!member) return;
     try { await api.post(`/api/v1/redemptions/${id}/${action}`); await refresh(member.memberId); }
@@ -128,7 +140,10 @@ export default function MembersPage() {
                 {member.birthDate && <tr><th>{tr("birthDate", lang)}</th><td>🎂 {member.birthDate}</td></tr>}
               </tbody>
             </table>
-            <button className="secondary" onClick={customerLink}>💳 {tr("customerAppLink", lang)}</button>
+            <div className="row" style={{ gap: 10 }}>
+              <button className="secondary" onClick={customerLink}>💳 {tr("customerAppLink", lang)}</button>
+              <button onClick={previewCard}>👁️ {tr("previewCard", lang)}</button>
+            </div>
             {custLink && (
               <div style={{ marginTop: 12, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ background: "#fff", padding: 10, borderRadius: 8 }}><QRCodeSVG value={custLink} size={110} /></div>

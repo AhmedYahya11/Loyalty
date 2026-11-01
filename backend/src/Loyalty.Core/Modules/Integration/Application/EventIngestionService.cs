@@ -31,6 +31,10 @@ public sealed class EventIngestionService(
     private const string OperationName = "SubmitEvent";
     private static readonly TimeSpan Retention = TimeSpan.FromDays(30);
 
+    /// <summary>Event types that can award points — the ones the per-member earn-rate guard limits (B3).</summary>
+    private static readonly string[] EarningEventTypes =
+        ["PurchaseCompleted", "ReferralCompleted", "CustomerRegistered", "ApplicationLogin", "CustomAction"];
+
     public async Task<SubmitResult> SubmitAsync(
         LoyaltyEventEnvelopeV1 envelope, string rawPayloadJson, string? idempotencyKey, CancellationToken ct)
     {
@@ -64,6 +68,21 @@ public sealed class EventIngestionService(
                 r => r.EventType == envelope.EventType && r.BusinessEventKey == normalized.BusinessEventKey, ct);
         if (priorByEvent is not null)
             return AcceptedResult(priorByEvent.Id, priorByEvent.Status, duplicate: true);
+
+        // 3c. per-member earn-rate guard (B3): cap accepted earning events per member per rolling hour
+        // (opt-in via MaxEarnEventsPerHour; 0 = off). Runs after the duplicate checks so retries/
+        // genuine duplicates are never counted or rejected. Only earning event types are limited.
+        if (effective.MaxEarnEventsPerHour > 0 && EarningEventTypes.Contains(envelope.EventType))
+        {
+            var windowStart = clock.UtcNow.AddHours(-1);
+            var recentEarnEvents = await ingestionRequestsRepo.Query().CountAsync(r =>
+                r.CustomerId == envelope.CustomerId
+                && r.CreatedAt >= windowStart
+                && r.Status != RequestStatus.Rejected && r.Status != RequestStatus.Failed
+                && EarningEventTypes.Contains(r.EventType), ct);
+            if (recentEarnEvents >= effective.MaxEarnEventsPerHour)
+                return RateLimitedResult(effective.MaxEarnEventsPerHour);
+        }
 
         // 4. durable acceptance: idempotency record + ingestion request + durable message, one commit
         var requestId = Guid.NewGuid();
@@ -194,6 +213,9 @@ public sealed class EventIngestionService(
 
     private static SubmitResult DuplicateResult(Guid requestId, RequestStatus status) =>
         new(202, AcceptedPayload(requestId, status, true), $"/api/v1/requests/{requestId}");
+
+    private static SubmitResult RateLimitedResult(int limit) =>
+        new(429, new { code = "earn_rate_limited", message = $"This member has reached the earning limit of {limit} events per hour." });
 
     private static bool IsUniqueViolation(DbUpdateException ex) =>
         ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };

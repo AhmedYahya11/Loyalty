@@ -1617,6 +1617,9 @@ namespace Loyalty.Core.Persistence.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
+                    b.Property<int>("MaxEarnEventsPerHour")
+                        .HasColumnType("integer");
+
                     b.Property<int>("PointsExpiryDays")
                         .HasColumnType("integer");
 

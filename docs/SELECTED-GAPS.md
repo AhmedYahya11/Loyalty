@@ -56,9 +56,13 @@ webhook is the integrator's problem today. Pairs with A6 (consent gate).
 Only the generic event API + one reference emitter (Hareer). A real multi-tenant rollout usually needs
 ready-made Shopify/POS plugins, not just a contract + CLI.
 
-### B3. No fraud / abuse detection on earning — *Medium · M*
-Rate limiting is per API key, not per member (`Program.cs` partitions the limiter by `X-Api-Key`), so
-there's no detection of one member farming points via repeated small purchases/referrals.
+### B3. No fraud / abuse detection on earning — ✅ **Done**
+~~Rate limiting is per API key, not per member~~. Implemented a per-tenant, opt-in **per-member earn-rate
+cap**: `ApplicationLoyaltySettings.MaxEarnEventsPerHour` (0 = unlimited, the default). The ingestion
+service counts a member's accepted earning events in the rolling hour and rejects the overflow with
+`429 earn_rate_limited` (duplicates/retries are not counted; only earning event types are limited).
+Configure via `PUT /applications/{id}/loyalty-settings` → `maxEarnEventsPerHour`. Covered by
+`MemberEarnRateLimitE2ETests`. A broader velocity/scoring model remains a possible future enhancement.
 
 ### B4. No cash-out / payout path for redemptions — *Medium · L*
 Rewards are catalog items/coupons; there's no gift-card or bank-payout integration for cashing out

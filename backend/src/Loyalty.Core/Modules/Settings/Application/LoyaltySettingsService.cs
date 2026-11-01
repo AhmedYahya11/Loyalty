@@ -8,13 +8,15 @@ namespace Loyalty.Core.Modules.Settings.Application;
 public sealed record PutLoyaltySettingsInput(
     string PointsUnitCode, string BaseCurrency, decimal SpendAmountPerPoint,
     RoundingPolicy RoundingPolicy, LoyaltyStatus LoyaltyStatus,
-    DateTimeOffset? LoyaltyStartsAtUtc, DateTimeOffset? LoyaltyEndsAtUtc, int? PointsExpiryDays = null);
+    DateTimeOffset? LoyaltyStartsAtUtc, DateTimeOffset? LoyaltyEndsAtUtc, int? PointsExpiryDays = null,
+    int? MaxEarnEventsPerHour = null);
 
 public sealed record EffectiveSettingsView(
     Guid ApplicationId, Guid SourceApplicationId, int SettingsVersion, bool IsInherited,
     string PointsUnitCode, string BaseCurrency, decimal SpendAmountPerPoint,
     RoundingPolicy RoundingPolicy, LoyaltyStatus LoyaltyStatus,
-    DateTimeOffset? LoyaltyStartsAtUtc, DateTimeOffset? LoyaltyEndsAtUtc, int PointsExpiryDays);
+    DateTimeOffset? LoyaltyStartsAtUtc, DateTimeOffset? LoyaltyEndsAtUtc, int PointsExpiryDays,
+    int MaxEarnEventsPerHour);
 
 /// <summary>
 /// Owns ApplicationLoyaltySettings with whole-row nearest-ancestor inheritance and
@@ -42,7 +44,7 @@ public sealed class LoyaltySettingsService(IRepository<Loyalty.Core.Modules.Appl
             {
                 var created = ApplicationLoyaltySettings.Create(
                     applicationId, unit, input.BaseCurrency, input.SpendAmountPerPoint,
-                    input.RoundingPolicy, input.LoyaltyStatus, input.LoyaltyStartsAtUtc, input.LoyaltyEndsAtUtc, clock.UtcNow, input.PointsExpiryDays ?? 0);
+                    input.RoundingPolicy, input.LoyaltyStatus, input.LoyaltyStartsAtUtc, input.LoyaltyEndsAtUtc, clock.UtcNow, input.PointsExpiryDays ?? 0, input.MaxEarnEventsPerHour ?? 0);
                 loyaltySettingsRepo.Add(created);
             }
             else
@@ -53,7 +55,7 @@ public sealed class LoyaltySettingsService(IRepository<Loyalty.Core.Modules.Appl
                     if (hasLedger) throw new LoyaltyException(LoyaltyError.PointsUnitInUse());
                 }
                 existing.Replace(unit, input.BaseCurrency, input.SpendAmountPerPoint,
-                    input.RoundingPolicy, input.LoyaltyStatus, input.LoyaltyStartsAtUtc, input.LoyaltyEndsAtUtc, clock.UtcNow, input.PointsExpiryDays ?? existing.PointsExpiryDays);
+                    input.RoundingPolicy, input.LoyaltyStatus, input.LoyaltyStartsAtUtc, input.LoyaltyEndsAtUtc, clock.UtcNow, input.PointsExpiryDays ?? existing.PointsExpiryDays, input.MaxEarnEventsPerHour ?? existing.MaxEarnEventsPerHour);
             }
 
             await uow.SaveChangesAsync(ct);
@@ -83,7 +85,7 @@ public sealed class LoyaltySettingsService(IRepository<Loyalty.Core.Modules.Appl
         return new EffectiveSettingsView(
             applicationId, resolved.ApplicationId, resolved.Version, resolved.ApplicationId != applicationId,
             resolved.PointsUnitCode, resolved.BaseCurrency, resolved.SpendAmountPerPoint,
-            resolved.RoundingPolicy, resolved.LoyaltyStatus, resolved.LoyaltyStartsAtUtc, resolved.LoyaltyEndsAtUtc, resolved.PointsExpiryDays);
+            resolved.RoundingPolicy, resolved.LoyaltyStatus, resolved.LoyaltyStartsAtUtc, resolved.LoyaltyEndsAtUtc, resolved.PointsExpiryDays, resolved.MaxEarnEventsPerHour);
     }
 
     /// <summary>

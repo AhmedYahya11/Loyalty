@@ -24,6 +24,8 @@ public sealed class ApplicationLoyaltySettings : IApplicationScoped
     public DateTimeOffset? LoyaltyEndsAtUtc { get; private set; }
     /// <summary>Points expire this many days after being earned. 0 = never expire (P13).</summary>
     public int PointsExpiryDays { get; private set; }
+    /// <summary>Anti-abuse: max earning events accepted per member per rolling hour. 0 = unlimited (B3).</summary>
+    public int MaxEarnEventsPerHour { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -32,7 +34,8 @@ public sealed class ApplicationLoyaltySettings : IApplicationScoped
     public static ApplicationLoyaltySettings Create(
         Guid applicationId, string pointsUnitCode, string baseCurrency, decimal spendAmountPerPoint,
         RoundingPolicy rounding, LoyaltyStatus status,
-        DateTimeOffset? startsAt, DateTimeOffset? endsAt, DateTimeOffset now, int pointsExpiryDays = 0) => new()
+        DateTimeOffset? startsAt, DateTimeOffset? endsAt, DateTimeOffset now, int pointsExpiryDays = 0,
+        int maxEarnEventsPerHour = 0) => new()
     {
         ApplicationId = applicationId,
         Version = 1,
@@ -44,6 +47,7 @@ public sealed class ApplicationLoyaltySettings : IApplicationScoped
         LoyaltyStartsAtUtc = startsAt,
         LoyaltyEndsAtUtc = endsAt,
         PointsExpiryDays = pointsExpiryDays < 0 ? 0 : pointsExpiryDays,
+        MaxEarnEventsPerHour = maxEarnEventsPerHour < 0 ? 0 : maxEarnEventsPerHour,
         CreatedAt = now,
         UpdatedAt = now,
     };
@@ -52,7 +56,8 @@ public sealed class ApplicationLoyaltySettings : IApplicationScoped
     public void Replace(
         string pointsUnitCode, string baseCurrency, decimal spendAmountPerPoint,
         RoundingPolicy rounding, LoyaltyStatus status,
-        DateTimeOffset? startsAt, DateTimeOffset? endsAt, DateTimeOffset now, int pointsExpiryDays = 0)
+        DateTimeOffset? startsAt, DateTimeOffset? endsAt, DateTimeOffset now, int pointsExpiryDays = 0,
+        int maxEarnEventsPerHour = 0)
     {
         Version += 1;
         PointsUnitCode = pointsUnitCode.Trim().ToUpperInvariant();
@@ -63,6 +68,7 @@ public sealed class ApplicationLoyaltySettings : IApplicationScoped
         LoyaltyStartsAtUtc = startsAt;
         LoyaltyEndsAtUtc = endsAt;
         PointsExpiryDays = pointsExpiryDays < 0 ? 0 : pointsExpiryDays;
+        MaxEarnEventsPerHour = maxEarnEventsPerHour < 0 ? 0 : maxEarnEventsPerHour;
         UpdatedAt = now;
     }
 

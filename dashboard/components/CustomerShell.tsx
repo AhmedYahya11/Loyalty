@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useLang } from "@/app/providers";
 import { tr, langName, nextLang } from "@/lib/i18n";
 import { isCustConnected, clearCustSession } from "@/lib/customer";
+import { isConnected } from "@/lib/session";
 
 const tabs = [
   { href: "/card", key: "myCard", ico: "💳" },
@@ -16,6 +17,9 @@ export function CustomerShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const connected = typeof window !== "undefined" && isCustConnected();
+  // admins reach /card via the dashboard "My card" link — give them a way back.
+  // real customers (tokenized link, no admin session) never see this.
+  const isAdmin = typeof window !== "undefined" && isConnected();
 
   return (
     <div className="cust">
@@ -26,6 +30,11 @@ export function CustomerShell({ children }: { children: React.ReactNode }) {
           {tr("appTitle", lang)}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          {isAdmin && (
+            <Link href="/overview" className="lang-toggle" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+              <span style={{ marginInlineEnd: 6 }}>{lang === "en" ? "←" : "→"}</span>{tr("backToDashboard", lang)}
+            </Link>
+          )}
           <button className="lang-toggle" onClick={() => setLang(nextLang[lang])}>
             🌐 {langName[nextLang[lang]]}
           </button>

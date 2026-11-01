@@ -17,29 +17,50 @@ Built to be **dynamic for any customer**; first integration target: **Hareer**.
 - **Immutable double-entry ledger** — points are balanced debit/credit postings; wallet balances are
   checked projections, never the source of truth.
 - **Idempotent at 4 boundaries** — HTTP key, source-event, business-event, and reward-effect/ledger.
-- **Bilingual (AR/EN)** — localized API errors via `Accept-Language`, Arabic names on user-facing
-  entities, RTL-ready dashboard.
+- **Trilingual (EN/AR/KU)** — localized API errors via `Accept-Language`, Arabic/Kurdish names on
+  user-facing entities, RTL-ready dashboard + customer app.
+- **Three auth modes** — tenant **API keys** (integrations), **Identity-issued JWTs** with
+  policy-based authorization (dashboard operators), and **member access tokens** (customer app).
 
 ## Architecture
 
 ```
-backend/   .NET 10 modular monolith — ASP.NET Core + WolverineFx (durable Postgres) + EF Core + PostgreSQL
-dashboard/ Next.js (App Router, TS) admin dashboard — bilingual AR/EN, RTL
+backend/   .NET 10 modular monolith — ASP.NET Core MVC controllers + WolverineFx + EF Core + PostgreSQL
+dashboard/ Next.js (App Router, TS) admin + customer app — trilingual EN/AR/KU, RTL
 integration/hareer/  Hareer integration contract + reference emitter + mock demo
 docs/      design spec, ADRs, deviations, flow diagram
 ```
 
-Modules: `Applications · Accounts · Settings · Members · Wallets(ledger) · Campaigns · Rules · Integration`.
+Modules: `Applications · Accounts · Identity · Settings · Members · Wallets(ledger) · Campaigns · Cvm ·
+Rules · Tiers · Rewards · Gamification · Engagement · Raffles · Customers · Analytics · Notifications · Integration`.
+
+Cross-cutting design:
+
+- **API** — resource-grouped **MVC controllers**; every module is a tag in the OpenAPI doc / Scalar UI
+  (`/scalar`). Three auth paths resolved by middleware: API key, admin JWT, member token.
+- **Data access** — **repository pattern**: services depend on `IRepository<T>` + `IUnitOfWork`, never
+  on `DbContext` directly. All repositories share the one scoped `DbContext`, so they join the same
+  transaction and the Wolverine outbox. Multi-tenancy is a global EF query filter (self + descendants).
+- **Events** — Wolverine with a **durable transactional outbox** (Postgres), so publishing is atomic
+  with the ingestion write. The **transport is selectable**: **RabbitMQ** (default) or the in-DB
+  Postgres queue (`LOYALTY_BROKER`). A dedicated **worker** is a competing consumer.
+- **Identity** — **ASP.NET Core Identity** owns admin users, roles and password hashing; login issues a
+  signed **JWT** (role + tenant claims, revocable via a `jti`→session link) validated by JwtBearer;
+  controllers use policy-based `[Authorize]` (e.g. `ManageUsers`).
 
 ## Run it
 
-The full stack is four containers — **Postgres + API + worker + dashboard**:
+The full stack is six containers — **Postgres + RabbitMQ + API + worker + dashboard + website**:
 
 ```bash
-cp .env.example .env              # set secrets (DB password, bootstrap token, CORS, dashboard base)
-docker compose up --build -d      # Dashboard → http://localhost:3000 · API → http://localhost:8080 (/scalar)
+cp .env.example .env              # set secrets: DB password, BOOTSTRAP_TOKEN, JWT_SIGNING_KEY,
+                                  # RabbitMQ creds, CORS, dashboard base
+docker compose up --build -d      # Dashboard → :3000 · API → :8080 (/scalar) · RabbitMQ UI → :15672
 docker compose ps                 # all running/healthy
 ```
+
+Set a strong `JWT_SIGNING_KEY` (≥32 chars) for anything but local dev — it signs the admin JWTs.
+To run the event pipeline on the in-database queue instead of RabbitMQ, set `LOYALTY_BROKER=postgres`.
 
 On an empty DB, bootstrap the root tenant once (see **[docs/DEPLOY.md](docs/DEPLOY.md)** for the full
 runbook — config, backup/restore, scaling, and public/TLS hardening).
@@ -53,16 +74,17 @@ cd backend && dotnet run --project src/Loyalty.Api     # + cd dashboard && npm r
 ## Test
 
 ```bash
-cd backend && dotnet test          # 83 tests: 24 unit + 59 Testcontainers end-to-end
+cd backend && dotnet test          # 84 tests: 24 unit + 60 Testcontainers end-to-end
 ```
 
 The E2E tests boot the real API + Wolverine + PostgreSQL (Testcontainers, no mocks). Per-feature suites
 cover each module (earn/ledger, CVM, campaigns, tiers, rewards, gamification, engagement, customer app,
 RFM + language, expiry + stamp conditions, refund reversal + reporting, raffles, grant-reward, ops,
 concurrency); **`FullJourneyE2ETests`** runs the whole platform in one realistic tenant lifecycle; and
-**`SecurityE2ETests`** exercises the security controls — API-key + member-token auth, tenant isolation
-(scope filter + `X-Application-Id` subtree check), bootstrap protection, replay/idempotency, body-size +
-rate limits, and secret non-exposure.
+**`SecurityE2ETests`** exercises the security controls — API-key + member-token + admin-JWT auth,
+tenant isolation (scope filter + `X-Application-Id` subtree check), bootstrap protection,
+replay/idempotency, body-size + rate limits, and secret non-exposure; and **`AdminIdentityE2ETests`**
+covers Identity login, JWT issuance, role policies and self-service password change.
 
 ## Quick API tour (Phase 1)
 
@@ -91,11 +113,13 @@ GET    /health/ready                               # readiness (PostgreSQL)
 Event types: `PurchaseCompleted`, `OrderRefunded`, `CustomerRegistered`, `ApplicationLogin`,
 `ReferralCompleted`, `ManualAdjustmentRequested`.
 
-All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabic error messages.
+Business endpoints accept a tenant **`X-Api-Key`** (integrations) or a dashboard **admin JWT**
+(`Authorization: Bearer …`); the `/api/v1/customer/*` surface uses a **member token**. Send
+`Accept-Language: ar` (or `ku`) for localized error messages.
 
 ## Status
 
-**Phases 1–5 complete and verified — 37 tests** (25 unit + 12 Testcontainers end-to-end):
+**Phases 1–18 complete and verified — 84 tests** (24 unit + 60 Testcontainers end-to-end):
 - **P1** core pipeline (ingestion → ledger, 4-boundary idempotency)
 - **P2** CVM (value profiles, lifecycle, rule-based segments, audience targeting, all six event types)
 - **P3** full campaign engine (stacking, member limits, global budgets, validate/simulate),
@@ -148,10 +172,20 @@ All business endpoints require `X-Api-Key`. Send `Accept-Language: ar` for Arabi
   limit, idempotent; granted coupons confirm/cancel without touching the ledger. Admin can also grant
   directly (`POST /members/{id}/grant-reward`).
 
-The core platform (P1–P6) is complete and generic/multi-tenant. P7–P16 are a **chaay.io-style** SMB
-product expansion (loyalty features; messaging hub out of scope): **Tiers ✅**, **Rewards &
-Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**, **Customer-facing
-app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**, **Refund reversal +
-reporting ✅**, **Raffles + custom actions ✅**, **GrantReward effect ✅**, **Admin identity + RBAC
-(login, SuperAdmin, roles) + Customers tab ✅**. **83 tests green** — incl. a whole-system **full-journey
-E2E**, a **security suite**, and an **admin-identity/RBAC suite**.
+- **P17** **Admin identity + RBAC**: dashboard login, seeded SuperAdmin, user management + roles
+  (Viewer/Manager/Admin/SuperAdmin), self-service password change, and a **Customers** tab.
+
+- **P18** **Architecture hardening**: **RabbitMQ** transport for the event pipeline (durable Postgres
+  outbox retained; `LOYALTY_BROKER`-selectable); the API refactored from minimal APIs to
+  **resource-grouped MVC controllers** (grouped OpenAPI/Scalar tags); a **repository pattern**
+  (`IRepository<T>` + `IUnitOfWork`) so services no longer touch `DbContext` directly; and admin auth
+  migrated to **ASP.NET Core Identity** with **Identity-issued JWTs + policy-based authorization**
+  (revocable via a `jti`→session link).
+
+The core platform (P1–P6) is complete and generic/multi-tenant. P7–P18 add a **chaay.io-style** SMB
+product expansion (loyalty features; messaging hub out of scope) plus the architecture hardening:
+**Tiers ✅**, **Rewards & Redemptions ✅**, **Gamification ✅**, **Referrals / Stamp cards / Birthday ✅**,
+**Customer-facing app ✅**, **RFM personas + Kurdish ✅**, **Expiry + stamp conditions ✅**, **Refund
+reversal + reporting ✅**, **Raffles + custom actions ✅**, **GrantReward effect ✅**, **Admin identity +
+RBAC + Customers tab ✅**, **RabbitMQ + repositories + Identity/JWT ✅**. **84 tests green** — incl. a
+whole-system **full-journey E2E**, a **security suite**, and an **admin-identity/RBAC suite**.

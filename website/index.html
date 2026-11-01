@@ -88,7 +88,8 @@
   .hero-note{margin-top:16px;font-size:13px;color:var(--muted)}
   .tagline{margin-top:10px;font-weight:700;font-family:var(--display)}
 
-  .mock{position:relative;display:flex;justify-content:center;align-items:center;min-height:320px}
+  .mock{position:relative;display:flex;justify-content:center;align-items:center;min-height:340px}
+  .mock-stage{position:relative;width:330px;max-width:100%}
   .loyalty-card{position:relative;z-index:2;width:330px;border-radius:20px;padding:26px;color:var(--ivory);
     background:linear-gradient(152deg,#1d3449 0%,#162430 58%,#10171e 100%);
     border:1px solid var(--border2);box-shadow:0 34px 80px rgba(0,0,0,.6);transform:rotate(-3deg)}
@@ -106,7 +107,7 @@
     transform:rotate(-9deg);border:1px solid var(--border2);box-shadow:0 22px 54px rgba(0,0,0,.6)}
   .floaty{position:absolute;z-index:3;background:rgba(24,33,43,.92);border:1px solid var(--border2);border-radius:14px;
     padding:11px 14px;font-size:13px;font-weight:600;box-shadow:0 14px 34px rgba(0,0,0,.5);display:flex;gap:8px;align-items:center;backdrop-filter:blur(6px)}
-  .floaty.a{top:0;inset-inline-end:-4%}.floaty.b{bottom:4%;inset-inline-start:2%}
+  .floaty.a{top:14px;inset-inline-end:-24px}.floaty.b{bottom:30px;inset-inline-start:-22px}
   .floaty .dot{width:8px;height:8px;border-radius:50%;background:var(--gold2)}
 
   /* cuneiform relief divider */
@@ -174,6 +175,7 @@
     .hero-bg img{opacity:.32;object-position:center}
     .hero-bg::after{background:linear-gradient(0deg,var(--obsidian) 10%,rgba(12,17,22,.7) 60%,rgba(12,17,22,.55)),radial-gradient(60% 40% at 50% 0%,rgba(177,138,67,.18),transparent 70%)}
     .mock{margin-top:34px}.seal{display:none}.navlinks{display:none}.menu-btn{display:block}
+    .floaty.a{inset-inline-end:6px;top:10px}.floaty.b{inset-inline-start:6px;bottom:22px}
     .navlinks.show{display:flex;position:absolute;top:70px;inset-inline:0;flex-direction:column;
       background:var(--ink);border-bottom:1px solid var(--border);padding:18px 22px;gap:16px}
     section{padding:72px 0}.band{padding:48px 24px}
@@ -222,16 +224,18 @@
       <p class="tagline grad" data-ar="حوّل زبائنك إلى عملاء دائمين." data-ku="کڕیارەکانت بکە بە دڵسۆز.">Turn shoppers into regulars.</p>
     </div>
     <div class="mock">
-      <img class="seal" src="assets/plaque.jpg" alt="" loading="lazy" />
-      <div class="floaty a"><span class="dot"></span> <span data-ar="+50 نقطة مكتسبة" data-ku="+50 خاڵ بەدەستهات">+50 points earned</span></div>
-      <div class="loyalty-card">
-        <div class="row"><span style="opacity:.9" data-ar="بطاقة كينوتو" data-ku="کارتی کینووتو">KĪNŪTU Card</span><span class="pill" data-ar="⭐ ذهبي ×1.5" data-ku="⭐ زێڕین ×1.5">⭐ Gold ×1.5</span></div>
-        <div style="opacity:.85;font-size:13px;margin-top:14px" data-ar="النقاط المتاحة" data-ku="خاڵە بەردەستەکان">Available points</div>
-        <div class="pts">6,154</div>
-        <div style="opacity:.85;font-size:13px" data-ar="🔥 سلسلة 12 يومًا · 🏅 4 أوسمة" data-ku="🔥 زنجیرەی 12 ڕۆژ · 🏅 4 نیشان">🔥 12-day streak · 🏅 4 badges</div>
-        <div class="qr" aria-hidden="true"></div>
+      <div class="mock-stage">
+        <img class="seal" src="assets/plaque.jpg" alt="" loading="lazy" />
+        <div class="floaty a"><span class="dot"></span> <span data-ar="+50 نقطة مكتسبة" data-ku="+50 خاڵ بەدەستهات">+50 points earned</span></div>
+        <div class="loyalty-card">
+          <div class="row"><span style="opacity:.9" data-ar="بطاقة كينوتو" data-ku="کارتی کینووتو">KĪNŪTU Card</span><span class="pill" data-ar="⭐ ذهبي ×1.5" data-ku="⭐ زێڕین ×1.5">⭐ Gold ×1.5</span></div>
+          <div style="opacity:.85;font-size:13px;margin-top:14px" data-ar="النقاط المتاحة" data-ku="خاڵە بەردەستەکان">Available points</div>
+          <div class="pts">6,154</div>
+          <div style="opacity:.85;font-size:13px" data-ar="🔥 سلسلة 12 يومًا · 🏅 4 أوسمة" data-ku="🔥 زنجیرەی 12 ڕۆژ · 🏅 4 نیشان">🔥 12-day streak · 🏅 4 badges</div>
+          <div class="qr" aria-hidden="true"></div>
+        </div>
+        <div class="floaty b" data-ar="🎁 قهوة مجانية" data-ku="🎁 قاوەی بەخۆڕایی">🎁 Free coffee unlocked</div>
       </div>
-      <div class="floaty b" data-ar="🎁 قهوة مجانية" data-ku="🎁 قاوەی بەخۆڕایی">🎁 Free coffee unlocked</div>
     </div>
   </div>
 </section>

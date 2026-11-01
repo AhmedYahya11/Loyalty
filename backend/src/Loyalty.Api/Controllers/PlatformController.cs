@@ -106,6 +106,10 @@ public sealed class ApplicationsController(
     [HttpGet("{appId:guid}/branding")]
     public async Task<IActionResult> GetBranding(Guid appId, CancellationToken ct) =>
         OkOrNotFound(await branding.GetAsync(appId, ct));
+
+    [HttpDelete("{appId:guid}/branding")]
+    public async Task<IActionResult> DeleteBranding(Guid appId, CancellationToken ct) =>
+        NoContentIf(await branding.DeleteAsync(appId, ct));
 }
 
 /// <summary>API-key accounts: creation (per application), key rotation, status, revocation.</summary>

@@ -56,6 +56,22 @@ public sealed partial class BrandingService(
         finally { scope.LeaveSystemScope(); }
     }
 
+    /// <summary>Remove a tenant's branding (reverts the customer app to the default theme). Returns
+    /// false when there was none.</summary>
+    public async Task<bool> DeleteAsync(Guid applicationId, CancellationToken ct)
+    {
+        scope.EnterSystemScope();
+        try
+        {
+            var existing = await brandingRepo.Query().FirstOrDefaultAsync(b => b.ApplicationId == applicationId, ct);
+            if (existing is null) return false;
+            brandingRepo.Remove(existing);
+            await uow.SaveChangesAsync(ct);
+            return true;
+        }
+        finally { scope.LeaveSystemScope(); }
+    }
+
     /// <summary>Branding for the current customer's application (member-token scope).</summary>
     public Task<BrandingView?> GetForCurrentAsync(CancellationToken ct) => GetAsync(scope.ApplicationId, ct);
 

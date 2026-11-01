@@ -66,4 +66,17 @@ public class BrandingE2ETests(ApiFixture fx)
         var brand2 = await fx.Get("/api/v1/customer/branding", Bearer(token2));
         brand2.ValueKind.ShouldBeOneOf(System.Text.Json.JsonValueKind.Null, System.Text.Json.JsonValueKind.Undefined); // no branding, and no cross-tenant leak
     }
+
+    [Fact]
+    public async Task Admin_can_delete_branding()
+    {
+        var (appId, apiKey) = await fx.OnboardChildAsync("brand-del");
+        var auth = ApiFixture.Auth(apiKey);
+        await fx.Put($"/api/v1/applications/{appId}/branding", new { brandName = "Temp", primaryColor = "#111820" }, auth);
+
+        // delete → 204; it's gone (404); deleting again → 404
+        (await Raw(HttpMethod.Delete, $"/api/v1/applications/{appId}/branding", auth)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await Raw(HttpMethod.Get, $"/api/v1/applications/{appId}/branding", auth)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await Raw(HttpMethod.Delete, $"/api/v1/applications/{appId}/branding", auth)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 }

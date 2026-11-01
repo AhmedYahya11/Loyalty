@@ -52,7 +52,9 @@ export default function LoginPage() {
 
   return (
     <div style={{ maxWidth: 420, margin: "8vh auto" }}>
-      <h1 style={{ textAlign: "center", marginBottom: 4 }}>💠 {tr("appTitle", lang)}</h1>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/img/logo.jpg" alt="" style={{ width: 72, height: 72, borderRadius: 16, objectFit: "cover", display: "block", margin: "0 auto 14px", border: "1px solid var(--border-2)" }} />
+      <h1 style={{ textAlign: "center", marginBottom: 4 }}>{tr("appTitle", lang)}</h1>
       <p className="muted" style={{ textAlign: "center", marginBottom: 20 }}>{tr("signIn", lang)}</p>
 
       <div className="card">

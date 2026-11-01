@@ -20,7 +20,11 @@ export function CustomerShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="cust">
       <div className="cust-head">
-        <div className="brand">💠 {tr("appTitle", lang)}</div>
+        <div className="brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/img/logo.jpg" alt="" className="brand-logo" />
+          {tr("appTitle", lang)}
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="lang-toggle" onClick={() => setLang(nextLang[lang])}>
             🌐 {langName[nextLang[lang]]}

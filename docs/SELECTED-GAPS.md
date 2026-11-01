@@ -68,10 +68,13 @@ Configure via `PUT /applications/{id}/loyalty-settings` → `maxEarnEventsPerHou
 Rewards are catalog items/coupons; there's no gift-card or bank-payout integration for cashing out
 points.
 
-### B5. No unified admin audit trail — *Medium · M*
-Individual features are tracked (`TierHistory`, admin sessions), but there's no unified
-"who changed what, when" log for admin/operator actions. A quick-ish win: an append-only `AuditEntry`
-written from the admin controllers / an action filter.
+### B5. No unified admin audit trail — ✅ **Done**
+~~No unified "who changed what, when" log~~. Added an append-only, application-scoped `AuditEntry`
+(`audit.entries`) written by a global MVC action filter (`AuditActionFilter`) for every **successful
+mutating action by an authenticated admin** (method + path + target id + status + user/role/time; never
+request bodies). Readable at `GET /api/v1/admin/audit` under the `ManageUsers` policy (Admin/SuperAdmin,
+tenant-scoped). Auditing failures are swallowed + logged so they never break the operation. Covered by
+`AuditTrailE2ETests`.
 
 ### B6. No per-tenant white-labeling — *Medium · M*
 The customer card app is trilingual/RTL but not tenant-brandable (logo/colors), which matters once it's

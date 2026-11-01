@@ -42,6 +42,7 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<MemberToken> MemberTokens => Set<MemberToken>();
     // ApplicationUser / roles are exposed via Identity's Users/Roles sets (UserManager/RoleManager)
     public DbSet<Modules.Identity.Domain.AdminSession> AdminSessions => Set<Modules.Identity.Domain.AdminSession>();
+    public DbSet<Modules.Audit.Domain.AuditEntry> AuditEntries => Set<Modules.Audit.Domain.AuditEntry>();
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<PointsLedgerAccount> LedgerAccounts => Set<PointsLedgerAccount>();
     public DbSet<PointsLedgerTransaction> LedgerTransactions => Set<PointsLedgerTransaction>();
@@ -485,6 +486,20 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             e.ToTable("member_stamp_cards", "engagement");
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.ApplicationId, x.MemberId, x.StampCardId }).IsUnique();
+            ApplyScope(e);
+        });
+
+        // ---------------- audit trail (B5) — application-scoped, append-only ----------------
+        b.Entity<Modules.Audit.Domain.AuditEntry>(e =>
+        {
+            e.ToTable("entries", "audit");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Username).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Role).HasMaxLength(16).IsRequired();
+            e.Property(x => x.Method).HasMaxLength(10).IsRequired();
+            e.Property(x => x.Path).HasMaxLength(256).IsRequired();
+            e.Property(x => x.TargetId).HasMaxLength(64);
+            e.HasIndex(x => new { x.ApplicationId, x.OccurredAt });
             ApplyScope(e);
         });
 

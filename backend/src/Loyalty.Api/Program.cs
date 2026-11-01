@@ -37,8 +37,11 @@ builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
+// unified audit trail (B5): record every successful mutating admin action
+builder.Services.AddScoped<AuditActionFilter>();
+
 // MVC controllers (grouped by resource) — mirror the same JSON shape as above.
-builder.Services.AddControllers().AddJsonOptions(o =>
+builder.Services.AddControllers(o => o.Filters.AddService<AuditActionFilter>()).AddJsonOptions(o =>
 {
     o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());

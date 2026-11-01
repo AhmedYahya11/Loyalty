@@ -1,4 +1,5 @@
 using Loyalty.Core.BuildingBlocks;
+using Loyalty.Core.Modules.Audit.Application;
 using Loyalty.Core.Modules.Cvm.Application;
 using Loyalty.Core.Modules.Engagement.Application;
 using Loyalty.Core.Modules.Identity.Application;
@@ -14,6 +15,7 @@ namespace Loyalty.Api.Controllers;
 public sealed class AdminController(
     AdminIdentityService identity,
     AdminContext me,
+    AuditService audit,
     LifecycleSweepService lifecycle,
     PointsExpiryService expiry,
     RfmService rfm,
@@ -74,6 +76,12 @@ public sealed class AdminController(
     [HttpPost("users/{id:guid}/deactivate")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken ct) =>
         NoContentIf(await identity.DeactivateAsync(me, id, ct));
+
+    // ----- audit trail (B5): who changed what, when (tenant-scoped) -----
+    [Authorize(Policy = "ManageUsers")]
+    [HttpGet("audit")]
+    public async Task<IActionResult> Audit([FromQuery] int? limit, CancellationToken ct) =>
+        Ok(new { items = await audit.ListAsync(limit ?? 50, ct) });
 
     // ----- on-demand maintenance jobs: operational endpoints, callable with an API key or an
     //       admin token (scope + Viewer read-only enforced by the auth middleware) — not [Authorize]. -----

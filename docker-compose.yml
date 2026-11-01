@@ -51,6 +51,8 @@ services:
       # event transport: rabbitmq (set LOYALTY_BROKER=postgres to use the in-DB queue instead)
       LOYALTY_BROKER: ${LOYALTY_BROKER:-rabbitmq}
       RABBITMQ_URL: "amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672"
+      # signing key for dashboard admin JWTs (HS256) — set a strong value in .env for prod
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:-dev-insecure-jwt-signing-key-change-me-0123456789}
       Bootstrap__Token: ${BOOTSTRAP_TOKEN:-dev-bootstrap-token-change-me}
       Cors__Origins: ${CORS_ORIGINS:-http://localhost:3000}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}

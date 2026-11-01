@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+using Microsoft.AspNetCore.Identity;
 
 namespace Loyalty.Core.Modules.Identity.Domain;
 
@@ -12,41 +12,21 @@ public enum AdminRole
 }
 
 /// <summary>
-/// A dashboard operator (P17). Authenticates with username + password (PBKDF2) and is scoped to an
-/// application; a SuperAdmin on the root application sees the whole tree. Identity metadata — NOT
+/// A dashboard operator (P17), now backed by ASP.NET Core Identity. Identity owns the username,
+/// normalized lookups and password hashing (via <see cref="UserManager{TUser}"/>); the operator's
+/// role is an Identity role. We extend the base user with the multi-tenant <see cref="ApplicationId"/>
+/// (a SuperAdmin on the root sees the whole tree) and an active flag. Identity metadata is NOT
 /// application-scoped (resolved during anonymous login, like <c>Account</c>).
 /// </summary>
-public sealed class AdminUser
+public sealed class ApplicationUser : IdentityUser<Guid>
 {
-    public Guid Id { get; private set; }
-    public Guid ApplicationId { get; private set; }
-    public string Username { get; private set; } = default!;
-    public string PasswordHash { get; private set; } = default!;
-    public AdminRole Role { get; private set; }
-    public bool IsActive { get; private set; }
-    public DateTimeOffset CreatedAt { get; private set; }
-    public DateTimeOffset UpdatedAt { get; private set; }
-
-    private AdminUser() { }
-
-    public static AdminUser Create(Guid applicationId, string username, string passwordHash, AdminRole role, DateTimeOffset now) => new()
-    {
-        Id = Guid.NewGuid(),
-        ApplicationId = applicationId,
-        Username = username.Trim().ToLowerInvariant(),
-        PasswordHash = passwordHash,
-        Role = role,
-        IsActive = true,
-        CreatedAt = now,
-        UpdatedAt = now,
-    };
-
-    public void SetRole(AdminRole role, DateTimeOffset now) { Role = role; UpdatedAt = now; }
-    public void SetActive(bool active, DateTimeOffset now) { IsActive = active; UpdatedAt = now; }
-    public void SetPassword(string passwordHash, DateTimeOffset now) { PasswordHash = passwordHash; UpdatedAt = now; }
+    public Guid ApplicationId { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTimeOffset CreatedAt { get; set; }
 }
 
-/// <summary>A hashed, expiring dashboard login session (P17). Only the SHA-256 hash is stored.</summary>
+/// <summary>A hashed, expiring dashboard login session (P17). Only the SHA-256 hash is stored.
+/// This is the server-side bearer-token ("as_") scheme the auth middleware resolves.</summary>
 public sealed class AdminSession
 {
     public Guid Id { get; private set; }
@@ -65,29 +45,4 @@ public sealed class AdminSession
 
     public bool IsValid(DateTimeOffset now) => RevokedAt is null && ExpiresAt > now;
     public void Revoke(DateTimeOffset now) => RevokedAt = now;
-}
-
-/// <summary>PBKDF2 (SHA-256) password hashing with a per-password salt; constant-time verify.</summary>
-public static class PasswordHasher
-{
-    private const int Iterations = 100_000;
-    private const int SaltBytes = 16;
-    private const int HashBytes = 32;
-
-    public static string Hash(string password)
-    {
-        var salt = RandomNumberGenerator.GetBytes(SaltBytes);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithmName.SHA256, HashBytes);
-        return $"{Iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
-    }
-
-    public static bool Verify(string password, string stored)
-    {
-        var parts = stored.Split('.');
-        if (parts.Length != 3 || !int.TryParse(parts[0], out var iter)) return false;
-        var salt = Convert.FromBase64String(parts[1]);
-        var expected = Convert.FromBase64String(parts[2]);
-        var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iter, HashAlgorithmName.SHA256, expected.Length);
-        return CryptographicOperations.FixedTimeEquals(actual, expected);
-    }
 }

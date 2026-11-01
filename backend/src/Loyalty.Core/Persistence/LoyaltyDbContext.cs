@@ -12,6 +12,8 @@ using Loyalty.Core.Modules.Rewards.Domain;
 using Loyalty.Core.Modules.Settings.Domain;
 using Loyalty.Core.Modules.Tiers.Domain;
 using Loyalty.Core.Modules.Wallets.Domain;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -24,7 +26,7 @@ namespace Loyalty.Core.Persistence;
 /// (self + descendants), bypassed only in the narrow system scope (§7).
 /// </summary>
 public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options, IApplicationContext appContext)
-    : DbContext(options)
+    : IdentityDbContext<Modules.Identity.Domain.ApplicationUser, IdentityRole<Guid>, Guid>(options)
 {
     private readonly IApplicationContext _appContext = appContext;
 
@@ -38,7 +40,7 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
     public DbSet<ApplicationLoyaltySettings> LoyaltySettings => Set<ApplicationLoyaltySettings>();
     public DbSet<Member> Members => Set<Member>();
     public DbSet<MemberToken> MemberTokens => Set<MemberToken>();
-    public DbSet<Modules.Identity.Domain.AdminUser> AdminUsers => Set<Modules.Identity.Domain.AdminUser>();
+    // ApplicationUser / roles are exposed via Identity's Users/Roles sets (UserManager/RoleManager)
     public DbSet<Modules.Identity.Domain.AdminSession> AdminSessions => Set<Modules.Identity.Domain.AdminSession>();
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<PointsLedgerAccount> LedgerAccounts => Set<PointsLedgerAccount>();
@@ -74,6 +76,22 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
 
     protected override void OnModelCreating(ModelBuilder b)
     {
+        base.OnModelCreating(b); // ASP.NET Core Identity tables (AspNetUsers/Roles/…)
+
+        // keep Identity tables in a dedicated schema + extra ApplicationUser columns
+        b.Entity<Modules.Identity.Domain.ApplicationUser>(e =>
+        {
+            e.ToTable("users", "identity");
+            e.Property(x => x.ApplicationId);
+            e.HasIndex(x => x.ApplicationId);
+        });
+        b.Entity<IdentityRole<Guid>>(e => e.ToTable("roles", "identity"));
+        b.Entity<IdentityUserRole<Guid>>(e => e.ToTable("user_roles", "identity"));
+        b.Entity<IdentityUserClaim<Guid>>(e => e.ToTable("user_claims", "identity"));
+        b.Entity<IdentityUserLogin<Guid>>(e => e.ToTable("user_logins", "identity"));
+        b.Entity<IdentityUserToken<Guid>>(e => e.ToTable("user_tokens", "identity"));
+        b.Entity<IdentityRoleClaim<Guid>>(e => e.ToTable("role_claims", "identity"));
+
         // ---------------- applications ----------------
         b.Entity<Application>(e =>
         {
@@ -470,17 +488,7 @@ public sealed class LoyaltyDbContext(DbContextOptions<LoyaltyDbContext> options,
             ApplyScope(e);
         });
 
-        // ---------------- identity (dashboard admin users/sessions) — NOT application-scoped ----------------
-        b.Entity<Modules.Identity.Domain.AdminUser>(e =>
-        {
-            e.ToTable("admin_users", "identity");
-            e.HasKey(x => x.Id);
-            e.Property(x => x.Username).HasMaxLength(100).IsRequired();
-            e.Property(x => x.PasswordHash).HasMaxLength(256).IsRequired();
-            e.Property(x => x.Role).HasConversion<string>().HasMaxLength(16);
-            e.HasIndex(x => x.Username).IsUnique();
-            e.HasIndex(x => x.ApplicationId);
-        });
+        // ---------------- identity (dashboard admin sessions) — NOT application-scoped ----------------
         b.Entity<Modules.Identity.Domain.AdminSession>(e =>
         {
             e.ToTable("admin_sessions", "identity");

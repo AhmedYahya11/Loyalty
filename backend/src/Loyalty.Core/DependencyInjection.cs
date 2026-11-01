@@ -8,7 +8,9 @@ using Loyalty.Core.Modules.Members.Application;
 using Loyalty.Core.Modules.Rules;
 using Loyalty.Core.Modules.Settings.Application;
 using Loyalty.Core.Modules.Wallets.Application;
+using Loyalty.Core.Modules.Identity.Domain;
 using Loyalty.Core.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -28,6 +30,23 @@ public static class DependencyInjection
         // scoped DbContext (so they join the same transaction / Wolverine EF outbox).
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // ASP.NET Core Identity for dashboard users + roles (password hashing, stores, role management).
+        // AddIdentityCore (not AddIdentity) — no cookie/sign-in middleware; we keep our own bearer-token
+        // auth middleware. Password policy relaxed to length-only to match existing admin credentials.
+        services.AddIdentityCore<ApplicationUser>(o =>
+        {
+            o.Password.RequiredLength = 8;
+            o.Password.RequireDigit = false;
+            o.Password.RequireLowercase = false;
+            o.Password.RequireUppercase = false;
+            o.Password.RequireNonAlphanumeric = false;
+            o.Password.RequiredUniqueChars = 1;
+            o.User.RequireUniqueEmail = false;
+            o.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+        })
+        .AddRoles<IdentityRole<Guid>>()
+        .AddEntityFrameworkStores<LoyaltyDbContext>();
 
         // ambient application scope (same instance behind the interface)
         services.AddScoped<ApplicationContext>();

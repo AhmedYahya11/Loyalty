@@ -16,11 +16,13 @@ from ledger postings, but a true value-profile rebuild from the full event histo
 corrupted or mis-evaluated profile) does not exist. This is the platform's main disaster-recovery gap
 for profile state.
 
-### A2. Worker/API migration ordering is a manual rule, not enforced — *High · S–M*
-The API runs EF migrations at startup (`DbBootstrap.InitializeAsync`); the Worker only calls
-`AddResourceSetupOnStartup` and assumes the schema already exists, so it must be started after the API.
-Nothing prevents starting them in the wrong order or two API replicas racing migrations. Options: a
-dedicated migration step/job, or an advisory-lock guard around migrate-on-startup.
+### A2. Worker/API migration ordering is a manual rule, not enforced — ✅ **Done**
+~~Nothing prevented wrong order or racing replicas~~. `DbBootstrap.InitializeAsync` now holds a
+PostgreSQL **advisory lock** (`pg_advisory_lock`) while migrating, so concurrent API replicas serialize
+(one applies; the losers find nothing pending). The **Worker no longer assumes the schema** — it calls
+`DbBootstrap.WaitForSchemaAsync` before consuming, blocking until migrations are applied (it never
+migrates itself). Covered by `MigrationOrderingE2ETests` (gate blocks on a fresh DB, concurrent
+`InitializeAsync` both succeed, gate returns once ready).
 
 ### A3. Kafka transport remains deferred — *Medium · doc, then L if needed*
 Only RabbitMQ and the in-DB Postgres queue exist (RabbitMQ shipped in P18). Acceptable at current

@@ -5,13 +5,63 @@ namespace Loyalty.Core.Persistence;
 /// <summary>
 /// Applies EF Core migrations and installs the deferred balancing trigger that enforces
 /// double-entry integrity in PostgreSQL (defense in depth beyond the domain — MVP spec §13).
+/// Migration ordering is enforced, not assumed (A2): the API holds a PostgreSQL advisory lock while
+/// migrating (so concurrent API replicas serialize instead of racing), and the Worker calls
+/// <see cref="WaitForSchemaAsync"/> to block until the schema is up to date before it consumes.
 /// </summary>
 public static class DbBootstrap
 {
+    // stable, arbitrary key so every host contends on the same advisory lock
+    private const long MigrationLockKey = 912_730_017L;
+
+    /// <summary>Apply migrations + the trigger under a cross-process advisory lock. Call from the API
+    /// (the single migration authority). Safe under concurrent replicas — the lock serializes them and
+    /// the already-applied migrations become a no-op for the losers.</summary>
     public static async Task InitializeAsync(LoyaltyDbContext db, CancellationToken ct = default)
     {
-        await db.Database.MigrateAsync(ct);
-        await db.Database.ExecuteSqlRawAsync(BalancingTriggerSql, ct);
+        var conn = db.Database.GetDbConnection();
+        var openedHere = conn.State != System.Data.ConnectionState.Open;
+        if (openedHere) await conn.OpenAsync(ct);
+        try
+        {
+            await ExecScalarAsync(conn, "SELECT pg_advisory_lock(@key)", ct);   // blocks until acquired
+            try
+            {
+                await db.Database.MigrateAsync(ct);
+                await db.Database.ExecuteSqlRawAsync(BalancingTriggerSql, ct);
+            }
+            finally { await ExecScalarAsync(conn, "SELECT pg_advisory_unlock(@key)", ct); }
+        }
+        finally { if (openedHere) await conn.CloseAsync(); }
+    }
+
+    /// <summary>Block until all migrations are applied (no pending). Call from hosts that must NOT
+    /// migrate themselves (the Worker) so they never run against a missing/stale schema (A2).</summary>
+    public static async Task WaitForSchemaAsync(LoyaltyDbContext db, int maxAttempts = 60, int delaySeconds = 2, CancellationToken ct = default)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                if (!(await db.Database.GetPendingMigrationsAsync(ct)).Any()) return;
+            }
+            catch { /* DB not reachable yet, or the migrations-history table doesn't exist — keep waiting */ }
+
+            if (attempt >= maxAttempts)
+                throw new InvalidOperationException("Timed out waiting for database migrations to be applied (is the API running?).");
+            await Task.Delay(TimeSpan.FromSeconds(delaySeconds), ct);
+        }
+    }
+
+    private static async Task ExecScalarAsync(System.Data.Common.DbConnection conn, string sql, CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        var p = cmd.CreateParameter();
+        p.ParameterName = "key";
+        p.Value = MigrationLockKey;
+        cmd.Parameters.Add(p);
+        await cmd.ExecuteNonQueryAsync(ct);
     }
 
     // A constraint trigger, deferred to commit, asserting every ledger transaction balances:

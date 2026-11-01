@@ -429,7 +429,7 @@
 
   // --- subtle reveal-on-scroll ---
   (function(){
-    const els=document.querySelectorAll('.card,.step,.price,.stat,.chip,.q,.relief,.loyalty-card,section .center');
+    const els=document.querySelectorAll('.card,.step,.price,.stat,.chip,.q,.relief,section .center');
     if(!('IntersectionObserver' in window)){els.forEach(e=>e.classList.add('in'));return;}
     const io=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.12,rootMargin:'0px 0px -40px'});
     els.forEach((el,i)=>{el.classList.add('reveal');el.style.transitionDelay=(Math.min(i%5,5)*50)+'ms';io.observe(el);});

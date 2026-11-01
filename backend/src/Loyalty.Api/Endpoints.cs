@@ -153,6 +153,12 @@ public static class Endpoints
             var t = await svc.IssueAsync(id, TimeSpan.FromDays(ttlDays), ct);
             return t is null ? Results.NotFound() : Results.Ok(new { token = t.Token, expiresAt = t.ExpiresAt });
         });
+        // revoke every access token for a member (invalidates any shared card link/QR) (P11)
+        members.MapDelete("/{id:guid}/access-tokens", async (Guid id, MemberTokenService svc, CancellationToken ct) =>
+        {
+            var revoked = await svc.RevokeAllAsync(id, ct);
+            return revoked is null ? Results.NotFound() : Results.Ok(new { revoked });
+        });
         members.MapGet("/{id:guid}", async (Guid id, MemberService svc, CancellationToken ct) =>
             await svc.GetAsync(id, ct) is { } v ? Results.Ok(v) : Results.NotFound());
         members.MapGet("/by-external-id/{externalId}", async (string externalId, MemberService svc, CancellationToken ct) =>

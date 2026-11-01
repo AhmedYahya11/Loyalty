@@ -36,6 +36,20 @@ public sealed class MemberTokenService(LoyaltyDbContext db, ApplicationContext s
         return new IssuedToken(raw, expiresAt);
     }
 
+    /// <summary>Admin-scoped: revoke (delete) all access tokens for one of the tenant's members.
+    /// Returns the number of tokens removed, or null if the member does not exist.</summary>
+    public async Task<int?> RevokeAllAsync(Guid memberId, CancellationToken ct)
+    {
+        var member = await db.Members.FirstOrDefaultAsync(m => m.Id == memberId, ct);
+        if (member is null) return null;
+
+        var tokens = await db.MemberTokens.Where(t => t.MemberId == memberId).ToListAsync(ct);
+        if (tokens.Count == 0) return 0;
+        db.MemberTokens.RemoveRange(tokens);
+        await db.SaveChangesAsync(ct);
+        return tokens.Count;
+    }
+
     /// <summary>System-scoped: resolve a plaintext token to its application + member, or null.</summary>
     public async Task<ResolvedMember?> ResolveAsync(string rawToken, CancellationToken ct)
     {

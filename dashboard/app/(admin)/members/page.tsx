@@ -30,6 +30,7 @@ export default function MembersPage() {
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [rewardId, setRewardId] = useState("");
   const [custLink, setCustLink] = useState("");
+  const [tokenMsg, setTokenMsg] = useState("");
   const [err, setErr] = useState("");
 
   const refresh = async (memberId: string) => {
@@ -80,6 +81,16 @@ export default function MembersPage() {
       setCustLink(url);
       if (w) w.location.href = url; else window.open(url, "_blank");
     } catch (e) { if (w) w.close(); setErr((e as Error).message); }
+  };
+  const revokeToken = async () => {
+    if (!member) return;
+    if (!window.confirm(tr("revokeConfirm", lang))) return;
+    setErr(""); setTokenMsg("");
+    try {
+      const r = await api.del<{ revoked: number }>(`/api/v1/members/${member.memberId}/access-tokens`);
+      setCustLink("");
+      setTokenMsg(`${tr("revokedCount", lang)}: ${r.revoked}`);
+    } catch (e) { setErr((e as Error).message); }
   };
   const act = async (id: string, action: "confirm" | "cancel") => {
     if (!member) return;
@@ -143,7 +154,9 @@ export default function MembersPage() {
             <div className="row" style={{ gap: 10 }}>
               <button className="secondary" onClick={customerLink}>💳 {tr("customerAppLink", lang)}</button>
               <button onClick={previewCard}>👁️ {tr("previewCard", lang)}</button>
+              <button className="secondary" onClick={revokeToken}>🚫 {tr("revokeToken", lang)}</button>
             </div>
+            {tokenMsg && <div className="ok-msg">{tokenMsg}</div>}
             {custLink && (
               <div style={{ marginTop: 12, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ background: "#fff", padding: 10, borderRadius: 8 }}><QRCodeSVG value={custLink} size={110} /></div>

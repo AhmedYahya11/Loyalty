@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Shouldly;
 
 namespace Loyalty.Tests.Integration;
@@ -74,6 +75,32 @@ public class CustomerAppE2ETests(ApiFixture fx)
 
         // active balance moved to reserved (50 - 10)
         (await fx.Get("/api/v1/customer/me", Bearer(token))).GetProperty("member").GetProperty("wallet").GetProperty("activeBalance").GetInt64().ShouldBe(40);
+    }
+
+    [Fact]
+    public async Task Revoking_a_members_tokens_invalidates_the_customer_surface()
+    {
+        var auth = await EarningApp("cust-app-revoke");
+        var owner = await fx.Post("/api/v1/members", new { externalCustomerId = "revoke-owner" }, auth);
+        var ownerId = owner.GetProperty("memberId").GetString()!;
+
+        var token = (await fx.Post($"/api/v1/members/{ownerId}/access-token", new { }, auth)).GetProperty("token").GetString()!;
+
+        // the freshly minted token authenticates the customer surface
+        (await fx.Get("/api/v1/customer/me", Bearer(token)))
+            .GetProperty("member").GetProperty("externalCustomerId").GetString().ShouldBe("revoke-owner");
+
+        // admin revokes every token for the member → reports how many were removed
+        var revoke = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/members/{ownerId}/access-tokens");
+        foreach (var (k, v) in auth) revoke.Headers.TryAddWithoutValidation(k, v);
+        var revokeResp = await fx.Client.SendAsync(revoke);
+        revokeResp.StatusCode.ShouldBe(HttpStatusCode.OK);
+        JsonDocument.Parse(await revokeResp.Content.ReadAsStringAsync()).RootElement.GetProperty("revoked").GetInt32().ShouldBe(1);
+
+        // the previously valid token no longer works
+        var after = new HttpRequestMessage(HttpMethod.Get, "/api/v1/customer/me");
+        after.Headers.TryAddWithoutValidation("Authorization", $"Bearer {token}");
+        (await fx.Client.SendAsync(after)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

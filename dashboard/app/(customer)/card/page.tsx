@@ -5,6 +5,8 @@ import { useLang } from "../../providers";
 import { tr } from "@/lib/i18n";
 import { capi } from "@/lib/customerApi";
 import { isCustConnected, setCustSession } from "@/lib/customer";
+import { isConnected } from "@/lib/session";
+import Link from "next/link";
 
 type Wallet = { pointsUnitCode: string; activeBalance: number; pendingBalance: number; reservedBalance: number };
 type Member = { memberId: string; externalCustomerId: string; wallet: Wallet; referralCode?: string };
@@ -49,9 +51,18 @@ export default function CardHome() {
   };
 
   if (!connected) {
+    const admin = typeof window !== "undefined" && isConnected();
     return (
       <div className="card">
         <h1 style={{ fontSize: 20 }}>{tr("connectCustomer", lang)}</h1>
+        {admin && (
+          <div style={{ background: "rgba(177,138,67,0.08)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", margin: "6px 0 16px" }}>
+            <p className="muted" style={{ margin: "0 0 10px" }}>{tr("adminCardHint", lang)}</p>
+            <Link href="/members" className="lang-toggle" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
+              👥 {tr("goToMembers", lang)}
+            </Link>
+          </div>
+        )}
         <p className="muted">{tr("notConnectedCust", lang)}</p>
         <label>{tr("pasteToken", lang)}</label>
         <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="mt_…" />

@@ -130,6 +130,8 @@ export const t: Dict = {
   connectBtn: { en: "Open my card", ar: "افتح بطاقتي", ku: "کارتەکەم بکەرەوە" },
   signOut: { en: "Sign out", ar: "خروج", ku: "چوونەدەرەوە" },
   notConnectedCust: { en: "Not connected. Open the link from your store, or paste your token.", ar: "غير متصل. افتح الرابط من المتجر أو الصق الرمز.", ku: "پەیوەندی نەکراوە. لینکەکە لە فرۆشگاکەتەوە بکەرەوە، یان تۆکنەکەت بلکێنە." },
+  adminCardHint: { en: "You're signed in as admin. A card belongs to a member — generate a card link from the Members page and open it to preview any member's card.", ar: "أنت مسجّل كمسؤول. البطاقة تخص عضوًا — أنشئ رابط بطاقة من صفحة الأعضاء وافتحه لمعاينة بطاقة أي عضو.", ku: "وەک بەڕێوەبەر چوویتەژوورەوە. کارت هی ئەندامێکە — لە پەڕەی ئەندامانەوە لینکی کارت دروستبکە و بیکەرەوە بۆ پیشاندانی کارتی هەر ئەندامێک." },
+  goToMembers: { en: "Go to Members", ar: "الذهاب إلى الأعضاء", ku: "بڕۆ بۆ ئەندامان" },
   pointsEarnedShort: { en: "Earned", ar: "المكتسبة", ku: "بەدەستهاتوو" },
   pointsRedeemedShort: { en: "Redeemed", ar: "المستبدلة", ku: "گۆڕدراوە" },
   affordableTag: { en: "Affordable", ar: "متاح", ku: "بەردەست" },

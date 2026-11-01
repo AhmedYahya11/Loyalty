@@ -75,23 +75,20 @@ public sealed class AdminController(
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken ct) =>
         NoContentIf(await identity.DeactivateAsync(me, id, ct));
 
-    // ----- on-demand maintenance jobs (any authenticated admin; Viewers blocked as read-only) -----
-    [Authorize]
+    // ----- on-demand maintenance jobs: operational endpoints, callable with an API key or an
+    //       admin token (scope + Viewer read-only enforced by the auth middleware) — not [Authorize]. -----
     [HttpPost("lifecycle-sweep")]
     public async Task<IActionResult> LifecycleSweep(CancellationToken ct) =>
         Ok(new { transitions = await lifecycle.RunAsync(ct) });
 
-    [Authorize]
     [HttpPost("expire-points")]
     public async Task<IActionResult> ExpirePoints([FromQuery] string? asOf, CancellationToken ct) =>
         Ok(new { expired = asOf is not null && DateTimeOffset.TryParse(asOf, out var d) ? await expiry.RunForAsync(d, ct) : await expiry.RunAsync(ct) });
 
-    [Authorize]
     [HttpPost("rfm-recompute")]
     public async Task<IActionResult> RfmRecompute(CancellationToken ct) =>
         Ok(new { scored = await rfm.RunAsync(ct) });
 
-    [Authorize]
     [HttpPost("birthday-sweep")]
     public async Task<IActionResult> BirthdaySweep([FromQuery] string? asOf, CancellationToken ct) =>
         Ok(new { rewarded = asOf is not null && DateTimeOffset.TryParse(asOf, out var d) ? await birthday.RunForAsync(d, ct) : await birthday.RunAsync(ct) });
